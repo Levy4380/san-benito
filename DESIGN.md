@@ -12,6 +12,8 @@ Incluye:
 - Registro público de pacientes.
 - Búsqueda de doctores por especialidad (obligatoria) y nombre (opcional).
 - Carga manual de slots disponibles (doctor para sí mismo; admin para cualquier doctor).
+- Plantilla semanal de franjas + generación explícita de slots del mes actual o
+  el siguiente (Settings → Agenda).
 - Reserva de turno por el paciente (atómica, sin doble reserva).
 - Cancelación de turnos (paciente el propio, doctor los de su agenda, admin cualquiera).
 - Agenda del doctor; vista admin de todos los turnos con filtros.
@@ -24,7 +26,7 @@ Incluye:
 - Mails o notificaciones de cualquier tipo.
 - Estado "turno atendido/completed".
 - Historial de cancelaciones / auditoría.
-- Agenda recurrente o generación automática de slots.
+- Recurrencia viva / jobs / generación más allá del mes actual y el siguiente.
 - Recordatorios, multi-sede, multi-tenant, API pública, historia clínica.
 - Borrado / desvinculación de la relación doctor–paciente.
 - Metadatos extra en el vínculo (obra social del vínculo, notas, etc.).
@@ -38,7 +40,10 @@ Decisiones ya tomadas por el dueño del proyecto. No reabrirlas.
   Reglas duras: (a) los controllers **nunca** hacen queries ni contienen lógica — solo
   reciben el request validado, llaman a un service y devuelven una respuesta Inertia;
   (b) toda query reutilizable se encapsula como **scope de Eloquent** en el modelo.
-- **D3 — Disponibilidad manual**: cada slot se carga a mano. No hay agenda recurrente.
+- **D3 — Disponibilidad materializada**: los turnos existen como filas concretas en
+  `appointments`. Se cargan a mano (día a día / franja del día) o se materializan
+  desde una plantilla semanal para el mes actual o el siguiente (d23). No hay
+  recurrencia viva ni generación automática continua.
 - **D4 — Especialidades catalogadas**: tabla `specialties`, FK desde `doctors`. No es
   texto libre.
 - **D5 — Cancelación**: pueden cancelar el paciente (sus turnos), el doctor (turnos de
@@ -99,8 +104,8 @@ Decisiones menores tomadas por el diseñador (vetables por el dueño, avisar si 
 - **d20 — Duración de turno por doctor**: cada doctor tiene `slot_duration_minutes`
   (default **20**, rango válido **5–120**). Se configura en **Settings → Agenda**
   (`GET/PATCH /settings/agenda`, solo rol `doctor`). Cambiar la duración no muta
-  slots ya creados. Alta por franja: transacción all-or-nothing (si algún slot
-  solapa o es inválido, no se crea ninguno).
+  slots ya creados. Alta por franja (día a día): transacción all-or-nothing (si
+  algún slot solapa o es inválido, no se crea ninguno).
 - **d21 — Alta manual del vínculo**: el doctor solo vincula pacientes **a sí mismo**;
   admin/super_admin puede vincular **cualquier paciente a cualquier doctor**. La
   selección del paciente es por búsqueda (DNI y/o nombre) entre pacientes ya
@@ -109,6 +114,15 @@ Decisiones menores tomadas por el diseñador (vetables por el dueño, avisar si 
   (`phone` / `email` del `User`). Sin “próximo turno” en v1 (se puede derivar
   después de `appointments`). Admin no tiene listado global de vínculos en v1:
   solo el endpoint de alta (el doctor ve los suyos en **Mis pacientes**).
+- **d23 — Plantilla semanal + generación mensual**: cada doctor tiene
+  `weekly_availability` (JSON nullable): lista plana de
+  `{ weekday: 1–7 (ISO lun–dom), start: "H:i", end: "H:i" }`. Se guarda en
+  Settings → Agenda junto con la duración; guardar **no** genera slots.
+  `POST /settings/agenda/generate` con `target=current|next` materializa slots
+  `available` del mes pedido, cortando cada franja con `slot_duration_minutes`
+  (remanente incompleto descartado). Solo `starts_at` futuros; solapes se
+  omiten (no all-or-nothing); no se tocan `booked`; no se borran `available`
+  huérfanos. Flash con resumen creados/omitidos. Solo rol `doctor` (propia).
 
 ## 3. Stack
 
@@ -174,6 +188,7 @@ Migraciones (además de las que trae el starter kit y las de spatie/laravel-perm
 | `specialty_id` | FK `specialties.id` | not null, restrict on delete |
 | `license_number` | string | unique |
 | `slot_duration_minutes` | unsigned smallint | not null, default **20** (d20) |
+| `weekly_availability` | json | nullable (d23); lista de franjas semanales |
 | timestamps | | |
 
 ### `patients`
@@ -252,7 +267,7 @@ Roles Spatie (seeder): `patient`, `doctor`, `admin`, `super_admin`.
 | Reservar turno | Sí | No | No | No |
 | Cancelar turno | Propios | De su agenda | Cualquiera | Cualquiera |
 | Crear/eliminar slots | No | Propios | Cualquier doctor | Cualquier doctor |
-| Configurar duración de turno | No | Sí (propia) | No | No |
+| Configurar duración / plantilla semanal; generar mes | No | Sí (propia) | No | No |
 | Ver mis pacientes / vincular paciente (manual) | No | Propios | Cualquier doctor | Cualquier doctor |
 | Ver todos los turnos | No | No | Sí | Sí |
 | Alta de doctores y admins | No | No | Sí | Sí |
@@ -277,8 +292,12 @@ Implementación: middleware `role:` de Spatie a nivel de grupo de rutas +
   admin/super_admin indica el doctor. El paciente debe existir (rol/entidad patient).
 - **Reserva solo de slots futuros**: el scope `available()` excluye slots pasados.
 - **Creación de slots**: validaciones de d11. Los admins indican el doctor; los
-  doctores solo crean para sí mismos (modos classic/range, d16/d20). Franja:
-  solo slots completos; remanente descartado; all-or-nothing.
+  doctores solo crean para sí mismos (modos classic/range, d16/d20). Franja del
+  día: solo slots completos; remanente descartado; all-or-nothing.
+- **Generación mensual desde plantilla** (d23): el doctor guarda
+  `weekly_availability` y dispara generate para mes actual o siguiente. Solo
+  futuros; solapes se omiten; no sync-delete de `available` huérfanos; no muta
+  `booked`.
 - **Alta de doctor** (por admin): crea `User` + `Doctor` + asigna rol `doctor` en una
   transacción, dentro de `DoctorService`. Ídem alta de admin (solo user + rol).
 - **Registro de paciente**: crea `User` + `Patient` + asigna rol `patient` en una
@@ -307,6 +326,7 @@ de rol con middleware `role:`.
 | POST | `/agenda/slots` | `AgendaSlotController@store` | — (redirect) |
 | DELETE | `/agenda/slots/{appointment}` | `AgendaSlotController@destroy` | — (redirect) |
 | GET/PATCH | `/settings/agenda` | `Settings\DoctorAgendaSettingsController@edit/update` | `settings/agenda` |
+| POST | `/settings/agenda/generate` | `Settings\DoctorAgendaSettingsController@generate` (`target=current\|next`) | — (redirect) |
 | GET | `/my-patients` | `MyPatientsController@index` (query `?q=` DNI/nombre) | `Doctor/MyPatients` |
 | POST | `/my-patients` | `MyPatientsController@store` (`patient_id`) | — (redirect) |
 
@@ -332,10 +352,11 @@ app/
   Models/                # User, Doctor, Patient, Specialty, Appointment
   Policies/AppointmentPolicy.php
   Services/
-    AppointmentService.php   # createSlot, createSlotsFromRange, book, cancel, deleteSlot
+    AppointmentService.php   # createSlot, createSlotsFromRange,
+                             # generateMonthFromWeeklyTemplate, book, cancel, deleteSlot
                              # (book también materializa doctor_patient)
     DoctorPatientService.php # link, listForDoctor (búsqueda q)
-    DoctorService.php        # createDoctor, updateSlotDuration, searchByName
+    DoctorService.php        # createDoctor, updateAgendaSettings, searchByName
     PatientService.php       # register
 database/
   factories/  migrations/  seeders/
@@ -384,6 +405,10 @@ Feature tests (PHPUnit, `RefreshDatabase`, contra MySQL `testing`):
     otro doctor (403). Admin vincula paciente a cualquier doctor. Par duplicado es
     idempotente.
 16. Doctor ve solo sus pacientes en `/my-patients`; búsqueda por DNI/nombre filtra.
+17. Doctor guarda `weekly_availability` válida; plantilla inválida (solape mismo
+    día, `end <= start`, weekday fuera de rango) falla validación.
+18. Generate `current`/`next` materializa slots según plantilla y duración; omite
+    pasados y solapes; no muta `booked`; reaplicar no duplica.
 
 ## 12. Calidad y convenciones
 

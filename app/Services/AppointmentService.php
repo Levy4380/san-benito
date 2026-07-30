@@ -97,15 +97,7 @@ class AppointmentService
             ]);
         }
 
-        $duration = $doctor->slot_duration_minutes;
-        $windows = [];
-        $cursor = $rangeStart->copy();
-
-        while ($cursor->copy()->addMinutes($duration)->lte($rangeEnd)) {
-            $slotEnd = $cursor->copy()->addMinutes($duration);
-            $windows[] = [$cursor->copy(), $slotEnd];
-            $cursor = $slotEnd;
-        }
+        $windows = $this->windowsFromRange($rangeStart, $rangeEnd, $doctor->slot_duration_minutes);
 
         if ($windows === []) {
             throw ValidationException::withMessages([
@@ -125,6 +117,74 @@ class AppointmentService
             }
 
             return $created;
+        });
+    }
+
+    /**
+     * Materialize available slots for a calendar month from the doctor's weekly template.
+     * Past and overlapping windows are skipped (not all-or-nothing).
+     *
+     * @return array{created: int, skipped: int}
+     */
+    public function generateMonthFromWeeklyTemplate(Doctor $doctor, Carbon $month): array
+    {
+        $bands = $doctor->weekly_availability ?? [];
+
+        if ($bands === []) {
+            throw ValidationException::withMessages([
+                'weekly_availability' => 'Primero guardá al menos una franja semanal.',
+            ]);
+        }
+
+        $duration = $doctor->slot_duration_minutes;
+        $monthStart = $month->copy()->timezone(config('app.timezone'))->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $now = now();
+
+        $bandsByWeekday = [];
+        foreach ($bands as $band) {
+            $bandsByWeekday[(int) $band['weekday']][] = $band;
+        }
+
+        return DB::transaction(function () use ($doctor, $bandsByWeekday, $duration, $monthStart, $monthEnd, $now) {
+            $created = 0;
+            $skipped = 0;
+            $cursorDay = $monthStart->copy()->startOfDay();
+
+            while ($cursorDay->lte($monthEnd)) {
+                $weekday = $cursorDay->dayOfWeekIso;
+                $dayBands = $bandsByWeekday[$weekday] ?? [];
+
+                foreach ($dayBands as $band) {
+                    $rangeStart = $cursorDay->copy()->setTimeFromTimeString($band['start']);
+                    $rangeEnd = $cursorDay->copy()->setTimeFromTimeString($band['end']);
+                    $windows = $this->windowsFromRange($rangeStart, $rangeEnd, $duration);
+
+                    foreach ($windows as [$startsAt, $endsAt]) {
+                        if ($startsAt->lte($now)) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        if ($this->slotOverlaps($doctor, $startsAt, $endsAt)) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        $this->insertAvailableSlot($doctor, $startsAt, $endsAt);
+                        $created++;
+                    }
+                }
+
+                $cursorDay->addDay();
+            }
+
+            return [
+                'created' => $created,
+                'skipped' => $skipped,
+            ];
         });
     }
 
@@ -204,17 +264,37 @@ class AppointmentService
             ]);
         }
 
-        $overlaps = Appointment::query()
-            ->forDoctor($doctor->id)
-            ->where('starts_at', '<', $endsAt)
-            ->where('ends_at', '>', $startsAt)
-            ->exists();
-
-        if ($overlaps) {
+        if ($this->slotOverlaps($doctor, $startsAt, $endsAt)) {
             throw ValidationException::withMessages([
                 'starts_at' => 'El horario se solapa con otro turno del mismo doctor.',
             ]);
         }
+    }
+
+    private function slotOverlaps(Doctor $doctor, Carbon $startsAt, Carbon $endsAt): bool
+    {
+        return Appointment::query()
+            ->forDoctor($doctor->id)
+            ->where('starts_at', '<', $endsAt)
+            ->where('ends_at', '>', $startsAt)
+            ->exists();
+    }
+
+    /**
+     * @return list<array{0: Carbon, 1: Carbon}>
+     */
+    private function windowsFromRange(Carbon $rangeStart, Carbon $rangeEnd, int $durationMinutes): array
+    {
+        $windows = [];
+        $cursor = $rangeStart->copy();
+
+        while ($cursor->copy()->addMinutes($durationMinutes)->lte($rangeEnd)) {
+            $slotEnd = $cursor->copy()->addMinutes($durationMinutes);
+            $windows[] = [$cursor->copy(), $slotEnd];
+            $cursor = $slotEnd;
+        }
+
+        return $windows;
     }
 
     private function insertAvailableSlot(Doctor $doctor, Carbon $startsAt, Carbon $endsAt): Appointment

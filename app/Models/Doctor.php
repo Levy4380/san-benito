@@ -19,12 +19,14 @@ class Doctor extends Model
         'specialty_id',
         'license_number',
         'slot_duration_minutes',
+        'weekly_availability',
     ];
 
     protected function casts(): array
     {
         return [
             'slot_duration_minutes' => 'integer',
+            'weekly_availability' => 'array',
         ];
     }
 

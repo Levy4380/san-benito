@@ -23,5 +23,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:doctor')->group(function () {
         Route::get('settings/agenda', [DoctorAgendaSettingsController::class, 'edit'])->name('settings.agenda.edit');
         Route::patch('settings/agenda', [DoctorAgendaSettingsController::class, 'update'])->name('settings.agenda.update');
+        Route::post('settings/agenda/generate', [DoctorAgendaSettingsController::class, 'generate'])->name('settings.agenda.generate');
     });
 });

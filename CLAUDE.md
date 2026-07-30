@@ -22,3 +22,4 @@ composer pint
 - `appointments` status: `available` | `booked`
 - Reserva atómica; cancelación reabre el slot
 - `doctor_patient` pivote (D21): nace al book + alta manual; no se borra en v1
+- Plantilla semanal + generate mes actual/siguiente (d23); no recurrencia viva

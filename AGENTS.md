@@ -28,3 +28,7 @@ composer pint
 ## Arquitectura
 
 Services + Eloquent directo (sin repositories). Controllers finos. FormRequests. Policies.
+
+## Dominio (resumen)
+
+- Plantilla semanal + generate mes actual/siguiente en Settings → Agenda (d23)

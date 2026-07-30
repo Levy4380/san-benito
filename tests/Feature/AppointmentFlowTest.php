@@ -490,6 +490,7 @@ class AppointmentFlowTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('settings/agenda')
                 ->where('doctor.slot_duration_minutes', 20)
+                ->where('doctor.weekly_availability', [])
             );
 
         $this->actingAs($doctor->user)
@@ -513,6 +514,200 @@ class AppointmentFlowTest extends TestCase
             ->assertSessionHasErrors('slot_duration_minutes');
     }
 
+    public function test_doctor_can_save_weekly_availability_template(): void
+    {
+        $doctor = $this->createDoctor();
+
+        $this->actingAs($doctor->user)
+            ->patch(route('settings.agenda.update'), [
+                'slot_duration_minutes' => 20,
+                'weekly_availability' => [
+                    ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
+                    ['weekday' => 1, 'start' => '15:00', 'end' => '19:00'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $saved = $doctor->fresh()->weekly_availability;
+        $this->assertCount(2, $saved);
+        $this->assertSame(1, (int) $saved[0]['weekday']);
+        $this->assertSame('10:00', $saved[0]['start']);
+        $this->assertSame('12:00', $saved[0]['end']);
+        $this->assertSame(1, (int) $saved[1]['weekday']);
+        $this->assertSame('15:00', $saved[1]['start']);
+        $this->assertSame('19:00', $saved[1]['end']);
+    }
+
+    public function test_weekly_availability_validation_rejects_invalid_bands(): void
+    {
+        $doctor = $this->createDoctor();
+
+        $this->actingAs($doctor->user)
+            ->patch(route('settings.agenda.update'), [
+                'slot_duration_minutes' => 20,
+                'weekly_availability' => [
+                    ['weekday' => 1, 'start' => '12:00', 'end' => '10:00'],
+                ],
+            ])
+            ->assertSessionHasErrors('weekly_availability.0.end');
+
+        $this->actingAs($doctor->user)
+            ->patch(route('settings.agenda.update'), [
+                'slot_duration_minutes' => 20,
+                'weekly_availability' => [
+                    ['weekday' => 8, 'start' => '10:00', 'end' => '12:00'],
+                ],
+            ])
+            ->assertSessionHasErrors('weekly_availability.0.weekday');
+
+        $this->actingAs($doctor->user)
+            ->patch(route('settings.agenda.update'), [
+                'slot_duration_minutes' => 20,
+                'weekly_availability' => [
+                    ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
+                    ['weekday' => 1, 'start' => '11:00', 'end' => '13:00'],
+                ],
+            ])
+            ->assertSessionHasErrors('weekly_availability.1.start');
+    }
+
+    public function test_generate_current_month_from_weekly_template(): void
+    {
+        $this->travelTo(now()->copy()->setDate(2026, 7, 6)->setTime(8, 0));
+
+        $doctor = $this->createDoctor(doctorAttributes: [
+            'slot_duration_minutes' => 20,
+            'weekly_availability' => [
+                ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
+            ],
+        ]);
+
+        $this->actingAs($doctor->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'current'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $monthStart = now()->startOfMonth();
+        $monthEnd = now()->endOfMonth();
+        $expected = 0;
+        $day = $monthStart->copy()->startOfDay();
+
+        while ($day->lte($monthEnd)) {
+            if ($day->dayOfWeekIso === 1) {
+                for ($hour = 10; $hour < 12; $hour++) {
+                    foreach ([0, 20, 40] as $minute) {
+                        $starts = $day->copy()->setTime($hour, $minute);
+                        if ($starts->gt(now())) {
+                            $expected++;
+                        }
+                    }
+                }
+            }
+            $day->addDay();
+        }
+
+        $this->assertGreaterThan(0, $expected);
+        $this->assertSame(
+            $expected,
+            Appointment::query()->forDoctor($doctor->id)->count(),
+        );
+
+        Appointment::query()->forDoctor($doctor->id)->each(function (Appointment $appointment): void {
+            $this->assertTrue($appointment->starts_at->gt(now()));
+            $this->assertSame(1, $appointment->starts_at->dayOfWeekIso);
+            $this->assertSame(Appointment::STATUS_AVAILABLE, $appointment->status);
+        });
+    }
+
+    public function test_generate_skips_overlaps_and_does_not_mutate_booked(): void
+    {
+        $this->travelTo(now()->copy()->setDate(2026, 7, 6)->setTime(8, 0));
+
+        $doctor = $this->createDoctor(doctorAttributes: [
+            'slot_duration_minutes' => 20,
+            'weekly_availability' => [
+                ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
+            ],
+        ]);
+        $patient = $this->createPatient();
+
+        $bookedStart = now()->copy()->setDate(2026, 7, 6)->setTime(10, 0);
+
+        $booked = Appointment::factory()->booked()->create([
+            'doctor_id' => $doctor->id,
+            'patient_id' => $patient->id,
+            'starts_at' => $bookedStart,
+            'ends_at' => $bookedStart->copy()->addMinutes(20),
+        ]);
+
+        $this->actingAs($doctor->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'current'])
+            ->assertRedirect();
+
+        $booked->refresh();
+        $this->assertSame(Appointment::STATUS_BOOKED, $booked->status);
+        $this->assertSame($patient->id, $booked->patient_id);
+
+        $this->assertSame(
+            1,
+            Appointment::query()
+                ->forDoctor($doctor->id)
+                ->where('starts_at', $bookedStart->format('Y-m-d H:i:s'))
+                ->count(),
+        );
+
+        $this->assertGreaterThan(
+            1,
+            Appointment::query()->forDoctor($doctor->id)->count(),
+        );
+    }
+
+    public function test_generate_next_month_only_creates_slots_in_next_month(): void
+    {
+        $this->travelTo(now()->copy()->setDate(2026, 7, 15)->setTime(12, 0));
+
+        $doctor = $this->createDoctor(doctorAttributes: [
+            'slot_duration_minutes' => 60,
+            'weekly_availability' => [
+                ['weekday' => 2, 'start' => '09:00', 'end' => '10:00'],
+            ],
+        ]);
+
+        $this->actingAs($doctor->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'next'])
+            ->assertRedirect();
+
+        $appointments = Appointment::query()->forDoctor($doctor->id)->get();
+        $this->assertNotEmpty($appointments);
+
+        $nextMonth = now()->startOfMonth()->addMonth();
+        foreach ($appointments as $appointment) {
+            $this->assertSame($nextMonth->year, $appointment->starts_at->year);
+            $this->assertSame($nextMonth->month, $appointment->starts_at->month);
+            $this->assertSame(2, $appointment->starts_at->dayOfWeekIso);
+        }
+
+        $this->actingAs($doctor->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'next'])
+            ->assertRedirect();
+
+        $this->assertSame(
+            $appointments->count(),
+            Appointment::query()->forDoctor($doctor->id)->count(),
+        );
+    }
+
+    public function test_generate_requires_saved_template(): void
+    {
+        $doctor = $this->createDoctor(doctorAttributes: [
+            'weekly_availability' => [],
+        ]);
+
+        $this->actingAs($doctor->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'current'])
+            ->assertSessionHasErrors('weekly_availability');
+    }
+
     public function test_non_doctor_cannot_access_agenda_settings(): void
     {
         $patient = $this->createPatient();
@@ -525,6 +720,16 @@ class AppointmentFlowTest extends TestCase
             ->patch(route('settings.agenda.update'), [
                 'slot_duration_minutes' => 30,
             ])
+            ->assertForbidden();
+
+        $this->actingAs($patient->user)
+            ->post(route('settings.agenda.generate'), ['target' => 'current'])
+            ->assertForbidden();
+
+        $admin = $this->createAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('settings.agenda.generate'), ['target' => 'next'])
             ->assertForbidden();
     }
 

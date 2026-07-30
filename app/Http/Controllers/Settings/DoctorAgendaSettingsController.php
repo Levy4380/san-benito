@@ -7,14 +7,29 @@ use App\Http\Requests\Settings\GenerateDoctorAgendaRequest;
 use App\Http\Requests\Settings\UpdateDoctorAgendaSettingsRequest;
 use App\Services\AppointmentService;
 use App\Services\DoctorService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DoctorAgendaSettingsController extends Controller
 {
+    private const MONTH_NAMES = [
+        1 => 'Enero',
+        2 => 'Febrero',
+        3 => 'Marzo',
+        4 => 'Abril',
+        5 => 'Mayo',
+        6 => 'Junio',
+        7 => 'Julio',
+        8 => 'Agosto',
+        9 => 'Septiembre',
+        10 => 'Octubre',
+        11 => 'Noviembre',
+        12 => 'Diciembre',
+    ];
+
     public function edit(Request $request): Response
     {
         $doctor = $request->user()->doctor;
@@ -27,6 +42,7 @@ class DoctorAgendaSettingsController extends Controller
                 'slot_duration_minutes' => $doctor->slot_duration_minutes,
                 'weekly_availability' => $doctor->weekly_availability ?? [],
             ],
+            'generateMonths' => $this->generateMonthOptions(),
         ]);
     }
 
@@ -53,24 +69,24 @@ class DoctorAgendaSettingsController extends Controller
 
     public function generate(
         GenerateDoctorAgendaRequest $request,
+        DoctorService $doctorService,
         AppointmentService $appointmentService,
     ): RedirectResponse {
         $doctor = $request->user()->doctor;
 
         abort_unless($doctor, 403);
 
-        $bands = $doctor->weekly_availability ?? [];
+        $validated = $request->validated();
+        $bands = $validated['weekly_availability'];
 
-        if ($bands === []) {
-            throw ValidationException::withMessages([
-                'weekly_availability' => 'Primero guardá al menos una franja semanal.',
-            ]);
-        }
+        $doctorService->updateAgendaSettings(
+            $doctor,
+            $doctor->slot_duration_minutes,
+            $bands,
+        );
+        $doctor->refresh();
 
-        $month = $request->validated('target') === 'next'
-            ? now()->startOfMonth()->addMonth()
-            : now()->startOfMonth();
-
+        $month = $this->monthForTarget($validated['target']);
         $result = $appointmentService->generateMonthFromWeeklyTemplate($doctor, $month);
 
         return back()->with(
@@ -81,5 +97,34 @@ class DoctorAgendaSettingsController extends Controller
                 $result['skipped'],
             ),
         );
+    }
+
+    /**
+     * @return list<array{target: string, label: string}>
+     */
+    private function generateMonthOptions(): array
+    {
+        $options = [];
+
+        foreach (['current' => 0, 'next' => 1, 'after_next' => 2] as $target => $offset) {
+            $date = now()->startOfMonth()->addMonths($offset);
+            $options[] = [
+                'target' => $target,
+                'label' => self::MONTH_NAMES[$date->month].' '.$date->year,
+            ];
+        }
+
+        return $options;
+    }
+
+    private function monthForTarget(string $target): Carbon
+    {
+        $offset = match ($target) {
+            'next' => 1,
+            'after_next' => 2,
+            default => 0,
+        };
+
+        return now()->startOfMonth()->addMonths($offset);
     }
 }

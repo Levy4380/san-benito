@@ -12,8 +12,8 @@ Incluye:
 - Registro público de pacientes.
 - Búsqueda de doctores por especialidad (obligatoria) y nombre (opcional).
 - Carga manual de slots disponibles (doctor para sí mismo; admin para cualquier doctor).
-- Plantilla semanal de franjas + generación explícita de slots del mes actual o
-  el siguiente (Settings → Agenda).
+- Plantilla semanal de franjas + generación explícita de slots del mes actual,
+  el siguiente o el posterior (Settings → Agenda, modal por mes).
 - Reserva de turno por el paciente (atómica, sin doble reserva).
 - Cancelación de turnos (paciente el propio, doctor los de su agenda, admin cualquiera).
 - Agenda del doctor; vista admin de todos los turnos con filtros.
@@ -26,7 +26,7 @@ Incluye:
 - Mails o notificaciones de cualquier tipo.
 - Estado "turno atendido/completed".
 - Historial de cancelaciones / auditoría.
-- Recurrencia viva / jobs / generación más allá del mes actual y el siguiente.
+- Recurrencia viva / jobs / generación más allá del mes actual, el siguiente y el posterior.
 - Recordatorios, multi-sede, multi-tenant, API pública, historia clínica.
 - Borrado / desvinculación de la relación doctor–paciente.
 - Metadatos extra en el vínculo (obra social del vínculo, notas, etc.).
@@ -42,8 +42,8 @@ Decisiones ya tomadas por el dueño del proyecto. No reabrirlas.
   (b) toda query reutilizable se encapsula como **scope de Eloquent** en el modelo.
 - **D3 — Disponibilidad materializada**: los turnos existen como filas concretas en
   `appointments`. Se cargan a mano (día a día / franja del día) o se materializan
-  desde una plantilla semanal para el mes actual o el siguiente (d23). No hay
-  recurrencia viva ni generación automática continua.
+  desde una plantilla semanal para el mes actual, el siguiente o el posterior
+  (d23). No hay recurrencia viva ni generación automática continua.
 - **D4 — Especialidades catalogadas**: tabla `specialties`, FK desde `doctors`. No es
   texto libre.
 - **D5 — Cancelación**: pueden cancelar el paciente (sus turnos), el doctor (turnos de
@@ -116,13 +116,16 @@ Decisiones menores tomadas por el diseñador (vetables por el dueño, avisar si 
   solo el endpoint de alta (el doctor ve los suyos en **Mis pacientes**).
 - **d23 — Plantilla semanal + generación mensual**: cada doctor tiene
   `weekly_availability` (JSON nullable): lista plana de
-  `{ weekday: 1–7 (ISO lun–dom), start: "H:i", end: "H:i" }`. Se guarda en
-  Settings → Agenda junto con la duración; guardar **no** genera slots.
-  `POST /settings/agenda/generate` con `target=current|next` materializa slots
-  `available` del mes pedido, cortando cada franja con `slot_duration_minutes`
-  (remanente incompleto descartado). Solo `starts_at` futuros; solapes se
-  omiten (no all-or-nothing); no se tocan `booked`; no se borran `available`
-  huérfanos. Flash con resumen creados/omitidos. Solo rol `doctor` (propia).
+  `{ weekday: 1–7 (ISO lun–dom), start: "H:i", end: "H:i" }`. En Settings →
+  Agenda, la UI muestra **Crear turnos para:** con botones del mes actual, el
+  siguiente y el posterior; al elegir uno se abre un modal “Franjas semanales
+  para el mes” donde se configuran las franjas. `POST /settings/agenda/generate`
+  con `target=current|next|after_next` y `weekly_availability` guarda la
+  plantilla y materializa slots `available` del mes pedido, cortando cada
+  franja con `slot_duration_minutes` (remanente incompleto descartado). Solo
+  `starts_at` futuros; solapes se omiten (no all-or-nothing); no se tocan
+  `booked`; no se borran `available` huérfanos. Flash con resumen
+  creados/omitidos. Solo rol `doctor` (propia).
 
 ## 3. Stack
 
@@ -294,10 +297,10 @@ Implementación: middleware `role:` de Spatie a nivel de grupo de rutas +
 - **Creación de slots**: validaciones de d11. Los admins indican el doctor; los
   doctores solo crean para sí mismos (modos classic/range, d16/d20). Franja del
   día: solo slots completos; remanente descartado; all-or-nothing.
-- **Generación mensual desde plantilla** (d23): el doctor guarda
-  `weekly_availability` y dispara generate para mes actual o siguiente. Solo
-  futuros; solapes se omiten; no sync-delete de `available` huérfanos; no muta
-  `booked`.
+- **Generación mensual desde plantilla** (d23): el doctor elige mes (actual /
+  siguiente / posterior), configura franjas en modal y `POST generate` guarda
+  `weekly_availability` + materializa slots. Solo futuros; solapes se omiten;
+  no sync-delete de `available` huérfanos; no muta `booked`.
 - **Alta de doctor** (por admin): crea `User` + `Doctor` + asigna rol `doctor` en una
   transacción, dentro de `DoctorService`. Ídem alta de admin (solo user + rol).
 - **Registro de paciente**: crea `User` + `Patient` + asigna rol `patient` en una
@@ -326,7 +329,7 @@ de rol con middleware `role:`.
 | POST | `/agenda/slots` | `AgendaSlotController@store` | — (redirect) |
 | DELETE | `/agenda/slots/{appointment}` | `AgendaSlotController@destroy` | — (redirect) |
 | GET/PATCH | `/settings/agenda` | `Settings\DoctorAgendaSettingsController@edit/update` | `settings/agenda` |
-| POST | `/settings/agenda/generate` | `Settings\DoctorAgendaSettingsController@generate` (`target=current\|next`) | — (redirect) |
+| POST | `/settings/agenda/generate` | `Settings\DoctorAgendaSettingsController@generate` (`target=current\|next\|after_next` + `weekly_availability`) | — (redirect) |
 | GET | `/my-patients` | `MyPatientsController@index` (query `?q=` DNI/nombre) | `Doctor/MyPatients` |
 | POST | `/my-patients` | `MyPatientsController@store` (`patient_id`) | — (redirect) |
 
@@ -407,8 +410,9 @@ Feature tests (PHPUnit, `RefreshDatabase`, contra MySQL `testing`):
 16. Doctor ve solo sus pacientes en `/my-patients`; búsqueda por DNI/nombre filtra.
 17. Doctor guarda `weekly_availability` válida; plantilla inválida (solape mismo
     día, `end <= start`, weekday fuera de rango) falla validación.
-18. Generate `current`/`next` materializa slots según plantilla y duración; omite
-    pasados y solapes; no muta `booked`; reaplicar no duplica.
+18. Generate `current`/`next`/`after_next` con franjas en el request materializa
+    slots; guarda plantilla; omite pasados y solapes; no muta `booked`;
+    reaplicar no duplica.
 
 ## 12. Calidad y convenciones
 

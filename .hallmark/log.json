@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-07-30",
+    "macrostructure": "Index-First",
+    "theme": "custom",
+    "theme_axes": "light / geometric-sans / cool",
+    "vibe": "clinical white, blue CTAs, austere",
+    "enrichment": "none",
+    "brief": "San Benito · minimal white + blue buttons (light/dark)",
+    "scope": "app"
+  },
+  {
+    "date": "2026-07-29",
+    "macrostructure": "Index-First",
+    "theme": "Garden",
+    "enrichment": "none",
+    "brief": "San Benito · full-app redesign (agenda-first)",
+    "scope": "app"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "scanned_at": "2026-07-30",
+  "font_stack": "Inter Tight + IBM Plex Sans (+ IBM Plex Mono)",
+  "palette": "custom OKLCH · white paper · blue accent ~255° · dark mode blue CTAs",
+  "motion": "motion-cut (tailwindcss-animate only)",
+  "spacing": "4pt named --space-*",
+  "framework": "Laravel 12 + Inertia + React + Tailwind v4",
+  "preserve": ["routes", "IA", "Spanish copy intent", "DESIGN.md product rules", "Radix/shadcn primitives"]
+}

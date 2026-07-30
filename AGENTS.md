@@ -31,4 +31,4 @@ Services + Eloquent directo (sin repositories). Controllers finos. FormRequests.
 
 ## Dominio (resumen)
 
-- Plantilla semanal + generate mes actual/siguiente en Settings → Agenda (d23)
+- Franjas en modal + generate mes actual/siguiente/posterior (d23); no se persisten

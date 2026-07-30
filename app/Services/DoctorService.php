@@ -45,33 +45,9 @@ class DoctorService
 
     public function updateSlotDuration(Doctor $doctor, int $minutes): Doctor
     {
-        return $this->updateAgendaSettings($doctor, $minutes);
-    }
-
-    /**
-     * @param  list<array{weekday: int, start: string, end: string}>|null  $weeklyAvailability
-     */
-    public function updateAgendaSettings(
-        Doctor $doctor,
-        int $minutes,
-        ?array $weeklyAvailability = null,
-    ): Doctor {
-        $attributes = [
+        $doctor->update([
             'slot_duration_minutes' => $minutes,
-        ];
-
-        if ($weeklyAvailability !== null) {
-            $attributes['weekly_availability'] = array_values(array_map(
-                fn (array $band): array => [
-                    'weekday' => (int) $band['weekday'],
-                    'start' => $band['start'],
-                    'end' => $band['end'],
-                ],
-                $weeklyAvailability,
-            ));
-        }
-
-        $doctor->update($attributes);
+        ]);
 
         return $doctor->refresh();
     }

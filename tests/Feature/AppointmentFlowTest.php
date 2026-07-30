@@ -490,7 +490,7 @@ class AppointmentFlowTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('settings/agenda')
                 ->where('doctor.slot_duration_minutes', 20)
-                ->where('doctor.weekly_availability', [])
+                ->missing('doctor.weekly_availability')
                 ->has('generateMonths', 3)
                 ->where('generateMonths.0.target', 'current')
                 ->where('generateMonths.1.target', 'next')
@@ -518,37 +518,13 @@ class AppointmentFlowTest extends TestCase
             ->assertSessionHasErrors('slot_duration_minutes');
     }
 
-    public function test_doctor_can_save_weekly_availability_template(): void
+    public function test_generate_rejects_invalid_weekly_bands(): void
     {
         $doctor = $this->createDoctor();
 
         $this->actingAs($doctor->user)
-            ->patch(route('settings.agenda.update'), [
-                'slot_duration_minutes' => 20,
-                'weekly_availability' => [
-                    ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
-                    ['weekday' => 1, 'start' => '15:00', 'end' => '19:00'],
-                ],
-            ])
-            ->assertRedirect();
-
-        $saved = $doctor->fresh()->weekly_availability;
-        $this->assertCount(2, $saved);
-        $this->assertSame(1, (int) $saved[0]['weekday']);
-        $this->assertSame('10:00', $saved[0]['start']);
-        $this->assertSame('12:00', $saved[0]['end']);
-        $this->assertSame(1, (int) $saved[1]['weekday']);
-        $this->assertSame('15:00', $saved[1]['start']);
-        $this->assertSame('19:00', $saved[1]['end']);
-    }
-
-    public function test_weekly_availability_validation_rejects_invalid_bands(): void
-    {
-        $doctor = $this->createDoctor();
-
-        $this->actingAs($doctor->user)
-            ->patch(route('settings.agenda.update'), [
-                'slot_duration_minutes' => 20,
+            ->post(route('settings.agenda.generate'), [
+                'target' => 'current',
                 'weekly_availability' => [
                     ['weekday' => 1, 'start' => '12:00', 'end' => '10:00'],
                 ],
@@ -556,8 +532,8 @@ class AppointmentFlowTest extends TestCase
             ->assertSessionHasErrors('weekly_availability.0.end');
 
         $this->actingAs($doctor->user)
-            ->patch(route('settings.agenda.update'), [
-                'slot_duration_minutes' => 20,
+            ->post(route('settings.agenda.generate'), [
+                'target' => 'current',
                 'weekly_availability' => [
                     ['weekday' => 8, 'start' => '10:00', 'end' => '12:00'],
                 ],
@@ -565,8 +541,8 @@ class AppointmentFlowTest extends TestCase
             ->assertSessionHasErrors('weekly_availability.0.weekday');
 
         $this->actingAs($doctor->user)
-            ->patch(route('settings.agenda.update'), [
-                'slot_duration_minutes' => 20,
+            ->post(route('settings.agenda.generate'), [
+                'target' => 'current',
                 'weekly_availability' => [
                     ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
                     ['weekday' => 1, 'start' => '11:00', 'end' => '13:00'],
@@ -581,7 +557,6 @@ class AppointmentFlowTest extends TestCase
 
         $doctor = $this->createDoctor(doctorAttributes: [
             'slot_duration_minutes' => 20,
-            'weekly_availability' => [],
         ]);
 
         $bands = [
@@ -596,7 +571,7 @@ class AppointmentFlowTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
 
-        $this->assertSame(1, (int) $doctor->fresh()->weekly_availability[0]['weekday']);
+        $this->assertArrayNotHasKey('weekly_availability', $doctor->fresh()->getAttributes());
 
         $monthStart = now()->startOfMonth();
         $monthEnd = now()->endOfMonth();
@@ -747,11 +722,7 @@ class AppointmentFlowTest extends TestCase
 
     public function test_generate_requires_weekly_availability_in_request(): void
     {
-        $doctor = $this->createDoctor(doctorAttributes: [
-            'weekly_availability' => [
-                ['weekday' => 1, 'start' => '10:00', 'end' => '12:00'],
-            ],
-        ]);
+        $doctor = $this->createDoctor();
 
         $this->actingAs($doctor->user)
             ->post(route('settings.agenda.generate'), ['target' => 'current'])

@@ -19,7 +19,6 @@ class DoctorFactory extends Factory
             'specialty_id' => Specialty::factory(),
             'license_number' => fake()->unique()->numerify('MN-######'),
             'slot_duration_minutes' => 20,
-            'weekly_availability' => [],
         ];
     }
 }

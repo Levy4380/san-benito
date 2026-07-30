@@ -121,18 +121,17 @@ class AppointmentService
     }
 
     /**
-     * Materialize available slots for a calendar month from the doctor's weekly template.
-     * Past and overlapping windows are skipped (not all-or-nothing).
+     * Materialize available slots for a calendar month from weekly bands.
+     * Bands are request-only (not persisted). Past and overlapping windows are skipped.
      *
+     * @param  list<array{weekday: int, start: string, end: string}>  $bands
      * @return array{created: int, skipped: int}
      */
-    public function generateMonthFromWeeklyTemplate(Doctor $doctor, Carbon $month): array
+    public function generateMonthFromWeeklyTemplate(Doctor $doctor, Carbon $month, array $bands): array
     {
-        $bands = $doctor->weekly_availability ?? [];
-
         if ($bands === []) {
             throw ValidationException::withMessages([
-                'weekly_availability' => 'Primero guardá al menos una franja semanal.',
+                'weekly_availability' => 'Agregá al menos una franja semanal.',
             ]);
         }
 

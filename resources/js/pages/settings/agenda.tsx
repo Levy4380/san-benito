@@ -7,6 +7,7 @@ import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
 import { Time24Input } from '@/components/time-24-input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -37,11 +38,21 @@ const WEEKDAYS: { value: number; label: string }[] = [
     { value: 7, label: 'Domingo' },
 ];
 
+const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7] as const;
+const WEEKDAY_DAYS = [1, 2, 3, 4, 5] as const;
+
 type WeeklyBand = {
     weekday: number;
     start: string;
     end: string;
 };
+
+type TimeRange = {
+    start: string;
+    end: string;
+};
+
+type RepeatMode = 'none' | 'all' | 'weekdays';
 
 type GenerateTarget = 'current' | 'next' | 'after_next';
 
@@ -54,19 +65,42 @@ type Props = {
     doctor: {
         id: number;
         slot_duration_minutes: number;
-        weekly_availability: WeeklyBand[];
     };
     generateMonths: GenerateMonth[];
 };
 
-function cloneBands(bands: WeeklyBand[]): WeeklyBand[] {
-    return bands.map((band) => ({ ...band }));
+function expandRanges(ranges: TimeRange[], days: readonly number[]): WeeklyBand[] {
+    return days.flatMap((weekday) =>
+        ranges.map((range) => ({
+            weekday,
+            start: range.start,
+            end: range.end,
+        })),
+    );
+}
+
+function uniqueRangesFromBands(bands: WeeklyBand[]): TimeRange[] {
+    const seen = new Set<string>();
+    const ranges: TimeRange[] = [];
+
+    for (const band of bands) {
+        const key = `${band.start}-${band.end}`;
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        ranges.push({ start: band.start, end: band.end });
+    }
+
+    return ranges;
 }
 
 export default function AgendaSettings({ doctor, generateMonths }: Props) {
     const { flash } = usePage<SharedData>().props;
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<GenerateMonth | null>(null);
+    const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
+    const [sharedRanges, setSharedRanges] = useState<TimeRange[]>([]);
 
     const durationForm = useForm({
         slot_duration_minutes: doctor.slot_duration_minutes,
@@ -77,7 +111,7 @@ export default function AgendaSettings({ doctor, generateMonths }: Props) {
         weekly_availability: WeeklyBand[];
     }>({
         target: 'current',
-        weekly_availability: cloneBands(doctor.weekly_availability ?? []),
+        weekly_availability: [],
     });
 
     const bandsByDay = useMemo(() => {
@@ -98,12 +132,64 @@ export default function AgendaSettings({ doctor, generateMonths }: Props) {
 
     const openMonthModal = (month: GenerateMonth) => {
         setSelectedMonth(month);
+        setRepeatMode('none');
+        setSharedRanges([]);
         generateForm.setData({
             target: month.target,
-            weekly_availability: cloneBands(doctor.weekly_availability ?? []),
+            weekly_availability: [],
         });
         generateForm.clearErrors();
         setModalOpen(true);
+    };
+
+    const applySharedRanges = (ranges: TimeRange[], mode: Exclude<RepeatMode, 'none'>) => {
+        const days = mode === 'all' ? ALL_DAYS : WEEKDAY_DAYS;
+        setSharedRanges(ranges);
+        generateForm.setData('weekly_availability', expandRanges(ranges, days));
+    };
+
+    const setRepeat = (mode: RepeatMode) => {
+        if (mode === repeatMode) {
+            return;
+        }
+
+        if (mode === 'none') {
+            setRepeatMode('none');
+            return;
+        }
+
+        const ranges =
+            sharedRanges.length > 0
+                ? sharedRanges
+                : uniqueRangesFromBands(generateForm.data.weekly_availability);
+
+        setRepeatMode(mode);
+        applySharedRanges(ranges, mode);
+    };
+
+    const addSharedRange = () => {
+        if (repeatMode === 'none') {
+            return;
+        }
+        applySharedRanges([...sharedRanges, { start: '09:00', end: '12:00' }], repeatMode);
+    };
+
+    const updateSharedRange = (index: number, field: 'start' | 'end', value: string) => {
+        if (repeatMode === 'none') {
+            return;
+        }
+        const next = sharedRanges.map((range, i) => (i === index ? { ...range, [field]: value } : range));
+        applySharedRanges(next, repeatMode);
+    };
+
+    const removeSharedRange = (index: number) => {
+        if (repeatMode === 'none') {
+            return;
+        }
+        applySharedRanges(
+            sharedRanges.filter((_, i) => i !== index),
+            repeatMode,
+        );
     };
 
     const addBand = (weekday: number) => {
@@ -189,7 +275,7 @@ export default function AgendaSettings({ doctor, generateMonths }: Props) {
                     <div className="space-y-4 border-t border-[var(--color-line)] pt-8">
                         <HeadingSmall
                             title="Crear turnos"
-                            description="Elegí el mes. Se abre un modal para definir las franjas semanales y crear los turnos."
+                            description="Elegí el mes. Se abre un modal para definir las franjas semanales de esa generación (no se guardan como plantilla)."
                         />
 
                         <div className="flex flex-wrap items-center gap-3">
@@ -214,6 +300,8 @@ export default function AgendaSettings({ doctor, generateMonths }: Props) {
                         setModalOpen(open);
                         if (!open) {
                             setSelectedMonth(null);
+                            setRepeatMode('none');
+                            setSharedRanges([]);
                         }
                     }}
                 >
@@ -232,83 +320,174 @@ export default function AgendaSettings({ doctor, generateMonths }: Props) {
                             <InputError message={generateForm.errors.weekly_availability} />
                             <InputError message={generateForm.errors.target} />
 
-                            <div className="space-y-6">
-                                {WEEKDAYS.map((day) => (
-                                    <div key={day.value} className="space-y-3">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <h3 className="text-sm font-medium text-[var(--color-ink)]">
-                                                {day.label}
-                                            </h3>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => addBand(day.value)}
-                                            >
-                                                Agregar franja
-                                            </Button>
-                                        </div>
-
-                                        {(bandsByDay[day.value] ?? []).length === 0 ? (
-                                            <p className="text-sm text-neutral-600">Sin franjas.</p>
-                                        ) : (
-                                            <ul className="space-y-3">
-                                                {(bandsByDay[day.value] ?? []).map(({ band, index }) => (
-                                                    <li
-                                                        key={`${day.value}-${index}`}
-                                                        className="flex flex-wrap items-end gap-3"
-                                                    >
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor={`modal-start-${index}`}>Desde</Label>
-                                                            <Time24Input
-                                                                id={`modal-start-${index}`}
-                                                                value={band.start}
-                                                                onChange={(value) =>
-                                                                    updateBand(index, 'start', value)
-                                                                }
-                                                                required
-                                                            />
-                                                            <InputError
-                                                                message={
-                                                                    generateForm.errors[
-                                                                        `weekly_availability.${index}.start`
-                                                                    ]
-                                                                }
-                                                            />
-                                                        </div>
-                                                        <div className="grid gap-2">
-                                                            <Label htmlFor={`modal-end-${index}`}>Hasta</Label>
-                                                            <Time24Input
-                                                                id={`modal-end-${index}`}
-                                                                value={band.end}
-                                                                onChange={(value) =>
-                                                                    updateBand(index, 'end', value)
-                                                                }
-                                                                required
-                                                            />
-                                                            <InputError
-                                                                message={
-                                                                    generateForm.errors[
-                                                                        `weekly_availability.${index}.end`
-                                                                    ]
-                                                                }
-                                                            />
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeBand(index)}
-                                                        >
-                                                            Quitar
-                                                        </Button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                ))}
+                            <div className="space-y-3 rounded-[var(--radius-input)] border border-[var(--color-line)] p-4">
+                                <p className="text-sm font-medium text-[var(--color-ink)]">Atajos</p>
+                                <label className="flex items-start gap-3 text-sm">
+                                    <Checkbox
+                                        checked={repeatMode === 'all'}
+                                        onCheckedChange={(checked) =>
+                                            setRepeat(checked === true ? 'all' : 'none')
+                                        }
+                                    />
+                                    <span>
+                                        <span className="font-medium">Repetir todos los días</span>
+                                        <span className="mt-0.5 block text-neutral-600">
+                                            Las mismas franjas de lunes a domingo.
+                                        </span>
+                                    </span>
+                                </label>
+                                <label className="flex items-start gap-3 text-sm">
+                                    <Checkbox
+                                        checked={repeatMode === 'weekdays'}
+                                        onCheckedChange={(checked) =>
+                                            setRepeat(checked === true ? 'weekdays' : 'none')
+                                        }
+                                    />
+                                    <span>
+                                        <span className="font-medium">Repetir todos los días de la semana</span>
+                                        <span className="mt-0.5 block text-neutral-600">
+                                            Las mismas franjas de lunes a viernes.
+                                        </span>
+                                    </span>
+                                </label>
                             </div>
+
+                            {repeatMode !== 'none' ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-sm font-medium text-[var(--color-ink)]">
+                                            Franjas horarias
+                                        </h3>
+                                        <Button type="button" variant="outline" size="sm" onClick={addSharedRange}>
+                                            Agregar franja
+                                        </Button>
+                                    </div>
+
+                                    {sharedRanges.length === 0 ? (
+                                        <p className="text-sm text-neutral-600">
+                                            Agregá al menos una franja. Se aplica a{' '}
+                                            {repeatMode === 'all' ? 'todos los días' : 'lunes a viernes'}.
+                                        </p>
+                                    ) : (
+                                        <ul className="space-y-3">
+                                            {sharedRanges.map((range, index) => (
+                                                <li key={index} className="flex flex-wrap items-end gap-3">
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor={`shared-start-${index}`}>Desde</Label>
+                                                        <Time24Input
+                                                            id={`shared-start-${index}`}
+                                                            value={range.start}
+                                                            onChange={(value) =>
+                                                                updateSharedRange(index, 'start', value)
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor={`shared-end-${index}`}>Hasta</Label>
+                                                        <Time24Input
+                                                            id={`shared-end-${index}`}
+                                                            value={range.end}
+                                                            onChange={(value) =>
+                                                                updateSharedRange(index, 'end', value)
+                                                            }
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeSharedRange(index)}
+                                                    >
+                                                        Quitar
+                                                    </Button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {WEEKDAYS.map((day) => (
+                                        <div key={day.value} className="space-y-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <h3 className="text-sm font-medium text-[var(--color-ink)]">
+                                                    {day.label}
+                                                </h3>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => addBand(day.value)}
+                                                >
+                                                    Agregar franja
+                                                </Button>
+                                            </div>
+
+                                            {(bandsByDay[day.value] ?? []).length === 0 ? (
+                                                <p className="text-sm text-neutral-600">Sin franjas.</p>
+                                            ) : (
+                                                <ul className="space-y-3">
+                                                    {(bandsByDay[day.value] ?? []).map(({ band, index }) => (
+                                                        <li
+                                                            key={`${day.value}-${index}`}
+                                                            className="flex flex-wrap items-end gap-3"
+                                                        >
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor={`modal-start-${index}`}>
+                                                                    Desde
+                                                                </Label>
+                                                                <Time24Input
+                                                                    id={`modal-start-${index}`}
+                                                                    value={band.start}
+                                                                    onChange={(value) =>
+                                                                        updateBand(index, 'start', value)
+                                                                    }
+                                                                    required
+                                                                />
+                                                                <InputError
+                                                                    message={
+                                                                        generateForm.errors[
+                                                                            `weekly_availability.${index}.start`
+                                                                        ]
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <div className="grid gap-2">
+                                                                <Label htmlFor={`modal-end-${index}`}>Hasta</Label>
+                                                                <Time24Input
+                                                                    id={`modal-end-${index}`}
+                                                                    value={band.end}
+                                                                    onChange={(value) =>
+                                                                        updateBand(index, 'end', value)
+                                                                    }
+                                                                    required
+                                                                />
+                                                                <InputError
+                                                                    message={
+                                                                        generateForm.errors[
+                                                                            `weekly_availability.${index}.end`
+                                                                        ]
+                                                                    }
+                                                                />
+                                                            </div>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => removeBand(index)}
+                                                            >
+                                                                Quitar
+                                                            </Button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             <DialogFooter>
                                 <Button

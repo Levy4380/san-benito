@@ -40,7 +40,6 @@ class DoctorAgendaSettingsController extends Controller
             'doctor' => [
                 'id' => $doctor->id,
                 'slot_duration_minutes' => $doctor->slot_duration_minutes,
-                'weekly_availability' => $doctor->weekly_availability ?? [],
             ],
             'generateMonths' => $this->generateMonthOptions(),
         ]);
@@ -54,14 +53,9 @@ class DoctorAgendaSettingsController extends Controller
 
         abort_unless($doctor, 403);
 
-        $validated = $request->validated();
-
-        $doctorService->updateAgendaSettings(
+        $doctorService->updateSlotDuration(
             $doctor,
-            (int) $validated['slot_duration_minutes'],
-            array_key_exists('weekly_availability', $validated)
-                ? ($validated['weekly_availability'] ?? [])
-                : null,
+            (int) $request->validated('slot_duration_minutes'),
         );
 
         return back()->with('success', 'Configuración de agenda actualizada.');
@@ -69,7 +63,6 @@ class DoctorAgendaSettingsController extends Controller
 
     public function generate(
         GenerateDoctorAgendaRequest $request,
-        DoctorService $doctorService,
         AppointmentService $appointmentService,
     ): RedirectResponse {
         $doctor = $request->user()->doctor;
@@ -77,17 +70,12 @@ class DoctorAgendaSettingsController extends Controller
         abort_unless($doctor, 403);
 
         $validated = $request->validated();
-        $bands = $validated['weekly_availability'];
-
-        $doctorService->updateAgendaSettings(
-            $doctor,
-            $doctor->slot_duration_minutes,
-            $bands,
-        );
-        $doctor->refresh();
-
         $month = $this->monthForTarget($validated['target']);
-        $result = $appointmentService->generateMonthFromWeeklyTemplate($doctor, $month);
+        $result = $appointmentService->generateMonthFromWeeklyTemplate(
+            $doctor,
+            $month,
+            $validated['weekly_availability'],
+        );
 
         return back()->with(
             'success',

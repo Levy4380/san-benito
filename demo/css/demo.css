@@ -2187,4 +2187,175 @@
     }
 
     .hidden { display: none !important; }
+
+    /*
+     * Mobile: smaller type, natural page scroll, agenda panel overlays calendar.
+     * Desktop keeps the locked viewport + side-by-side agenda.
+     */
+    @media (max-width: 767px) {
+      :root {
+        --text-display: 1.45rem;
+        --page-header-h: auto;
+        --page-header-title-h: auto;
+        --page-header-sub-h: auto;
+      }
+
+      html,
+      body {
+        height: auto;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      .app-shell {
+        overflow: visible;
+        height: auto;
+        min-height: calc(100dvh - (2 * var(--app-frame)));
+      }
+      .app.is-authed {
+        height: auto;
+        min-height: calc(100dvh - (2 * var(--app-frame)));
+        overflow: visible;
+      }
+      .app.is-authed .main {
+        overflow: visible;
+        height: auto;
+      }
+      .app:not(.is-authed) .main {
+        overflow: visible;
+        height: auto;
+      }
+
+      .page.active:has(.agenda),
+      .page.active:has(#book-body),
+      .page.active:has(#my-body),
+      .page.active:has(.center-stage),
+      .page.active:has(#program-body) {
+        overflow: visible;
+        max-height: none;
+        height: auto;
+        min-height: 0;
+      }
+      .page.active > .agenda,
+      .page.active > #my-body,
+      .page.active > #book-body,
+      .page.active > #program-body,
+      .page.active > .center-stage,
+      #my-body,
+      #book-body,
+      #program-body,
+      .center-stage,
+      #my-body > .agenda,
+      #book-body > .agenda,
+      .page.active > .agenda,
+      #my-body > .center-stage,
+      #book-body > .center-stage,
+      .center-stage:has(.doctor-results),
+      .center-stage > .doctor-results,
+      .doctor-results,
+      .doctor-results:has(.agenda) {
+        overflow: visible;
+        height: auto;
+        max-height: none;
+      }
+
+      .page-header {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+      .page-header h1,
+      .page-header-copy > h1,
+      .page-header > div:first-child > h1 {
+        font-size: 1.15rem;
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        white-space: normal;
+      }
+      .page-header p,
+      .page-header .steps,
+      .page-header-copy > p,
+      .page-header-copy > .steps {
+        height: auto;
+        min-height: 0;
+        font-size: var(--text-xs);
+      }
+      .page-header > div:first-child,
+      .page-header-copy {
+        grid-template-rows: auto auto;
+        flex: 1 1 12rem;
+        min-width: 0;
+      }
+      .page-header .step-pill .step-label {
+        font-size: 0.65rem;
+      }
+      .header-actions {
+        flex-wrap: wrap;
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .auth-card h1,
+      .home-hero h1 {
+        font-size: 1.35rem;
+      }
+      .auth-establishment span:last-child,
+      .brand-label span:last-child {
+        font-size: 1.05rem;
+      }
+      .home-hero {
+        min-height: 0;
+        padding: var(--space-sm) var(--space-2xs);
+        justify-content: flex-start;
+        padding-top: var(--space-md);
+      }
+      .home-hero > p {
+        font-size: var(--text-sm);
+        margin-bottom: var(--space-sm);
+      }
+      .home-start-cta {
+        font-size: var(--text-sm);
+        min-height: var(--control-h);
+      }
+
+      /* Calendar fills width; day panel overlays the bottom of the calendar */
+      .agenda {
+        display: block;
+        position: relative;
+        height: auto;
+        min-height: 19rem;
+        overflow: visible;
+      }
+      .agenda > .cal {
+        width: 100%;
+        height: auto;
+        min-height: 18.5rem;
+        max-height: none;
+      }
+      .agenda > .panel {
+        position: absolute;
+        left: 0.2rem;
+        right: 0.2rem;
+        bottom: 0.2rem;
+        top: auto;
+        height: auto;
+        max-height: 56%;
+        z-index: 8;
+        margin: 0;
+        box-shadow: 0 -10px 28px oklch(22% 0.02 255 / 0.18);
+        background: var(--color-paper);
+        border-radius: var(--radius-card);
+      }
+      .agenda > .panel > .panel-scroll {
+        max-height: 11rem;
+      }
+      .doctor-results .agenda > .panel,
+      .book-slots-agenda > .panel {
+        background: var(--color-paper);
+      }
+    }
   

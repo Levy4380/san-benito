@@ -926,8 +926,8 @@
       : formatDateLabel(viewDate);
     const assignTarget = state.assignPatientId ? patientById(state.assignPatientId) : null;
     panel.innerHTML = `
-      ${viewingDefaultToday ? '' : '<button type="button" class="back-link" id="day-clear"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>'}
       <h2 style="font-size:var(--text-xl);text-transform:capitalize">${title}</h2>
+      ${viewingDefaultToday ? '' : '<button type="button" class="back-link" id="day-clear"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>'}
       <p class="hint" style="margin-top:0.25rem">${daySlots.length ? `${daySlots.length} turno(s)${viewingDefaultToday ? ' hoy' : ' este día'}.` : emptyMsg}</p>
       ${assignTarget ? `
         <p class="hint" style="margin:0.35rem 0 0">

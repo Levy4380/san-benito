@@ -417,8 +417,8 @@
 
       const daySlots = byDate.get(state.slotsDate) || [];
       panel.innerHTML = `
-        <button type="button" class="back-link" id="slots-back-day"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>
         <h2 style="font-size:var(--text-xl);text-transform:capitalize">${formatDateLabel(state.slotsDate)}</h2>
+        <button type="button" class="back-link" id="slots-back-day"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>
         <p class="hint">${daySlots.length ? `${daySlots.length} horario(s) disponible(s).` : 'No hay turnos disponibles este día.'}</p>
         ${daySlots.length ? `
           <div class="panel-scroll">
@@ -644,8 +644,8 @@
       } else {
         const daySlots = byDate.get(state.book.date) || [];
         panel.innerHTML = `
-          <button type="button" class="back-link" id="book-clear-day"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>
           <h2 style="font-size:var(--text-xl);text-transform:capitalize">${formatDateLabel(state.book.date)}</h2>
+          <button type="button" class="back-link" id="book-clear-day"><span class="nav-arrow" aria-hidden="true">&lt;</span> Atrás</button>
           <p class="hint">${daySlots.length ? `${daySlots.length} horario(s) disponible(s).` : 'No hay turnos este día.'}</p>
           ${daySlots.length ? `
             <div class="panel-scroll">

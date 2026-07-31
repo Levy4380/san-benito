@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral san benito — Demo doctor (estable)</title>
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-old.css" />
+</head>
+<body class="demo-old">
+  <script>document.documentElement.classList.add('track-estable');</script>
+  <div class="app-shell">
+  <div class="demo-chip">
+    <button type="button" class="demo-chip-btn" id="demo-toggle" aria-expanded="false" aria-controls="demo-panel">
+      Demo
+    </button>
+    <div class="demo-panel" id="demo-panel" role="dialog" aria-label="Información de la demo">
+      <p><strong>DEMO doctor</strong> — HTML estático, sin backend.</p>
+      <p>Alta: página Programar turnos (franja) o cargar un turno en el día desde Mi agenda.</p>
+      <p>Entrada desde <code>estable/index.html</code> (rol doctor).</p>
+      <button type="button" class="btn btn-sm" id="reset-demo">Reiniciar demo</button>
+    </div>
+  </div>
+
+  <div class="app is-authed" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación">
+      <button type="button" class="brand" id="brand-home" aria-label="Ir al inicio">
+        <img class="brand-logo" src="../assets/san-benito-logo-hq.png" width="56" height="56" alt="" />
+        <span class="brand-label"><span>Sanatorio integral</span><span>San Benito</span></span>
+      </button>
+      <div class="sidebar-panel sidebar-panel--nav" id="sidebar-nav-panel">
+        <nav class="nav">
+          <button type="button" class="nav-btn" data-nav="agenda">Mi agenda</button>
+          <button type="button" class="nav-btn" data-nav="program">Programar turnos</button>
+          <button type="button" class="nav-btn" data-nav="patients">Mis pacientes</button>
+          <button type="button" class="nav-btn" data-nav="settings">Config. agenda</button>
+        </nav>
+        <div class="sidebar-foot sidebar-foot--inline">
+          <strong id="user-name">Dra. Ana Pérez</strong>
+          <span>Doctor · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-panel sidebar-panel--user" id="sidebar-user-panel" hidden>
+        <div class="sidebar-foot">
+          <strong id="user-name-mobile">Dra. Ana Pérez</strong>
+          <span>Doctor · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-rail">
+        <button type="button" class="mobile-user-btn" id="mobile-user-btn" aria-expanded="false" aria-controls="sidebar-user-panel" aria-label="Abrir sesión">
+          <span class="user-avatar" aria-hidden="true">AP</span>
+        </button>
+        <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-expanded="false" aria-controls="sidebar-nav-panel" aria-label="Abrir menú">
+          <span class="hamburger" aria-hidden="true"></span>
+        </button>
+      </div>
+    </aside>
+
+    <button type="button" class="nav-backdrop" id="nav-backdrop" tabindex="-1" aria-hidden="true"></button>
+
+    <main class="main">
+      <div class="flash" id="flash" role="status"></div>
+
+      <section class="page" id="page-home">
+        <div class="home-hero">
+          <div class="home-watermark" aria-hidden="true">
+            <img src="../assets/san-benito-logo-hq.png" alt="" />
+          </div>
+          <h1 id="home-greeting">Hola</h1>
+          <p>Gestioná tu agenda y tus pacientes.</p>
+          <div class="home-start">
+            <div class="home-start-primary">
+              <button type="button" class="btn home-start-cta" data-nav="agenda">Ir a mi agenda</button>
+              <button type="button" class="btn btn-outline home-start-cta" data-nav="program">Programar turnos</button>
+              <button type="button" class="btn btn-outline home-start-cta" data-nav="patients">Mis pacientes</button>
+            </div>
+            <div class="home-upcoming" id="home-upcoming" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-agenda">
+        <header class="page-header">
+          <div>
+            <h1>Mi agenda</h1>
+            <p id="agenda-subtitle">Turnos de 20 min.</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn" id="agenda-program-btn">Programar turnos</button>
+          </div>
+        </header>
+        <div class="agenda" id="agenda-root">
+          <div class="cal" id="agenda-cal"></div>
+          <div class="panel" id="agenda-panel"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-program">
+        <header class="page-header page-header--book" id="program-header">
+          <div class="page-header-copy">
+            <div class="page-back-slot" id="program-back-slot"></div>
+            <h1>Programar turnos</h1>
+            <div class="steps" id="program-steps" aria-label="Progreso">
+              <div class="step-pill" data-step="1">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Cuándo</span>
+              </div>
+              <div class="step-pill" data-step="2">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Horario</span>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div id="program-body" class="center-stage"></div>
+      </section>
+
+      <section class="page" id="page-patient-profile">
+        <header class="page-header page-header--back-title">
+          <div class="page-header-copy">
+            <div class="page-back-slot">
+              <button type="button" class="back-link" id="patient-profile-back"><span class="nav-arrow" aria-hidden="true">←</span> Atrás</button>
+            </div>
+            <h1>Perfil del paciente</h1>
+            <p id="patient-profile-subtitle">—</p>
+          </div>
+        </header>
+        <div class="center-stage">
+          <div class="doctor-results" id="patient-profile-body"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-patients">
+        <header class="page-header">
+          <div>
+            <h1>Mis pacientes</h1>
+            <p id="patients-subtitle">Vinculados a tu práctica. El vínculo nace al reservar o al dar de alta.</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn" id="patients-link-btn">Vincular paciente</button>
+          </div>
+        </header>
+        <div class="center-stage">
+          <div class="doctor-results" id="patients-list-panel">
+            <form class="filters filters--one" id="patients-filter">
+              <div class="field">
+                <label for="patients-q">Buscar (DNI o nombre)</label>
+                <input id="patients-q" type="search" placeholder="Ej. García o 30111" />
+              </div>
+              <button type="submit" class="btn">Buscar</button>
+            </form>
+            <div id="patients-list" class="doctor-grid"></div>
+            <p class="empty" id="patients-empty">Todavía no tenés pacientes vinculados.</p>
+          </div>
+
+          <div class="doctor-results hidden" id="patients-link-panel">
+            <form class="filters filters--one" id="link-filter">
+              <div class="field">
+                <label for="link-q">Buscar (DNI o nombre)</label>
+                <input id="link-q" type="search" placeholder="Ej. Ruiz o 32999" />
+              </div>
+              <button type="submit" class="btn">Buscar</button>
+            </form>
+            <div id="link-results" class="doctor-grid"></div>
+            <p class="empty" id="link-empty">Escribí al menos 2 caracteres y buscá para ver pacientes del sistema.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <header class="page-header">
+          <div>
+            <h1>Configuración de agenda</h1>
+            <p>Duración por defecto al partir franjas en Programar turnos.</p>
+          </div>
+        </header>
+        <div class="center-stage">
+          <div class="doctor-results book-specialty-panel" id="settings-body"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  </div>
+
+  <style>
+    #page-agenda.active,
+    #page-program.active {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+    }
+    #page-program .page-header {
+      flex-shrink: 0;
+    }
+    #program-body {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      justify-content: flex-start;
+      margin-top: 0 !important;
+      min-height: 0;
+      overflow: hidden !important;
+    }
+    #program-body > .agenda,
+    #program-body > .doctor-results {
+      flex: 1 1 auto;
+      align-self: stretch;
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+    }
+    #program-body > .doctor-results {
+      position: relative;
+      gap: var(--space-md);
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-md);
+      padding-bottom: 3.25rem;
+    }
+    .program-when-agenda {
+      min-height: 0;
+      overflow: hidden;
+    }
+    .program-cal--paint .cal-grid {
+      touch-action: none;
+      user-select: none;
+    }
+    .program-cal--paint .day:not(:disabled) {
+      cursor: crosshair;
+    }
+    .swatch.program-swatch-selected {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+    .program-when-side {
+      gap: 0;
+    }
+    .program-when-side .book-next-btn {
+      margin-top: auto;
+      align-self: flex-end;
+      flex-shrink: 0;
+    }
+    #program-when-hint,
+    #program-when-count {
+      margin: 0;
+      text-align: left;
+      max-width: none;
+    }
+    .program-when-side .cal-check {
+      justify-content: flex-start;
+      text-align: left;
+      margin: 0;
+    }
+    #program-body > .doctor-results .book-next-btn {
+      position: absolute;
+      right: var(--space-sm);
+      bottom: var(--space-sm);
+      z-index: 2;
+      margin: 0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    .program-horario-panel {
+      gap: var(--space-md);
+    }
+    .program-time-fields {
+      display: grid;
+      gap: var(--space-md);
+      width: 100%;
+    }
+    @media (min-width: 640px) {
+      .program-time-fields {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .program-franja-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .program-franja-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .program-horario-panel > .book-next-btn {
+      position: static;
+      margin-top: auto;
+      align-self: flex-end;
+      box-shadow: none;
+    }
+    .btn-text {
+      border: 0;
+      background: transparent;
+      color: var(--color-accent);
+      font: inherit;
+      font-weight: 600;
+      font-size: var(--text-sm);
+      padding: 0.35rem 0;
+      cursor: pointer;
+      text-align: left;
+      align-self: flex-start;
+    }
+    .btn-text:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .cal-check {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0;
+      font-size: var(--text-sm);
+      color: var(--color-ink);
+      cursor: pointer;
+      user-select: none;
+    }
+    .cal-check input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--color-accent);
+      cursor: pointer;
+    }
+  </style>
+  <script src="../js/demo-confirm.js"></script>
+  <script src="../js/demo-route-loader.js"></script>
+  <script src="../js/demo-mock-picker.js"></script>
+  <script src="demo-doctor-old.js"></script>
+</body>
+</html>

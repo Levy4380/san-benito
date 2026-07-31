@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral San Benito — Login (Estable)</title>
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-old.css" />
+  <script>document.documentElement.classList.add('track-estable');</script>
+</head>
+<body class="demo-old" data-track="estable">
+  <div class="app-shell">
+    <div class="app" id="app">
+      <main class="main">
+        <section class="page active" id="page-login">
+          <div class="auth-shell" style="min-height:auto;padding:0;background:none">
+            <div class="auth-card surface">
+              <div class="auth-brand">
+                <img class="auth-logo" src="../assets/san-benito-logo-hq.png" width="112" height="112" alt="" />
+                <p class="auth-establishment"><span>Sanatorio integral</span><span>San Benito</span></p>
+              </div>
+              <h1 style="font-size:var(--text-xl);margin-bottom:0.35rem">Iniciar sesión</h1>
+              <p class="hint">Esta es una demo para el sistema de turnos del Sanatorio integral San Benito.</p>
+              <p class="hint" style="margin-top:0.35rem">Canal Estable. Elegí el rol. Sin usuario ni contraseña.</p>
+
+              <p class="hint" style="margin-top:var(--space-md);margin-bottom:0.35rem">Rol</p>
+              <div class="welcome-actions" style="flex-direction:column;align-items:stretch">
+                <button type="button" class="btn" data-role="patient">Logear como paciente</button>
+                <button type="button" class="btn btn-outline" data-role="doctor">Logear como doctor</button>
+                <button type="button" class="btn btn-outline" data-role="admin">Logear como admin</button>
+              </div>
+
+              <p class="hint" style="margin-top:var(--space-md);margin-bottom:0;text-align:center">
+                <a href="camino.html" id="link-camino" style="color:var(--color-accent);font-weight:500">Camino del proyecto</a>
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../js/demo-route-loader.js"></script>
+  <script src="../js/demo-login.js"></script>
+  <script>
+    (() => {
+      const link = document.getElementById('link-camino');
+      if (!link) return;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.DemoRouteLoader) window.DemoRouteLoader.navigate('camino.html');
+        else location.href = 'camino.html';
+      });
+    })();
+  </script>
+</body>
+</html>

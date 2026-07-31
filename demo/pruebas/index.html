@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral San Benito — Login (Pruebas)</title>
+  <script src="../js/demo-theme-boot.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter+Tight:wght@600&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-themes.css" />
+</head>
+<body data-track="pruebas">
+  <div class="app-shell">
+    <div class="app" id="app">
+      <main class="main">
+        <section class="page active" id="page-login">
+          <div class="auth-shell" style="min-height:auto;padding:0;background:none">
+            <div class="auth-card surface">
+              <div class="auth-brand">
+                <img class="auth-logo" src="../assets/san-benito-logo-hq.png" width="112" height="112" alt="" />
+                <p class="auth-establishment"><span>Sanatorio integral</span><span>San Benito</span></p>
+              </div>
+              <h1 style="font-size:var(--text-xl);margin-bottom:0.35rem">Iniciar sesión</h1>
+              <p class="hint">Esta es una demo para el sistema de turnos del Sanatorio integral San Benito.</p>
+              <p class="hint" style="margin-top:0.35rem">Canal Pruebas. Elegí el rol. Sin usuario ni contraseña.</p>
+
+              <p class="hint" style="margin-top:var(--space-md);margin-bottom:0.35rem">Rol</p>
+              <div class="welcome-actions" style="flex-direction:column;align-items:stretch">
+                <button type="button" class="btn" data-role="patient">Logear como paciente</button>
+                <button type="button" class="btn btn-outline" data-role="doctor">Logear como doctor</button>
+                <button type="button" class="btn btn-outline" data-role="admin">Logear como admin</button>
+              </div>
+
+              <p class="hint" style="margin-top:var(--space-md);margin-bottom:0;text-align:center">
+                <a href="camino.html" id="link-camino" style="color:var(--color-accent);font-weight:500">Camino del proyecto</a>
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../js/demo-toast.js"></script>
+  <script src="../js/demo-theme.js"></script>
+  <script src="../js/demo-route-loader.js"></script>
+  <script src="../js/demo-login.js"></script>
+  <script>
+    (() => {
+      const link = document.getElementById('link-camino');
+      if (!link || !window.DemoRouteLoader) return;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.DemoRouteLoader.navigate('camino.html');
+      });
+    })();
+  </script>
+</body>
+</html>

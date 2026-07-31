@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral san benito — Demo admin</title>
+  <script src="../js/demo-theme-boot.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter+Tight:wght@600&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-themes.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div class="app" id="app">
+      <main class="main">
+        <section class="page active">
+          <div class="home-hero">
+            <div class="home-watermark" aria-hidden="true">
+              <img src="../assets/san-benito-logo-hq.png" alt="" />
+            </div>
+            <h1>Hola</h1>
+            <p>Demo admin (próximamente).</p>
+            <div class="welcome-actions" style="justify-content:center">
+              <a class="btn btn-outline" id="admin-back-login" href="../estable/index.html">Volver al login</a>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../js/demo-toast.js"></script>
+  <script src="../js/demo-theme.js"></script>
+  <script src="../js/demo-route-loader.js"></script>
+  <script>
+    (() => {
+      const login = window.DemoRouteLoader?.loginHref?.() || '../estable/index.html';
+      const back = document.getElementById('admin-back-login');
+      if (back) back.setAttribute('href', login);
+      back?.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.DemoRouteLoader) window.DemoRouteLoader.navigate(login);
+        else location.href = login;
+      });
+    })();
+  </script>
+</body>
+</html>

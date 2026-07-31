@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral San Benito — Camino del proyecto (Estable)</title>
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-old.css" />
+  <style>
+    html.plan-doc,
+    html.plan-doc body {
+      height: auto;
+      overflow: auto;
+    }
+    html.plan-doc .app-shell,
+    html.plan-doc .app,
+    html.plan-doc .main,
+    html.plan-doc .page.active {
+      overflow: visible;
+      height: auto;
+      min-height: 0;
+    }
+    html.plan-doc .app:not(.is-authed) .main {
+      overflow: visible;
+      display: block;
+    }
+    .plan-shell {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: var(--space-md) var(--space-md) var(--space-xl);
+    }
+    .plan-shell h1 {
+      font-size: var(--text-xl);
+      margin-bottom: 0.35rem;
+    }
+    .plan-shell h2 {
+      font-size: var(--text-lg);
+      margin: var(--space-lg) 0 var(--space-sm);
+    }
+    .plan-shell h3 {
+      font-size: var(--text-md);
+      margin: var(--space-md) 0 var(--space-xs);
+    }
+    .plan-shell p,
+    .plan-shell li {
+      font-size: var(--text-sm);
+      color: var(--color-ink);
+      line-height: 1.55;
+    }
+    .plan-shell p { margin: 0 0 0.75rem; }
+    .plan-shell ul {
+      margin: 0 0 0.75rem;
+      padding-left: 1.2rem;
+    }
+    .plan-shell li + li { margin-top: 0.35rem; }
+    .plan-shell .plan-lead {
+      color: var(--color-ink-2);
+      margin-bottom: var(--space-md);
+    }
+    .plan-shell .plan-card {
+      margin: var(--space-sm) 0;
+      padding: var(--space-sm);
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      background: var(--color-paper);
+    }
+    .plan-shell .plan-card p:last-child,
+    .plan-shell .plan-card ul:last-child { margin-bottom: 0; }
+    .plan-back {
+      display: inline-block;
+      margin-bottom: var(--space-md);
+    }
+  </style>
+  <script>document.documentElement.classList.add('plan-doc', 'track-estable');</script>
+</head>
+<body class="demo-old" data-track="estable">
+  <div class="app-shell">
+    <div class="app" id="app">
+      <main class="main">
+        <section class="page active">
+          <div class="plan-shell">
+            <a class="back-link plan-back" href="index.html">← Volver al login</a>
+
+            <div class="auth-brand" style="align-items:flex-start;text-align:left;margin-bottom:var(--space-md)">
+              <img class="auth-logo" src="../assets/san-benito-logo-hq.png" width="96" height="96" alt="" />
+              <p class="auth-establishment" style="max-width:none"><span>Sanatorio integral</span><span>San Benito</span></p>
+            </div>
+
+            <h1>Camino del proyecto</h1>
+            <p class="plan-lead">Resumen de la demo, de lo que se entrega en la versión 1 y de la evolución prevista en la versión 2.</p>
+
+            <h2>Demo de pruebas</h2>
+            <p>Un archivo para abrir en la computadora. Elige rol (paciente o médico) y recorre:</p>
+            <ul>
+              <li>El <strong>sitio del sanatorio</strong> (inicio, especialidades, noticias).</li>
+              <li>El <strong>portal de turnos</strong> (pantallas de trabajo según el rol).</li>
+            </ul>
+            <p>No guarda turnos reales; sirve para ver cómo se usa.</p>
+
+            <h3>Portal del paciente</h3>
+            <p>Al entrar ve una <strong>pantalla de bienvenida</strong> con saludo y tres entradas claras: Doctores, Mis turnos y Reservar turno. El menú lateral repite esas mismas opciones.</p>
+            <div class="plan-card">
+              <ul>
+                <li><strong>Doctores</strong> — elige especialidad y/o escribe un nombre, busca, y abre los turnos de ese profesional. Ahí ve un <strong>calendario</strong> y, al lado, el detalle del día (o los próximos horarios si aún no eligió fecha). Desde ahí puede reservar.</li>
+                <li><strong>Reservar turno</strong> — recorrido guiado con indicador de pasos: <strong>Especialidad → Doctor → Horario</strong>. Puede volver atrás en cada etapa. En el último paso elige día y hora con el mismo esquema calendario + panel.</li>
+                <li><strong>Mis turnos</strong> — ve sus reservas, puede pasar a vista calendario, cancelar y volver a pedir otro turno.</li>
+              </ul>
+            </div>
+            <p>La sensación buscada: <strong>empezar por una home simple</strong>, y después o bien buscar un médico, o bien ir directo al asistente de reserva en tres pasos.</p>
+
+            <h3>Portal del médico</h3>
+            <p>También arranca con una <strong>home</strong> (agenda, pacientes, configuración) y un menú con: Mi agenda, Programar turnos, Mis pacientes y Config. agenda.</p>
+            <div class="plan-card">
+              <ul>
+                <li><strong>Mi agenda</strong> — calendario a la izquierda y, a la derecha, los turnos del día. Puede cargar <strong>un turno suelto</strong> ese día, asignar un paciente ya vinculado a un horario libre, o cancelar.</li>
+                <li><strong>Programar turnos (creación masiva)</strong> — asistente en dos pasos:
+                  <ul>
+                    <li><strong>Cuándo</strong> — en el calendario <strong>pinta los días</strong> que quiere (puede arrastrar para marcar varios). Opcionalmente deja afuera los fines de semana.</li>
+                    <li><strong>Horario</strong> — define desde qué hora; puede <strong>crear una franja</strong> (hora de inicio y fin). El sistema parte esa franja en turnos según la duración configurada, muestra cuántos se van a crear y, al confirmar, los genera <strong>para todos los días elegidos de una vez</strong>.</li>
+                  </ul>
+                </li>
+                <li><strong>Mis pacientes</strong> — lista de vinculados; puede buscar y vincular uno nuevo.</li>
+                <li><strong>Config. agenda</strong> — define la duración de cada consulta (eso se usa al partir las franjas).</li>
+              </ul>
+            </div>
+            <p>La diferencia fuerte respecto a cargar turno por turno: <strong>elige varios días, arma una franja y publica muchos turnos juntos</strong>.</p>
+
+            <h2>Versión 1 — el sistema en funcionamiento</h2>
+            <p>Plazo orientativo: <strong>2 a 3 meses</strong>. Incluye <strong>capacitación</strong> y <strong>soporte después de la entrega</strong>. El <strong>hosting</strong> (dónde vive el sistema online) queda <strong>a definir</strong> con ustedes.</p>
+            <p>La versión 1 es <strong>todo lo que se ve en la demo de pruebas</strong>, llevado a un sistema real: con usuarios, contraseñas y datos que se guardan. Además suma la <strong>administración</strong>, que en la demo todavía no está armada.</p>
+
+            <h3>Qué incluye</h3>
+            <div class="plan-card">
+              <p><strong>Para el paciente</strong><br />Registro e ingreso. Portal propio con la misma lógica de la demo: bienvenida, búsqueda de médicos, reserva en tres pasos y gestión de sus turnos (ver y cancelar).</p>
+            </div>
+            <div class="plan-card">
+              <p><strong>Para el médico</strong><br />Ingreso a su portal: agenda del día, carga de un turno suelto, <strong>creación masiva</strong> pintando días y armando franjas, pacientes vinculados y duración de la consulta.</p>
+            </div>
+            <div class="plan-card">
+              <p><strong>Para administración</strong><br />Vista de todos los turnos, altas de médicos y de otros administradores, y las acciones de apoyo que hagan falta para operar el día a día (por ejemplo cargar horarios o vincular pacientes cuando corresponda).</p>
+            </div>
+            <div class="plan-card">
+              <p><strong>Datos reales</strong><br />Especialidades, médicos y usuarios de prueba o iniciales según acuerden; el sanatorio deja de “simular” y empieza a operar con información verdadera.</p>
+            </div>
+            <div class="plan-card">
+              <p><strong>Acompañamiento</strong><br />Capacitación al equipo que vaya a usar el sistema y soporte post-entrega para dudas y ajustes menores de puesta en marcha.</p>
+            </div>
+
+            <h3>Qué no entra en la versión 1</h3>
+            <p>La <strong>página de inicio</strong> del sitio (solo con contenido), los correos automáticos, recordatorios, marca de “turno realizado” y el filtro por obra social quedan para la versión 2.</p>
+
+            <h2>Versión 2 — evolución comprometida</h2>
+            <p>No es un “extra opcional”: forma parte del camino del producto. Se trabaja después de estabilizar la versión 1. Reúne mejoras relacionadas entre sí:</p>
+            <div class="plan-card">
+              <ul>
+                <li><strong>Página de inicio</strong> — se arma <strong>solo con contenido</strong> (textos e imágenes que aporte el sanatorio). No incluye un sistema de noticias ni de visitas importantes.</li>
+                <li><strong>Avisos por correo</strong> — confirmación al reservar; recordatorio <strong>24 horas antes</strong>; aviso al cancelar. Solo correo.</li>
+                <li><strong>Más cuidado en reservas al mismo tiempo</strong> — refuerzo para que, si varias personas intentan el mismo horario a la vez, no queden dos reservas.</li>
+                <li><strong>Turno realizado</strong> — el médico marca que la consulta ya se atendió. Hoy alcanza con ese marcado; más adelante puede alimentar historial o reportes si lo necesitan.</li>
+                <li><strong>Filtro por obra social</strong> — que la búsqueda tenga en cuenta la obra social.</li>
+              </ul>
+            </div>
+
+            <h2>Posibles evoluciones (no pactadas)</h2>
+            <p>Quedan como ideas a futuro, <strong>fuera del alcance acordado</strong> de las versiones 1 y 2. Se pueden evaluar después si el sanatorio lo necesita:</p>
+            <div class="plan-card">
+              <ul>
+                <li><strong>Noticias y visitas importantes</strong> — secciones del sitio para publicar novedades y la agenda de profesionales visitantes.</li>
+                <li><strong>Historia clínica de pacientes</strong> — registro clínico dentro del sistema.</li>
+                <li><strong>Interconsulta</strong> — pedido y seguimiento de consultas entre profesionales.</li>
+              </ul>
+            </div>
+
+            <h2>En resumen</h2>
+            <div class="plan-card">
+              <p>Les enviamos la <strong>demo de pruebas</strong> en un archivo para recorrer sitio y portal.</p>
+              <p>La <strong>versión 1</strong> (aprox. 2 a 3 meses) pone en marcha el sistema real con la misma experiencia de paciente y médico de la demo, más administración, datos reales, capacitación y soporte post-entrega. El hosting se define en conjunto.</p>
+              <p>La <strong>versión 2</strong> contempla página de inicio solo con contenido, correos (confirmación, recordatorio 24 h y cancelación), mayor cuidado en reservas simultáneas, turno realizado y filtro por obra social.</p>
+              <p><strong>Noticias y visitas importantes</strong>, <strong>historia clínica</strong> e <strong>interconsulta</strong> son posibles evoluciones <strong>no pactadas</strong>.</p>
+            </div>
+
+            <p style="margin-top:var(--space-lg)">
+              <a class="btn btn-outline" href="index.html">Volver al login</a>
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="../js/demo-route-loader.js"></script>
+  <script>
+    (() => {
+      const back = document.querySelectorAll('a[href="index.html"]');
+      back.forEach((a) => {
+        a.addEventListener('click', (e) => {
+          if (!window.DemoRouteLoader) return;
+          e.preventDefault();
+          window.DemoRouteLoader.navigate('index.html');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

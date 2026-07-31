@@ -3,7 +3,7 @@
   "private": true,
   "description": "Demo estática San Benito — servir con Railway o localmente",
   "scripts": {
-    "start": "npx --yes serve . -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "npx --yes serve . -c serve.json -l tcp://0.0.0.0:${PORT:-3000}"
   },
   "engines": {
     "node": ">=18"

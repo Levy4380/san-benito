@@ -1,9 +1,10 @@
 {
   "name": "san-benito-demo",
   "private": true,
-  "description": "Demo estática San Benito — servir con Railway o localmente",
+  "description": "Demo estática San Benito — Railway / local",
   "scripts": {
-    "start": "npx --yes serve . -c serve.json -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "engines": {
     "node": ">=18"

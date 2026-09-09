@@ -1,6 +1,6 @@
 # developer.md — cómo levantar San Benito
 
-Guía de entorno local. La fuente de verdad de **producto** sigue siendo [DESIGN.md](DESIGN.md). Este archivo cubre bootstrap, puertos, hostname y errores reales al clonar el repo.
+Guía de entorno local. La fuente de verdad de **producto** es [new-design.md](new-design.md). Visual: [design.md](design.md). Este archivo cubre bootstrap, puertos, hostname y errores reales al clonar el repo.
 
 ## Qué es
 

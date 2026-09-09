@@ -11,7 +11,7 @@ Sistema de gestión de turnos para un sanatorio.
 
 ## Fuente de verdad
 
-Leé y seguí **[DESIGN.md](DESIGN.md)** al pie de la letra. Ante ambigüedad: preguntar, no inventar.
+Leé y seguí **[new-design.md](new-design.md)** al pie de la letra. Visual: [design.md](design.md). Ante ambigüedad: preguntar, no inventar.
 
 ## Comandos
 

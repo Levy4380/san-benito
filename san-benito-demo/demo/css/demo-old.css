@@ -1,0 +1,254 @@
+/* Estable channel — functional, neat, low style */
+body.demo-old {
+  --color-paper: #fff;
+  --color-paper-2: #f0f0f0;
+  --color-paper-3: #e4e4e4;
+  --color-ink: #222;
+  --color-ink-2: #555;
+  --color-rule: #ccc;
+  --color-accent: #335588;
+  --color-accent-ink: #fff;
+  --color-accent-soft: #d9e2ec;
+  --color-focus: #335588;
+  --color-danger: #a33;
+  --font-display: Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, 'Courier New', monospace;
+  --radius-card: 0;
+  --radius-input: 0;
+  --app-frame: 0;
+  --app-radius: 0;
+  --ease-out: linear;
+  --dur-short: 0ms;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f0f0f0;
+  color: #222;
+  padding: 0;
+  line-height: 1.4;
+}
+
+html:has(body.demo-old) {
+  background: #f0f0f0;
+}
+
+body.demo-old h1,
+body.demo-old h2,
+body.demo-old h3 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  letter-spacing: 0;
+}
+
+body.demo-old .app-shell {
+  border-radius: 0;
+  background: #f0f0f0;
+}
+
+body.demo-old .app.is-authed {
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+body.demo-old .sidebar {
+  background: #e8eef5;
+  border-right: 1px solid #99a;
+}
+
+body.demo-old .brand-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+body.demo-old .brand-logo {
+  border-radius: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+body.demo-old .nav-btn {
+  border-radius: 0;
+  color: #003399;
+  text-decoration: underline;
+  background: transparent;
+  padding: 0.4rem 0.35rem;
+}
+
+body.demo-old .nav-btn:hover {
+  background: #dce6f0;
+  color: #003399;
+}
+
+body.demo-old .nav-btn.active {
+  background: #dce6f0;
+  color: #000;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+body.demo-old .btn {
+  border-radius: 0;
+  font-weight: normal;
+  border: 1px solid #666;
+  background: #e8e8e8;
+  color: #222;
+  transition: none;
+  box-shadow: none;
+}
+
+body.demo-old .btn:hover {
+  filter: none;
+  background: #ddd;
+}
+
+body.demo-old .btn:active {
+  transform: none;
+}
+
+body.demo-old .btn:not(.btn-outline):not(.btn-danger):not(.btn-sm) {
+  background: #335588;
+  border-color: #274066;
+  color: #fff;
+}
+
+body.demo-old .btn:not(.btn-outline):not(.btn-danger):not(.btn-sm):hover {
+  background: #274066;
+}
+
+body.demo-old .btn-outline {
+  background: #fff;
+  color: #222;
+  border-color: #999;
+}
+
+body.demo-old .btn-outline:hover {
+  background: #f3f3f3;
+  color: #222;
+  border-color: #666;
+  filter: none;
+}
+
+body.demo-old .btn-danger {
+  background: #a33;
+  border-color: #822;
+  color: #fff;
+}
+
+body.demo-old .btn-sm {
+  background: #e8e8e8;
+  color: #222;
+  border-color: #999;
+}
+
+body.demo-old .surface,
+body.demo-old .doctor-card,
+body.demo-old .booking-card,
+body.demo-old .auth-card {
+  border-radius: 0;
+  border: 1px solid #999;
+  box-shadow: none;
+  background: #fff;
+}
+
+body.demo-old .doctor-card.is-selected {
+  border: 3px solid #335588;
+  background: #d9e2ec;
+}
+
+body.demo-old input,
+body.demo-old select,
+body.demo-old textarea {
+  border-radius: 0;
+  border: 1px solid #999;
+  background: #fff;
+}
+
+body.demo-old .demo-chip-btn {
+  border-radius: 0;
+  background: #666;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: bold;
+  box-shadow: none;
+}
+
+body.demo-old .demo-panel {
+  border-radius: 0;
+  border: 1px solid #666;
+}
+
+body.demo-old .page-header h1,
+body.demo-old .welcome-title,
+body.demo-old .home-hero h1 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #003366;
+}
+
+body.demo-old .hint,
+body.demo-old .muted {
+  color: #555;
+  font-size: 0.875rem;
+}
+
+body.demo-old .main {
+  background: #fff;
+}
+
+body.demo-old .sidebar-foot {
+  border-top: 1px solid #99a;
+  font-size: 0.8rem;
+}
+
+body.demo-old .cal-day,
+body.demo-old .slot-chip,
+body.demo-old .time-chip,
+body.demo-old .pill,
+body.demo-old .chip {
+  border-radius: 0;
+}
+
+body.demo-old .mock-picker-btn {
+  border-radius: 0;
+}
+
+/* Flatten common interactive polish */
+body.demo-old button.brand:hover .brand-logo {
+  filter: none;
+}
+
+body.demo-old .route-loader-bar {
+  background: #335588;
+}
+
+/* No motion in estable */
+body.demo-old,
+body.demo-old *,
+body.demo-old *::before,
+body.demo-old *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+body.demo-old .page.active {
+  animation: none !important;
+}
+
+body.demo-old .route-loader,
+html.track-estable .route-loader {
+  display: none !important;
+}
+html.route-loading body.demo-old .app .main,
+html.route-loading body.demo-old .app.is-authed .main {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+@media (max-width: 1199px) {
+  body.demo-old .app.is-authed .sidebar {
+    background: #e8eef5;
+    border-right: 1px solid #99a;
+  }
+}

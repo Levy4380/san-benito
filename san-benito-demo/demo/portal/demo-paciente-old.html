@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral san benito — Demo paciente (estable)</title>
+  <link rel="stylesheet" href="../css/demo.css" />
+  <link rel="stylesheet" href="../css/demo-old.css" />
+</head>
+<body class="demo-old">
+  <script>document.documentElement.classList.add('track-estable');</script>
+  <div class="app-shell">
+  <div class="demo-chip">
+    <button type="button" class="demo-chip-btn" id="demo-toggle" aria-expanded="false" aria-controls="demo-panel">
+      Demo
+    </button>
+    <div class="demo-panel" id="demo-panel" role="dialog" aria-label="Información de la demo">
+      <p><strong>DEMO paciente</strong> — HTML estático, sin backend.</p>
+      <p>Entrada desde <code>estable/index.html</code> (rol paciente).</p>
+      <button type="button" class="btn btn-sm" id="reset-demo">Reiniciar demo</button>
+    </div>
+  </div>
+
+  <div class="app is-authed" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación">
+      <button type="button" class="brand" id="brand-home" aria-label="Ir al inicio">
+        <img class="brand-logo" src="../assets/san-benito-logo-hq.png" width="56" height="56" alt="" />
+        <span class="brand-label"><span>Sanatorio integral</span><span>San Benito</span></span>
+      </button>
+      <div class="sidebar-panel sidebar-panel--nav" id="sidebar-nav-panel">
+        <nav class="nav">
+          <button type="button" class="nav-btn" data-nav="doctors">Doctores</button>
+          <button type="button" class="nav-btn" data-nav="my">Mis turnos</button>
+          <button type="button" class="nav-btn" data-nav="book">Reservar turno</button>
+        </nav>
+        <div class="sidebar-foot sidebar-foot--inline">
+          <strong id="user-name">Juan Paciente</strong>
+          <span>Paciente · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-panel sidebar-panel--user" id="sidebar-user-panel" hidden>
+        <div class="sidebar-foot">
+          <strong id="user-name-mobile">Juan Paciente</strong>
+          <span>Paciente · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-rail">
+        <button type="button" class="mobile-user-btn" id="mobile-user-btn" aria-expanded="false" aria-controls="sidebar-user-panel" aria-label="Abrir sesión">
+          <span class="user-avatar" aria-hidden="true">JP</span>
+        </button>
+        <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-expanded="false" aria-controls="sidebar-nav-panel" aria-label="Abrir menú">
+          <span class="hamburger" aria-hidden="true"></span>
+        </button>
+      </div>
+    </aside>
+
+    <button type="button" class="nav-backdrop" id="nav-backdrop" tabindex="-1" aria-hidden="true"></button>
+
+    <main class="main">
+      <div class="flash" id="flash" role="status"></div>
+
+      <!-- HOME -->
+      <section class="page" id="page-home">
+        <div class="home-hero">
+          <div class="home-watermark" aria-hidden="true">
+            <img src="../assets/san-benito-logo-hq.png" alt="" />
+          </div>
+          <h1 id="home-greeting">Hola</h1>
+          <p>¿Cómo podemos ayudarte hoy?</p>
+          <div class="home-start">
+            <div class="home-start-primary">
+              <button type="button" class="btn home-start-cta" data-nav="book">Reservar turno</button>
+              <button type="button" class="btn btn-outline home-start-cta" data-nav="doctors">Buscar profesionales</button>
+            </div>
+            <div class="home-upcoming" id="home-upcoming" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOCTORS -->
+      <section class="page" id="page-doctors">
+        <header class="page-header">
+          <div>
+            <h1>Doctores</h1>
+            <p>Elegí especialidad o buscá por nombre.</p>
+          </div>
+        </header>
+        <div class="center-stage">
+          <div class="doctor-results">
+            <form class="filters" id="doctors-filter">
+              <div class="field">
+                <label for="specialty">Especialidad</label>
+                <select id="specialty"></select>
+              </div>
+              <div class="field">
+                <label for="doctor-name">Nombre</label>
+                <input id="doctor-name" type="search" placeholder="Ej. Ana" />
+              </div>
+              <button type="submit" class="btn">Buscar</button>
+            </form>
+            <div id="doctors-list" class="doctor-grid"></div>
+            <p class="empty" id="doctors-empty">Seleccioná una especialidad o escribí un nombre para ver profesionales.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOCTOR PROFILE -->
+      <section class="page" id="page-doctor-profile">
+        <header class="page-header page-header--back-title">
+          <div class="page-header-copy">
+            <div class="page-back-slot">
+              <button type="button" class="back-link" id="doctor-profile-back"><span class="nav-arrow" aria-hidden="true">←</span> Atrás</button>
+            </div>
+            <h1>Perfil del profesional</h1>
+            <p id="doctor-profile-subtitle">—</p>
+          </div>
+        </header>
+        <div class="center-stage">
+          <div class="doctor-results" id="doctor-profile-body"></div>
+        </div>
+      </section>
+
+      <!-- SLOTS -->
+      <section class="page" id="page-slots">
+        <header class="page-header page-header--back-title">
+          <div class="page-header-copy">
+            <div class="page-back-slot">
+              <button type="button" class="back-link" data-go="doctors"><span class="nav-arrow" aria-hidden="true">←</span> Atrás</button>
+            </div>
+            <h1>Turnos disponibles</h1>
+            <p id="slots-subtitle">—</p>
+          </div>
+        </header>
+        <div class="agenda">
+          <div class="cal" id="slots-cal"></div>
+          <div class="panel" id="slots-panel"></div>
+        </div>
+      </section>
+
+      <!-- BOOK WIZARD -->
+      <section class="page" id="page-book">
+        <header class="page-header page-header--book">
+          <div class="page-header-copy">
+            <div class="page-back-slot" id="book-back-slot"></div>
+            <h1>Reservar turno</h1>
+            <div class="steps" id="book-steps" aria-label="Progreso de reserva">
+              <div class="step-pill" data-step="1">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Especialidad</span>
+              </div>
+              <div class="step-pill" data-step="2">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Doctor</span>
+              </div>
+              <div class="step-pill" data-step="3">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Horario</span>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div id="book-body"></div>
+      </section>
+
+      <!-- MY APPOINTMENTS -->
+      <section class="page" id="page-my">
+        <header class="page-header">
+          <div>
+            <h1>Mis turnos</h1>
+            <p id="my-subtitle">Próximos turnos.</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="my-all-btn">Calendario</button>
+            <button type="button" class="btn btn-sm" data-nav="book">Reservar turno</button>
+          </div>
+        </header>
+        <div id="my-body"></div>
+      </section>
+    </main>
+  </div>
+  </div>
+
+  <script src="../js/demo-confirm.js"></script>
+  <script src="../js/demo-route-loader.js"></script>
+  <script src="../js/demo-mock-picker.js"></script>
+  <script src="demo-paciente-old.js"></script>
+</body>
+</html>

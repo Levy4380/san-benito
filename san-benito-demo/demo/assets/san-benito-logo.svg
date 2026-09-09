@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sanatorio Integral San Benito">
+  <title>Sanatorio Integral San Benito</title>
+  <defs>
+    <path id="arc-top" d="M 92,256 A 164,164 0 0 1 420,256" fill="none"/>
+    <path id="arc-bottom" d="M 124,256 A 164,164 0 0 0 388,256" fill="none"/>
+  </defs>
+
+  <circle cx="256" cy="256" r="246" fill="#fff" stroke="#231F52" stroke-width="5.5"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#231F52" stroke-width="4.5"/>
+
+  <text fill="#231F52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" letter-spacing="2.2">
+    <textPath href="#arc-top" startOffset="50%" text-anchor="middle">SANATORIO INTEGRAL</textPath>
+  </text>
+  <text fill="#231F52" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" letter-spacing="3.2">
+    <textPath href="#arc-bottom" startOffset="50%" text-anchor="middle">SAN BENITO</textPath>
+  </text>
+
+  <!-- Chestpiece -->
+  <circle cx="148" cy="318" r="27" fill="none" stroke="#E30613" stroke-width="8"/>
+  <circle cx="148" cy="318" r="11" fill="#E30613"/>
+
+  <!-- Stethoscope tubing + family silhouettes + binaurals -->
+  <path
+    fill="none"
+    stroke="#E30613"
+    stroke-width="8.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    d="
+      M 175 318
+      C 196 318 208 298 214 280
+      L 220 262
+      L 220 308
+      C 220 320 232 326 244 320
+      L 248 262
+      L 256 252
+      L 264 262
+      L 264 300
+      C 264 312 276 318 288 310
+      L 292 258
+      L 308 246
+      L 328 270
+      L 342 308
+      C 350 322 368 324 384 316
+      C 408 304 424 276 422 248
+      C 420 210 396 182 360 172
+      C 336 166 314 174 300 192
+      C 288 208 290 228 304 240
+    "
+  />
+
+  <path fill="none" stroke="#E30613" stroke-width="10" stroke-linecap="round"
+        d="M 300 192 C 292 180 294 164 308 156"/>
+  <path fill="none" stroke="#E30613" stroke-width="10" stroke-linecap="round"
+        d="M 360 172 C 372 160 388 160 400 172"/>
+
+  <circle cx="234" cy="236" r="14" fill="none" stroke="#E30613" stroke-width="8"/>
+  <circle cx="276" cy="228" r="12" fill="none" stroke="#E30613" stroke-width="8"/>
+  <circle cx="318" cy="230" r="14" fill="none" stroke="#E30613" stroke-width="8"/>
+</svg>

@@ -1,6 +1,6 @@
 # Design — San Benito
 
-A locked visual design system for this app. Product rules live in `DESIGN.md`.
+A locked visual design system for this app. Product rules live in `new-design.md`.
 Every page redesign reads this file before emitting UI. Do not regenerate per page —
 amend this file when the system needs to grow.
 

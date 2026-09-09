@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral San Benito - Inicio</title>
+  <script src="../js/demo-theme-boot.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fraunces:opsz,wght@9..144,500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter+Tight:wght@600&family=Libre+Baskerville:wght@400;700&family=Manrope:wght@400;500;600;700&family=Nunito:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/site.css" />
+  <link rel="stylesheet" href="../css/demo-themes.css" />
+</head>
+<body class="site">
+  <a class="site-skip" href="#contenido">Saltar al contenido</a>
+  <div class="demo-chip">
+    <button type="button" class="demo-chip-btn" id="demo-toggle" aria-expanded="false" aria-controls="demo-panel">Demo</button>
+    <div class="demo-panel" id="demo-panel" role="dialog" aria-label="Información de la demo">
+      <p><strong>DEMO sitio</strong> — canal pruebas.</p>
+      <p>Rol: <span id="demo-role-label">—</span></p>
+      <button type="button" class="demo-chip-reset" id="reset-demo">Reiniciar demo</button>
+    </div>
+  </div>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="home.html" data-home>
+        <img src="../assets/san-benito-logo-hq.png" width="54" height="54" alt="" />
+        <span class="site-brand-text"><span>Sanatorio integral</span><span>San Benito</span></span>
+      </a>
+      <button type="button" class="site-menu-toggle" aria-expanded="false" aria-controls="site-nav">Menú</button>
+      <nav class="site-nav" id="site-nav" aria-label="Principal">
+        <a href="home.html" data-nav data-home>Inicio</a>
+        <a href="../site/especialidades.html" data-nav>Especialidades</a>
+        <a href="../site/noticias.html" data-nav>Noticias</a>
+        <a href="#" data-portal>Turnos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main" id="contenido">
+    <section class="home-hero" aria-label="Presentación">
+      <img class="home-hero-media" src="../assets/media/hero-hospital.jpg" alt="" width="1600" height="1089" />
+      <div class="home-hero-veil" aria-hidden="true"></div>
+      <div class="home-hero-copy">
+        <p class="home-hero-kicker">Sanatorio integral</p>
+        <h1>San Benito</h1>
+        <p class="home-hero-lead">Atención ambulatoria con turnos claros y un equipo cercano.</p>
+        <a class="site-btn home-hero-cta" href="#" data-portal>Ir a turnos</a>
+      </div>
+    </section>
+
+    <section class="home-band home-columns" aria-label="Novedades">
+      <div class="home-panel">
+        <div class="home-panel-head">
+          <h2>Noticias</h2>
+          <p class="home-more"><a href="../site/noticias.html">Ver todas</a></p>
+        </div>
+        <ul class="home-news">
+          <li><time datetime="2026-07-18">18/07/2026</time> — <a href="../site/noticias.html#n1">Horarios de admisión</a></li>
+          <li><time datetime="2026-07-05">05/07/2026</time> — <a href="../site/noticias.html#n2">Campaña de vacunación</a></li>
+          <li><time datetime="2026-06-20">20/06/2026</time> — <a href="../site/noticias.html#n3">Consultorio de cardiología</a></li>
+        </ul>
+      </div>
+      <div class="home-panel">
+        <div class="home-panel-head">
+          <h2>Profesionales visitantes</h2>
+          <p class="home-more"><a href="../site/noticias.html#visitas">Ver agenda</a></p>
+        </div>
+        <div class="home-table-wrap">
+          <table class="home-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Profesional</th>
+                <th>Especialidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>12/08/2026</td>
+                <td>Dr. Ricardo Mena</td>
+                <td>Cirugía cardiovascular</td>
+              </tr>
+              <tr>
+                <td>26/08/2026</td>
+                <td>Dra. Elena Quiroga</td>
+                <td>Neurología</td>
+              </tr>
+              <tr>
+                <td>09/09/2026</td>
+                <td>Dr. Pablo Herrera</td>
+                <td>Ortopedia infantil</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-band home-comunidad" aria-label="Comunidad">
+      <div class="home-comunidad-inner">
+        <img src="../assets/media/waiting-area.jpg" alt="Recepción del sanatorio" width="480" height="270" />
+        <div>
+          <h2>Comunidad</h2>
+          <p>Actividades de prevención en el barrio y espacios de encuentro para pacientes y familias.</p>
+          <a class="site-btn site-btn-outline" href="../site/noticias.html#comunidad">Más información</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>Sanatorio integral San Benito</p>
+      <ul class="site-footer-links">
+        <li><a href="../site/especialidades.html">Especialidades</a></li>
+        <li><a href="../site/noticias.html">Noticias</a></li>
+        <li><a href="#" data-portal>Turnos</a></li>
+      </ul>
+    </div>
+  </footer>
+  <script src="../js/demo-toast.js"></script>
+  <script src="../js/demo-theme.js"></script>
+  <script src="../js/demo-route-loader.js"></script>
+  <script src="../js/site.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 ## Reglas
 
-1. **Fuente de verdad:** [DESIGN.md](DESIGN.md). No inventar decisiones.
+1. **Fuente de verdad:** [new-design.md](new-design.md). Visual: [design.md](design.md). No inventar decisiones.
 2. **Sail obligatorio** para PHP/Composer/yarn/tests.
 3. **yarn**, no npm.
 4. Ramas `feature/<slug>` desde `main`; Conventional Commits; todo por PR.
@@ -19,6 +19,6 @@ composer pint
 ## Dominio (resumen)
 
 - `users` = auth; `doctors` / `patients` = entidades de dominio
-- `appointments` status: `available` | `booked`
-- Reserva atómica; cancelación reabre el slot
-- `doctor_patient` pivote (D21): nace al book + alta manual; no se borra en v1
+- Disponibilidad = franjas (`availability_windows`); huecos calculados; `appointments` solo reservas
+- Reserva = INSERT; cancelar borra la reserva; la franja sigue
+- `doctor_patient` pivote (D21): nace al book/assign + alta manual; no se borra en v1

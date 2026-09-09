@@ -1,0 +1,3202 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sanatorio integral San Benito — Demo paciente (estable)</title>
+  <style>
+    /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
+     * San Benito patient demo — mirrors design.md tokens
+     */
+    :root {
+      --color-paper: oklch(99% 0.006 255);
+      --color-paper-2: oklch(96.5% 0.01 255);
+      --color-paper-3: oklch(93.5% 0.014 255);
+      --color-ink: oklch(22% 0.02 255);
+      --color-ink-2: oklch(48% 0.016 255);
+      --color-rule: oklch(88% 0.012 255);
+      --color-accent: oklch(47% 0.16 255);
+      --color-accent-ink: oklch(99% 0.004 255);
+      --color-accent-soft: oklch(92% 0.045 255);
+      --color-focus: oklch(52% 0.18 255);
+      --color-danger: oklch(52% 0.18 25);
+      --font-display: 'Inter Tight', 'Segoe UI', sans-serif;
+      --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+      --space-3xs: 0.25rem;
+      --space-2xs: 0.5rem;
+      --space-xs: 0.75rem;
+      --space-sm: 1rem;
+      --space-md: 1.5rem;
+      --space-lg: 2rem;
+      --space-xl: 3rem;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-md: 1rem;
+      --text-lg: 1.25rem;
+      --text-xl: 1.5rem;
+      --text-display: clamp(2rem, 3.5vw, 3rem);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --dur-short: 180ms;
+      --radius-card: 8px;
+      --radius-input: 6px;
+      --rule-hair: 1px solid var(--color-rule);
+      --sidebar-w: 15.5rem;
+      --mobile-rail: calc(2.1rem + var(--app-frame));
+      --app-frame: 0.45rem;
+      --app-radius: 0.85rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html {
+      height: 100%;
+      overflow: hidden;
+      background: var(--color-paper-2);
+    }
+    body {
+      margin: 0;
+      height: 100%;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-body);
+      font-size: var(--text-md);
+      color: var(--color-ink);
+      background: var(--color-paper-2);
+      line-height: 1.45;
+      overflow: hidden;
+      padding: var(--app-frame);
+    }
+    .app-shell {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-paper-2);
+      border-radius: var(--app-radius);
+      overflow: hidden;
+    }
+    button, input, select { font: inherit; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      font-style: normal;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    p { margin: 0; }
+    a { color: inherit; }
+    a.btn { text-decoration: none; }
+
+    .demo-chip {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.55rem;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.35rem;
+    }
+    .demo-chip-btn {
+      border: 0;
+      background: var(--color-ink);
+      color: var(--color-accent-ink);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: var(--radius-input);
+      padding: 0.35rem 0.65rem;
+      cursor: pointer;
+      box-shadow: 0 1px 2px oklch(22% 0.02 255 / 0.18);
+    }
+    .demo-chip-btn:hover { filter: brightness(1.12); }
+    .demo-chip-btn:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .demo-chip-btn[aria-expanded="true"] {
+      background: var(--color-accent);
+    }
+    .demo-panel {
+      display: none;
+      width: min(18.5rem, calc(100vw - 2.5rem));
+      padding: var(--space-sm);
+      background: var(--color-ink);
+      color: var(--color-accent-ink);
+      border-radius: var(--radius-card);
+      font-size: var(--text-xs);
+      line-height: 1.45;
+      box-shadow: 0 8px 24px oklch(22% 0.02 255 / 0.22);
+    }
+    .demo-panel.open { display: grid; gap: 0.55rem; }
+    .demo-panel strong { font-weight: 600; }
+    .demo-panel code {
+      font-family: var(--font-mono);
+      background: oklch(30% 0.02 255);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+    .demo-panel .btn {
+      width: 100%;
+      border-color: oklch(50% 0.02 255);
+      background: transparent;
+      color: inherit;
+    }
+    .demo-panel .btn:hover {
+      background: oklch(30% 0.02 255);
+      border-color: oklch(50% 0.02 255);
+      color: inherit;
+      filter: none;
+    }
+
+    .app {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      overflow: auto;
+      background: var(--color-paper);
+    }
+    .app.is-authed {
+      position: relative;
+      display: grid;
+      align-content: start;
+      background: transparent;
+    }
+    @media (min-width: 1200px) {
+      .app.is-authed {
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        align-content: stretch;
+        overflow: hidden;
+        transition: grid-template-columns 320ms var(--ease-out);
+      }
+      .app.is-authed.is-home {
+        grid-template-columns: 0px minmax(0, 1fr);
+      }
+      .app.is-authed .main {
+        grid-column: 2;
+        grid-row: 1;
+      }
+    }
+
+    .sidebar {
+      display: none;
+      background: transparent;
+      border-right: 0;
+      padding: var(--space-md);
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+    .app.is-authed .sidebar { display: flex; }
+    .mobile-menu-btn,
+    .mobile-user-btn { display: none; }
+    .sidebar-rail { display: none; }
+    @media (max-width: 1199px) {
+      .app.is-authed {
+        display: grid;
+        grid-template-columns: var(--mobile-rail) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .app.is-authed .sidebar {
+        --rail-btn: 2.1rem;
+        --rail-stack: calc(var(--rail-btn) * 2 + 0.2rem);
+        grid-column: 1;
+        grid-row: 1;
+        position: relative;
+        z-index: 60;
+        width: auto;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+        align-self: stretch;
+        margin: var(--app-frame) 0 var(--app-frame) var(--app-frame);
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
+        overflow: hidden;
+        box-shadow: none;
+        gap: 0;
+      }
+      .app.is-authed.nav-open .sidebar,
+      .app.is-authed.user-open .sidebar {
+        position: absolute;
+        top: var(--app-frame);
+        left: var(--app-frame);
+        bottom: var(--app-frame);
+        width: min(17.5rem, calc(100% - 3rem));
+        margin: 0;
+        padding: 3rem 0.65rem var(--rail-stack);
+        gap: var(--space-sm);
+        background: var(--color-paper-2);
+        border-radius: var(--app-radius);
+        overflow-x: hidden;
+        overflow-y: auto;
+        box-shadow: 8px 0 28px oklch(22% 0.02 255 / 0.18);
+      }
+      .app.is-authed #brand-home {
+        display: none;
+      }
+      .app.is-authed.nav-open #brand-home,
+      .app.is-authed.user-open #brand-home {
+        display: grid;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        grid-template-columns: var(--rail-btn) auto;
+        justify-items: center;
+        align-items: center;
+        column-gap: var(--space-2xs);
+        width: auto;
+        max-width: calc(100% - 0.5rem);
+        min-height: var(--rail-btn);
+        height: auto;
+        padding: 0.35rem 0.5rem 0.35rem 0;
+        color: var(--color-ink);
+      }
+      .app.is-authed.nav-open #brand-home .brand-label,
+      .app.is-authed.user-open #brand-home .brand-label {
+        justify-self: start;
+        white-space: normal;
+        line-height: 1.15;
+        font-size: 0.72rem;
+        max-width: 11rem;
+      }
+      .app.is-authed.nav-open #brand-home .brand-logo,
+      .app.is-authed.user-open #brand-home .brand-logo {
+        width: 1.35rem;
+        height: 1.35rem;
+      }
+      .app.is-authed .main {
+        grid-column: 2;
+        grid-row: 1;
+        margin-left: 0;
+      }
+      .sidebar-foot--inline { display: none; }
+      .sidebar-panel--nav,
+      .sidebar-panel--user {
+        display: none;
+        flex: 1 1 auto;
+        min-height: 0;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+      .app.is-authed.nav-open .sidebar-panel--nav {
+        display: flex;
+      }
+      .app.is-authed.user-open .sidebar-panel--user {
+        display: flex;
+      }
+      .app.is-authed.user-open .sidebar-panel--user[hidden] {
+        display: flex;
+      }
+      .sidebar-rail {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-top: 0;
+        flex-shrink: 0;
+        z-index: 2;
+      }
+    }
+    @media (min-width: 1200px) {
+      .sidebar-panel--nav {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        flex-direction: column;
+        gap: var(--space-lg);
+      }
+      .sidebar-panel--nav .sidebar-foot--inline {
+        margin-top: auto;
+      }
+      .sidebar-panel--user,
+      .sidebar-rail {
+        display: none !important;
+      }
+      .sidebar-foot--inline { display: block; }
+    }
+    @media (min-width: 1200px) {
+      .app.is-authed .sidebar {
+        grid-column: 1;
+        grid-row: 1;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        z-index: 40;
+        padding-top: calc(var(--space-md) + 2.75rem + var(--space-sm));
+      }
+      .app.is-authed.is-home .sidebar {
+        overflow: visible;
+        padding-inline: 0;
+      }
+    }
+    .sidebar .nav,
+    .sidebar .sidebar-foot {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      transition:
+        opacity 280ms var(--ease-out),
+        transform 320ms var(--ease-out),
+        visibility 320ms var(--ease-out);
+    }
+    @media (min-width: 1200px) {
+      .app.is-home .sidebar .nav,
+      .app.is-home .sidebar .sidebar-foot {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-1.25rem);
+        pointer-events: none;
+      }
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2xs);
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+    button.brand {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      cursor: pointer;
+      text-align: left;
+    }
+    .app.is-authed #brand-home {
+      position: absolute;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: 45;
+      color: var(--color-ink);
+    }
+    button.brand:hover .brand-logo { filter: brightness(1.04); }
+    button.brand:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      object-fit: contain;
+      flex-shrink: 0;
+      display: block;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .brand-label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.82rem;
+      line-height: 1.15;
+      max-width: 9.5rem;
+    }
+    .nav { display: grid; gap: 0.2rem; }
+    .nav-btn {
+      text-align: left;
+      border: 0;
+      background: transparent;
+      color: var(--color-ink-2);
+      border-radius: var(--radius-input);
+      padding: 0.55rem 0.65rem;
+      cursor: pointer;
+    }
+    .nav-btn:hover { color: var(--color-ink); background: var(--color-paper); }
+    .nav-btn.active {
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+    }
+    .sidebar-foot {
+      margin-top: auto;
+      padding-top: var(--space-md);
+      border-top: var(--rule-hair);
+      font-size: var(--text-sm);
+      color: var(--color-ink-2);
+    }
+    .sidebar-foot strong {
+      display: block;
+      color: var(--color-ink);
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+
+    .nav-backdrop {
+      display: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      background: oklch(22% 0.02 255 / 0.35);
+    }
+    @media (max-width: 1199px) {
+      .app.is-authed.nav-open .nav-backdrop,
+      .app.is-authed.user-open .nav-backdrop {
+        display: block;
+        position: absolute;
+        inset: var(--app-frame);
+        z-index: 55;
+        border-radius: var(--app-radius);
+      }
+      .mobile-menu-btn,
+      .mobile-user-btn {
+        display: grid;
+        place-items: center;
+        width: var(--rail-btn, 2.1rem);
+        height: var(--rail-btn, 2.1rem);
+        flex-shrink: 0;
+        border: 0;
+        border-radius: var(--radius-input);
+        background: transparent;
+        color: var(--color-ink);
+        padding: 0;
+        cursor: pointer;
+        z-index: 2;
+      }
+      .mobile-menu-btn:hover,
+      .mobile-user-btn:hover {
+        background: oklch(22% 0.02 255 / 0.06);
+      }
+      .mobile-menu-btn:focus-visible,
+      .mobile-user-btn:focus-visible {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 2px;
+      }
+      .mobile-menu-btn[aria-expanded="true"],
+      .mobile-user-btn[aria-expanded="true"] {
+        background: oklch(22% 0.02 255 / 0.08);
+        color: var(--color-ink);
+      }
+      .user-avatar {
+        width: 1.2rem;
+        height: 1.2rem;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        background: var(--color-accent);
+        color: var(--color-accent-ink);
+      }
+      .hamburger,
+      .hamburger::before,
+      .hamburger::after {
+        display: block;
+        width: 0.85rem;
+        height: 1.5px;
+        border-radius: 1px;
+        background: currentColor;
+      }
+      .hamburger { position: relative; }
+      .hamburger::before,
+      .hamburger::after {
+        content: '';
+        position: absolute;
+        left: 0;
+      }
+      .hamburger::before { top: -3.5px; }
+      .hamburger::after { top: 3.5px; }
+      .mobile-menu-btn[aria-expanded="true"] .hamburger {
+        background: transparent;
+      }
+      .mobile-menu-btn[aria-expanded="true"] .hamburger::before {
+        top: 0;
+        transform: rotate(45deg);
+      }
+      .mobile-menu-btn[aria-expanded="true"] .hamburger::after {
+        top: 0;
+        transform: rotate(-45deg);
+      }
+    }
+
+    .main {
+      min-width: 0;
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    @media (min-width: 1200px) {
+      .main { padding: var(--space-lg) var(--space-xl); }
+    }
+    .app.is-authed .main {
+      margin: var(--app-frame);
+      border-radius: var(--app-radius);
+      background: var(--color-paper);
+      overflow-x: hidden;
+      overflow-y: auto;
+      min-height: 0;
+      align-self: stretch;
+    }
+    .app.is-authed.is-home .main {
+      overflow: visible;
+    }
+    .app:not(.is-authed) {
+      display: flex;
+      flex-direction: column;
+    }
+    .app:not(.is-authed) .main {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .page { display: none; }
+    .page.active {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 100%;
+      animation: fade var(--dur-short) var(--ease-out);
+    }
+    .page.active:has(.agenda) {
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
+    }
+    .app.is-home .page.active,
+    .app:not(.is-authed) .page.active {
+      justify-content: center;
+    }
+    .page.active > .page-header,
+    .page.active > .steps {
+      flex-shrink: 0;
+    }
+    .page.active > .agenda,
+    .page.active > #my-body,
+    .page.active > #book-body,
+    .page.active > .center-stage {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    @keyframes fade {
+      from { opacity: 0.55; }
+      to { opacity: 1; }
+    }
+
+    .page-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-xs);
+    }
+    .page-header h1 { font-size: var(--text-xl); }
+    .page-header p {
+      margin-top: 0.25rem;
+      color: var(--color-ink-2);
+      font-size: var(--text-sm);
+    }
+    .header-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .page-header-copy {
+      display: grid;
+      min-width: 0;
+    }
+    .page-header--book {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-sm);
+    }
+    .page-header--book .page-header-copy {
+      width: 100%;
+    }
+    .page-header--book .steps {
+      margin-bottom: 0;
+    }
+    .page-header--back-title .page-header-copy > h1 {
+      grid-area: 1 / 1;
+      visibility: hidden;
+    }
+    .page-header--back-title .page-back-slot {
+      display: flex;
+      grid-area: 1 / 1;
+      z-index: 1;
+      margin-bottom: 0;
+      min-height: 0;
+      align-self: center;
+    }
+    .title-with-back {
+      display: grid;
+      margin-bottom: 0.35rem;
+    }
+    .title-with-back > h1 {
+      grid-area: 1 / 1;
+      visibility: hidden;
+      margin-bottom: 0 !important;
+    }
+    .title-with-back > .page-back-slot {
+      grid-area: 1 / 1;
+      z-index: 1;
+      margin-bottom: 0;
+      min-height: 0;
+      align-self: center;
+    }
+
+    .surface {
+      background: var(--color-paper);
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: var(--space-md);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      border: 1px solid transparent;
+      border-radius: var(--radius-input);
+      padding: 0.5rem 0.85rem;
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: var(--text-sm);
+      transition: background var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+    .btn-outline {
+      background: var(--color-paper);
+      color: var(--color-ink);
+      border-color: var(--color-rule);
+    }
+    .btn-outline:hover {
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+      border-color: var(--color-accent);
+      filter: none;
+    }
+    .btn-danger {
+      background: var(--color-danger);
+      color: white;
+    }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: var(--text-xs); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      border: 0;
+      background: none;
+      padding: 0;
+      color: var(--color-ink-2);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+    .back-link:hover { color: var(--color-accent); }
+    .page-back-slot {
+      display: none;
+      align-items: center;
+      min-height: calc(var(--text-sm) * 1.45);
+    }
+    .page-back-slot .back-link.is-placeholder {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .field { display: grid; gap: 0.35rem; margin-bottom: var(--space-sm); }
+    .field label { font-size: var(--text-sm); font-weight: 500; }
+    .time-24 {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      max-width: 100%;
+    }
+    .time-24 select {
+      width: auto;
+      min-width: 4.25rem;
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+    }
+    .time-24-sep {
+      color: var(--color-ink-2);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+    .field input, .field select {
+      width: 100%;
+      border: var(--rule-hair);
+      border-radius: var(--radius-input);
+      background: var(--color-paper);
+      padding: 0.55rem 0.7rem;
+      color: var(--color-ink);
+    }
+
+    /* Mock data picker (demo cheat-sheet) */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .mock-picker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .mock-picker-head label { margin: 0; }
+    .mock-picker-control {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.35rem;
+      align-items: center;
+    }
+    .mock-picker { position: relative; flex-shrink: 0; }
+    .mock-picker-btn {
+      width: 1.5rem;
+      height: 1.5rem;
+      display: inline-grid;
+      place-items: center;
+      border: var(--rule-hair);
+      border-radius: 999px;
+      background: var(--color-paper-2);
+      color: var(--color-ink-2);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      transition: background var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+    }
+    .mock-picker-btn:hover,
+    .mock-picker.is-open .mock-picker-btn {
+      background: var(--color-accent-soft);
+      color: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+    .mock-picker-btn:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .mock-picker-pop {
+      display: none;
+      position: absolute;
+      top: calc(100% + 0.35rem);
+      right: 0;
+      z-index: 40;
+      width: min(18rem, calc(100vw - 2rem));
+      padding: 0.65rem;
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      background: var(--color-paper);
+      box-shadow: 0 10px 28px oklch(22% 0.02 255 / 0.12);
+    }
+    .mock-picker.is-open .mock-picker-pop { display: grid; gap: 0.45rem; }
+    .mock-picker-title {
+      margin: 0;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-ink-2);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .mock-picker-search {
+      width: 100%;
+      border: var(--rule-hair);
+      border-radius: var(--radius-input);
+      background: var(--color-paper-2);
+      padding: 0.4rem 0.55rem;
+      color: var(--color-ink);
+      font: inherit;
+      font-size: var(--text-sm);
+    }
+    .mock-picker-search:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 1px;
+    }
+    .mock-picker-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 12rem;
+      overflow-y: auto;
+      display: grid;
+      gap: 0.15rem;
+    }
+    .mock-picker-option {
+      width: 100%;
+      display: grid;
+      gap: 0.1rem;
+      text-align: left;
+      border: 0;
+      border-radius: var(--radius-input);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 0.4rem 0.5rem;
+      cursor: pointer;
+    }
+    .mock-picker-option:hover,
+    .mock-picker-option:focus-visible {
+      background: var(--color-accent-soft);
+      outline: none;
+    }
+    .mock-picker-option-label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-ink);
+    }
+    .mock-picker-option-meta {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-ink-2);
+    }
+    .mock-picker-empty {
+      padding: 0.5rem;
+      font-size: var(--text-sm);
+      color: var(--color-ink-2);
+    }
+    .field input:focus-visible, .field select:focus-visible, .btn:focus-visible, .nav-btn:focus-visible, .day:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .hint { font-size: var(--text-sm); color: var(--color-ink-2); }
+    .error { font-size: var(--text-sm); color: var(--color-danger); margin-top: 0.35rem; }
+
+    /* Welcome / auth */
+    .auth-shell {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: var(--space-md);
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, oklch(96% 0.03 255), transparent),
+        var(--color-paper);
+    }
+    .auth-card { width: min(100%, 26rem); }
+    .auth-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-lg);
+    }
+    .auth-logo {
+      width: 5.5rem;
+      height: 5.5rem;
+      object-fit: contain;
+      display: block;
+    }
+    .auth-establishment {
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: var(--text-sm);
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+      color: var(--color-ink);
+      max-width: 16rem;
+    }
+    .auth-card h1 {
+      font-size: var(--text-display);
+      margin-bottom: 0.5rem;
+    }
+    .cred-box {
+      margin: var(--space-md) 0;
+      padding: var(--space-sm);
+      background: var(--color-paper-2);
+      border-radius: var(--radius-card);
+      border: var(--rule-hair);
+      font-size: var(--text-sm);
+    }
+    .cred-box p + p { margin-top: 0.25rem; }
+    .cred-box code { font-family: var(--font-mono); }
+
+    .welcome-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: var(--space-md); }
+
+    /* Agenda layout — calendar always fits; only panel lists scroll */
+    .agenda {
+      display: grid;
+      gap: var(--space-sm);
+      align-items: stretch;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
+    }
+    @media (min-width: 768px) {
+      .agenda {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+        grid-template-rows: minmax(0, 1fr);
+        gap: var(--space-md);
+      }
+    }
+    .cal {
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: var(--space-2xs);
+      background: var(--color-paper);
+      min-height: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      container-type: size;
+      container-name: cal;
+    }
+    @media (min-width: 768px) {
+      .cal { padding: var(--space-sm); }
+    }
+    .cal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      margin-bottom: var(--space-2xs);
+      flex-shrink: 0;
+    }
+    .cal-head h2 {
+      flex: 1 1 auto;
+      font-size: clamp(0.75rem, 6.5cqh, var(--text-md));
+      text-transform: capitalize;
+      text-align: center;
+      min-width: 0;
+      line-height: 1.2;
+    }
+    .cal-head .btn-sm {
+      flex: 0 0 auto;
+      padding: 0.3rem 0.5rem;
+    }
+    .cal-grid {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-rows: auto repeat(6, minmax(0, 1fr));
+      gap: clamp(0.12rem, 1.2cqh, 0.35rem);
+      align-items: stretch;
+      justify-items: stretch;
+    }
+    .cal-dow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 0;
+      padding: 0.15rem 0;
+      font-size: 0.65rem;
+      font-weight: 500;
+      font-family: var(--font-body);
+      color: var(--color-ink-2);
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .day {
+      border: 0;
+      border-radius: 6px;
+      background: oklch(92% 0.005 260);
+      color: var(--color-ink-2);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: clamp(0.68rem, 5cqh, var(--text-sm));
+      font-weight: 500;
+      line-height: 1;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .day.muted { opacity: 0.35; cursor: default; }
+    .day.tone-empty {
+      background: oklch(90% 0.008 260);
+      color: oklch(55% 0.02 260);
+    }
+    .day.has,
+    .day.tone-has {
+      background: oklch(88% 0.06 250);
+      color: oklch(32% 0.08 250);
+      font-weight: 500;
+    }
+    .day.tone-full {
+      background: oklch(88% 0.12 55);
+      color: oklch(35% 0.1 45);
+      font-weight: 600;
+    }
+    .day.selected {
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+      box-shadow: inset 0 0 0 2px oklch(100% 0 0 / 0.35);
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.2rem 0.55rem;
+      margin-top: 0.35rem;
+      font-size: 0.65rem;
+      color: var(--color-ink-2);
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex: 0 0 auto;
+      max-width: none;
+    }
+    .swatch {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 2px;
+      background: oklch(90% 0.008 260);
+      flex: 0 0 auto;
+      border: 1px solid oklch(80% 0.01 260);
+      font-style: normal;
+    }
+    .swatch.tone-empty { background: oklch(90% 0.008 260); }
+    .swatch.has,
+    .swatch.tone-has { background: oklch(88% 0.06 250); border-color: oklch(75% 0.08 250); }
+    .swatch.tone-full { background: oklch(88% 0.12 55); border-color: oklch(72% 0.14 55); }
+
+    .panel {
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: var(--space-sm);
+      background: var(--color-paper);
+      min-height: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    @media (min-width: 768px) {
+      .panel { padding: var(--space-md); }
+    }
+    .panel > .back-link {
+      align-self: flex-start;
+      margin-bottom: var(--space-2xs);
+      flex-shrink: 0;
+    }
+    .panel > h2,
+    .panel > .hint {
+      flex-shrink: 0;
+    }
+    .panel-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: grid;
+      gap: 0.65rem;
+      padding-top: 0.75rem;
+      align-content: start;
+    }
+    .slot-row, .doctor-card, .list-row {
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: 0.7rem 1rem;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.65rem;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .slot-row button, .list-row button { flex-shrink: 0; }
+    .list-row {
+      width: 100%;
+      background: var(--color-paper);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      transition: border-color var(--dur-short) var(--ease-out);
+    }
+    button.list-row { cursor: pointer; }
+    button.list-row:hover { border-color: var(--color-accent); }
+    button.list-row:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .list-line {
+      min-width: 0;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: var(--text-sm);
+    }
+    .list-line strong {
+      font-family: var(--font-display);
+      font-weight: 600;
+    }
+    .list-line .muted { color: var(--color-ink-2); }
+    .list-line .mono {
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .booking-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 14rem));
+      gap: var(--space-sm);
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-top: 0.75rem;
+      align-content: start;
+      justify-content: start;
+    }
+    .booking-card {
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: var(--space-sm);
+      background: var(--color-paper-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      min-width: 0;
+      color: inherit;
+      font: inherit;
+      transition: border-color var(--dur-short) var(--ease-out);
+    }
+    button.booking-card:hover { border-color: var(--color-accent); }
+    button.booking-card:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .booking-card h3 {
+      font-size: var(--text-md);
+      overflow-wrap: anywhere;
+    }
+    .booking-card .booking-meta {
+      font-size: var(--text-sm);
+      color: var(--color-ink-2);
+    }
+    .booking-card .booking-time {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-ink);
+    }
+    .booking-card .btn { align-self: flex-start; margin-top: auto; }
+
+    .month-groups {
+      display: grid;
+      gap: var(--space-lg);
+      margin-top: var(--space-md);
+    }
+    .month-group-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs) var(--space-sm);
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: var(--space-xs);
+      padding-bottom: var(--space-xs);
+      border-bottom: var(--rule-hair);
+    }
+    .month-group-head h3 {
+      font-size: var(--text-lg);
+      text-transform: capitalize;
+    }
+    .month-groups .booking-grid {
+      flex: none;
+      overflow: visible;
+      padding-top: 0;
+    }
+
+    .mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+    .badge {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--color-ink-2);
+    }
+
+    .doctor-results {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      background: var(--color-paper);
+      padding: var(--space-md);
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .doctor-results > .empty {
+      margin: auto 0;
+      text-align: center;
+      width: 100%;
+    }
+    .doctor-grid {
+      display: grid;
+      gap: var(--space-sm);
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+      width: 100%;
+      align-content: start;
+    }
+    .doctor-grid--3 {
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .doctor-grid--3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 900px) {
+      .doctor-grid--3 { grid-template-columns: repeat(3, 1fr); }
+    }
+    .book-specialty-panel,
+    .book-doctors-panel {
+      gap: var(--space-md);
+    }
+    .book-specialty-panel .book-next-btn,
+    .book-doctors-panel .book-next-btn {
+      margin-top: auto;
+      align-self: flex-end;
+      flex-shrink: 0;
+    }
+    .doctor-card {
+      flex-direction: column;
+      align-items: stretch;
+      cursor: pointer;
+      background: var(--color-paper);
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      transition: border-color var(--dur-short) var(--ease-out), background var(--dur-short) var(--ease-out);
+    }
+    .doctor-card:hover { border-color: var(--color-accent); }
+    .doctor-card.is-selected {
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+    .doctor-card h3 { font-size: var(--text-md); }
+    .filters {
+      display: grid;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    @media (min-width: 640px) {
+      .filters { grid-template-columns: 1fr 1fr auto; align-items: end; }
+    }
+
+    .center-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: var(--space-md);
+      min-height: 0;
+      overflow: auto;
+    }
+    #my-body,
+    #book-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      width: 100%;
+    }
+    #my-body > .agenda,
+    #book-body > .agenda,
+    #my-body > .surface,
+    #book-body > .center-stage {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+    }
+    #my-body > .agenda,
+    #book-body > .agenda,
+    .page.active > .agenda {
+      overflow: hidden;
+    }
+    #book-body > .hint {
+      flex-shrink: 0;
+    }
+    #book-body > .center-stage {
+      margin-top: 0;
+      justify-content: flex-start;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    #book-body > .center-stage > .hint {
+      flex-shrink: 0;
+      width: 100%;
+    }
+    .center-stage:has(.doctor-results) {
+      align-items: stretch;
+      overflow: hidden;
+    }
+    #my-body > .surface {
+      overflow: auto;
+    }
+    .center-stage > .surface {
+      width: min(100%, 28rem);
+    }
+    .center-stage > .filters {
+      flex-shrink: 0;
+      width: 100%;
+      margin-bottom: var(--space-md);
+    }
+    .center-stage > .doctor-results {
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+    }
+    .center-stage > .empty {
+      text-align: center;
+      width: min(100%, 40rem);
+    }
+    .center-stage > .back-link,
+    .center-stage > .hint {
+      width: min(100%, 50rem);
+    }
+
+    #page-home {
+      position: relative;
+      overflow: visible;
+    }
+    .home-hero {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--space-md) var(--space-sm);
+      isolation: isolate;
+      min-height: min(70vh, 36rem);
+      justify-content: center;
+      overflow: visible;
+    }
+    .home-watermark {
+      position: absolute;
+      top: 0;
+      right: 0;
+      z-index: 0;
+      width: min(58vw, 22rem);
+      height: min(58vw, 22rem);
+      margin: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+    @media (min-width: 900px) {
+      .home-watermark {
+        top: calc(-1 * var(--space-lg));
+        right: calc(-1 * var(--space-xl));
+      }
+    }
+    .home-watermark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: top right;
+      opacity: 0.1;
+      user-select: none;
+      display: block;
+    }
+    .home-hero > :not(.home-watermark) {
+      position: relative;
+      z-index: 1;
+    }
+    .home-hero h1 {
+      font-size: var(--text-display);
+      margin-bottom: 0.35rem;
+    }
+    .home-hero > p {
+      color: var(--color-ink-2);
+      font-size: var(--text-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .home-cards {
+      display: grid;
+      gap: var(--space-sm);
+      width: min(100%, 52rem);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) {
+      .home-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .home-card {
+      border: var(--rule-hair);
+      border-radius: var(--radius-card);
+      padding: var(--space-md);
+      background: var(--color-paper-2);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2xs);
+      min-width: 0;
+      transition: border-color var(--dur-short) var(--ease-out),
+        background var(--dur-short) var(--ease-out);
+    }
+    .home-card:hover {
+      border-color: var(--color-accent);
+      background: var(--color-paper);
+    }
+    .home-card:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+    .home-card h2 {
+      font-size: var(--text-lg);
+    }
+    .home-card p {
+      font-size: var(--text-sm);
+      color: var(--color-ink-2);
+    }
+    .home-card .home-card-go {
+      margin-top: auto;
+      padding-top: var(--space-sm);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-accent);
+    }
+
+    .steps {
+      display: flex;
+      align-items: start;
+      gap: var(--space-sm);
+      width: 100%;
+      margin-bottom: var(--space-sm);
+      font-size: var(--text-xs);
+    }
+    .step-pill {
+      display: flex;
+      flex: 1 1 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.35rem;
+      text-align: center;
+      color: var(--color-ink-2);
+      background: transparent;
+      border: 0;
+      padding: 0;
+      min-width: 0;
+    }
+    .step-pill .step-node {
+      width: 100%;
+      height: 0.45rem;
+      border-radius: 2px;
+      display: block;
+      background: var(--color-paper-3);
+      border: 0;
+      transition: background var(--dur-short) var(--ease-out);
+    }
+    .step-pill .step-label {
+      font-size: var(--text-xs);
+      line-height: 1.25;
+    }
+    .step-pill.done { color: var(--color-accent); }
+    .step-pill.done .step-node {
+      background: var(--color-accent-soft);
+    }
+    .step-pill.on { color: var(--color-ink); }
+    .step-pill.on .step-node {
+      background: var(--color-accent);
+    }
+    .step-pill.on .step-label { font-weight: 600; }
+
+    .flash {
+      margin-bottom: var(--space-sm);
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-input);
+      background: var(--color-accent-soft);
+      color: var(--color-ink);
+      font-size: var(--text-sm);
+      display: none;
+    }
+    .flash.show { display: block; flex-shrink: 0; }
+
+    /* Simulated section navigation latency */
+    .route-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 120ms var(--ease-out);
+    }
+    .route-loader.is-on {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .route-loader-track {
+      height: 3px;
+      width: 100%;
+      background: oklch(90% 0.02 255);
+      overflow: hidden;
+    }
+    .route-loader-bar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--color-accent), oklch(62% 0.16 230));
+      border-radius: 0 2px 2px 0;
+    }
+    .route-loader.is-on .route-loader-bar {
+      animation: route-load-bar 900ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    }
+    @keyframes route-load-bar {
+      0% { width: 0; }
+      15% { width: 22%; }
+      55% { width: 68%; }
+      85% { width: 92%; }
+      100% { width: 100%; }
+    }
+    html.route-loading,
+    html.route-loading body {
+      cursor: progress;
+    }
+    html.route-loading .app .main,
+    html.route-loading .app.is-authed .main {
+      opacity: 0.55;
+      transition: opacity 160ms var(--ease-out);
+      pointer-events: none;
+    }
+
+    .empty {
+      color: var(--color-ink-2);
+      font-size: var(--text-sm);
+      padding: var(--space-sm) 0;
+    }
+
+    .hidden { display: none !important; }
+  
+
+/* Estable channel — functional, neat, low style */
+body.demo-old {
+  --color-paper: #fff;
+  --color-paper-2: #f0f0f0;
+  --color-paper-3: #e4e4e4;
+  --color-ink: #222;
+  --color-ink-2: #555;
+  --color-rule: #ccc;
+  --color-accent: #335588;
+  --color-accent-ink: #fff;
+  --color-accent-soft: #d9e2ec;
+  --color-focus: #335588;
+  --color-danger: #a33;
+  --font-display: Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, 'Courier New', monospace;
+  --radius-card: 0;
+  --radius-input: 0;
+  --app-frame: 0;
+  --app-radius: 0;
+  --ease-out: linear;
+  --dur-short: 0ms;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f0f0f0;
+  color: #222;
+  padding: 0;
+  line-height: 1.4;
+}
+
+html:has(body.demo-old) {
+  background: #f0f0f0;
+}
+
+body.demo-old h1,
+body.demo-old h2,
+body.demo-old h3 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  letter-spacing: 0;
+}
+
+body.demo-old .app-shell {
+  border-radius: 0;
+  background: #f0f0f0;
+}
+
+body.demo-old .app.is-authed {
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+body.demo-old .sidebar {
+  background: #e8eef5;
+  border-right: 1px solid #99a;
+}
+
+body.demo-old .brand-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+body.demo-old .brand-logo {
+  border-radius: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+body.demo-old .nav-btn {
+  border-radius: 0;
+  color: #003399;
+  text-decoration: underline;
+  background: transparent;
+  padding: 0.4rem 0.35rem;
+}
+
+body.demo-old .nav-btn:hover {
+  background: #dce6f0;
+  color: #003399;
+}
+
+body.demo-old .nav-btn.active {
+  background: #dce6f0;
+  color: #000;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+body.demo-old .btn {
+  border-radius: 0;
+  font-weight: normal;
+  border: 1px solid #666;
+  background: #e8e8e8;
+  color: #222;
+  transition: none;
+  box-shadow: none;
+}
+
+body.demo-old .btn:hover {
+  filter: none;
+  background: #ddd;
+}
+
+body.demo-old .btn:active {
+  transform: none;
+}
+
+body.demo-old .btn:not(.btn-outline):not(.btn-danger):not(.btn-sm) {
+  background: #335588;
+  border-color: #274066;
+  color: #fff;
+}
+
+body.demo-old .btn:not(.btn-outline):not(.btn-danger):not(.btn-sm):hover {
+  background: #274066;
+}
+
+body.demo-old .btn-outline {
+  background: #fff;
+  color: #222;
+  border-color: #999;
+}
+
+body.demo-old .btn-outline:hover {
+  background: #f3f3f3;
+  color: #222;
+  border-color: #666;
+  filter: none;
+}
+
+body.demo-old .btn-danger {
+  background: #a33;
+  border-color: #822;
+  color: #fff;
+}
+
+body.demo-old .btn-sm {
+  background: #e8e8e8;
+  color: #222;
+  border-color: #999;
+}
+
+body.demo-old .surface,
+body.demo-old .doctor-card,
+body.demo-old .booking-card,
+body.demo-old .auth-card {
+  border-radius: 0;
+  border: 1px solid #999;
+  box-shadow: none;
+  background: #fff;
+}
+
+body.demo-old input,
+body.demo-old select,
+body.demo-old textarea {
+  border-radius: 0;
+  border: 1px solid #999;
+  background: #fff;
+}
+
+body.demo-old .demo-chip-btn {
+  border-radius: 0;
+  background: #666;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: bold;
+  box-shadow: none;
+}
+
+body.demo-old .demo-panel {
+  border-radius: 0;
+  border: 1px solid #666;
+}
+
+body.demo-old .page-header h1,
+body.demo-old .welcome-title,
+body.demo-old .home-hero h1 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #003366;
+}
+
+body.demo-old .hint,
+body.demo-old .muted {
+  color: #555;
+  font-size: 0.875rem;
+}
+
+body.demo-old .main {
+  background: #fff;
+}
+
+body.demo-old .sidebar-foot {
+  border-top: 1px solid #99a;
+  font-size: 0.8rem;
+}
+
+body.demo-old .cal-day,
+body.demo-old .slot-chip,
+body.demo-old .time-chip,
+body.demo-old .pill,
+body.demo-old .chip {
+  border-radius: 0;
+}
+
+body.demo-old .mock-picker-btn {
+  border-radius: 0;
+}
+
+/* Flatten common interactive polish */
+body.demo-old button.brand:hover .brand-logo {
+  filter: none;
+}
+
+body.demo-old .route-loader-bar {
+  background: #335588;
+}
+
+/* No motion in estable */
+body.demo-old,
+body.demo-old *,
+body.demo-old *::before,
+body.demo-old *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+body.demo-old .page.active {
+  animation: none !important;
+}
+
+body.demo-old .route-loader,
+html.track-estable .route-loader {
+  display: none !important;
+}
+html.route-loading body.demo-old .app .main,
+html.route-loading body.demo-old .app.is-authed .main {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+@media (max-width: 1199px) {
+  body.demo-old .app.is-authed .sidebar {
+    background: #e8eef5;
+    border-right: 1px solid #99a;
+  }
+}
+
+  </style>
+</head>
+<body class="demo-old">
+  <div class="app-shell">
+  <div class="demo-chip">
+    <button type="button" class="demo-chip-btn" id="demo-toggle" aria-expanded="false" aria-controls="demo-panel">
+      Demo
+    </button>
+    <div class="demo-panel" id="demo-panel" role="dialog" aria-label="Información de la demo">
+      <p><strong>DEMO paciente</strong> — HTML estático, sin backend.</p>
+      <p>Archivo único para compartir — canal estable, rol paciente.</p>
+      <button type="button" class="btn btn-sm" id="reset-demo">Reiniciar demo</button>
+    </div>
+  </div>
+
+  <div class="app is-authed" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navegación">
+      <button type="button" class="brand" id="brand-home" aria-label="Ir al inicio">
+        <img class="brand-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlNhbmF0b3JpbyBJbnRlZ3JhbCBTYW4gQmVuaXRvIj4KICA8dGl0bGU+U2FuYXRvcmlvIEludGVncmFsIFNhbiBCZW5pdG88L3RpdGxlPgogIDxkZWZzPgogICAgPHBhdGggaWQ9ImFyYy10b3AiIGQ9Ik0gOTIsMjU2IEEgMTY0LDE2NCAwIDAgMSA0MjAsMjU2IiBmaWxsPSJub25lIi8+CiAgICA8cGF0aCBpZD0iYXJjLWJvdHRvbSIgZD0iTSAxMjQsMjU2IEEgMTY0LDE2NCAwIDAgMCAzODgsMjU2IiBmaWxsPSJub25lIi8+CiAgPC9kZWZzPgoKICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjI0NiIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMjMxRjUyIiBzdHJva2Utd2lkdGg9IjUuNSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTgwIiBmaWxsPSJub25lIiBzdHJva2U9IiMyMzFGNTIiIHN0cm9rZS13aWR0aD0iNC41Ii8+CgogIDx0ZXh0IGZpbGw9IiMyMzFGNTIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI1IiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMi4yIj4KICAgIDx0ZXh0UGF0aCBocmVmPSIjYXJjLXRvcCIgc3RhcnRPZmZzZXQ9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U0FOQVRPUklPIElOVEVHUkFMPC90ZXh0UGF0aD4KICA8L3RleHQ+CiAgPHRleHQgZmlsbD0iIzIzMUY1MiIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjUiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIzLjIiPgogICAgPHRleHRQYXRoIGhyZWY9IiNhcmMtYm90dG9tIiBzdGFydE9mZnNldD0iNTAlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TQU4gQkVOSVRPPC90ZXh0UGF0aD4KICA8L3RleHQ+CgogIDwhLS0gQ2hlc3RwaWVjZSAtLT4KICA8Y2lyY2xlIGN4PSIxNDgiIGN5PSIzMTgiIHI9IjI3IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iOCIvPgogIDxjaXJjbGUgY3g9IjE0OCIgY3k9IjMxOCIgcj0iMTEiIGZpbGw9IiNFMzA2MTMiLz4KCiAgPCEtLSBTdGV0aG9zY29wZSB0dWJpbmcgKyBmYW1pbHkgc2lsaG91ZXR0ZXMgKyBiaW5hdXJhbHMgLS0+CiAgPHBhdGgKICAgIGZpbGw9Im5vbmUiCiAgICBzdHJva2U9IiNFMzA2MTMiCiAgICBzdHJva2Utd2lkdGg9IjguNSIKICAgIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAgIHN0cm9rZS1saW5lam9pbj0icm91bmQiCiAgICBkPSIKICAgICAgTSAxNzUgMzE4CiAgICAgIEMgMTk2IDMxOCAyMDggMjk4IDIxNCAyODAKICAgICAgTCAyMjAgMjYyCiAgICAgIEwgMjIwIDMwOAogICAgICBDIDIyMCAzMjAgMjMyIDMyNiAyNDQgMzIwCiAgICAgIEwgMjQ4IDI2MgogICAgICBMIDI1NiAyNTIKICAgICAgTCAyNjQgMjYyCiAgICAgIEwgMjY0IDMwMAogICAgICBDIDI2NCAzMTIgMjc2IDMxOCAyODggMzEwCiAgICAgIEwgMjkyIDI1OAogICAgICBMIDMwOCAyNDYKICAgICAgTCAzMjggMjcwCiAgICAgIEwgMzQyIDMwOAogICAgICBDIDM1MCAzMjIgMzY4IDMyNCAzODQgMzE2CiAgICAgIEMgNDA4IDMwNCA0MjQgMjc2IDQyMiAyNDgKICAgICAgQyA0MjAgMjEwIDM5NiAxODIgMzYwIDE3MgogICAgICBDIDMzNiAxNjYgMzE0IDE3NCAzMDAgMTkyCiAgICAgIEMgMjg4IDIwOCAyOTAgMjI4IDMwNCAyNDAKICAgICIKICAvPgoKICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAgICAgICBkPSJNIDMwMCAxOTIgQyAyOTIgMTgwIDI5NCAxNjQgMzA4IDE1NiIvPgogIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UzMDYxMyIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogICAgICAgIGQ9Ik0gMzYwIDE3MiBDIDM3MiAxNjAgMzg4IDE2MCA0MDAgMTcyIi8+CgogIDxjaXJjbGUgY3g9IjIzNCIgY3k9IjIzNiIgcj0iMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UzMDYxMyIgc3Ryb2tlLXdpZHRoPSI4Ii8+CiAgPGNpcmNsZSBjeD0iMjc2IiBjeT0iMjI4IiByPSIxMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTMwNjEzIiBzdHJva2Utd2lkdGg9IjgiLz4KICA8Y2lyY2xlIGN4PSIzMTgiIGN5PSIyMzAiIHI9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iOCIvPgo8L3N2Zz4K" width="36" height="36" alt="" />
+        <span class="brand-label"><span>Sanatorio integral</span><span>San Benito</span></span>
+      </button>
+      <div class="sidebar-panel sidebar-panel--nav" id="sidebar-nav-panel">
+        <nav class="nav">
+          <button type="button" class="nav-btn" data-nav="doctors">Doctores</button>
+          <button type="button" class="nav-btn" data-nav="my">Mis turnos</button>
+          <button type="button" class="nav-btn" data-nav="book">Reservar turno</button>
+        </nav>
+        <div class="sidebar-foot sidebar-foot--inline">
+          <strong id="user-name">Juan Paciente</strong>
+          <span>Paciente · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-panel sidebar-panel--user" id="sidebar-user-panel" hidden>
+        <div class="sidebar-foot">
+          <strong id="user-name-mobile">Juan Paciente</strong>
+          <span>Paciente · demo</span>
+          <button type="button" class="btn btn-outline btn-sm logout-btn" style="margin-top:0.75rem;width:100%">Cerrar sesión</button>
+        </div>
+      </div>
+      <div class="sidebar-rail">
+        <button type="button" class="mobile-user-btn" id="mobile-user-btn" aria-expanded="false" aria-controls="sidebar-user-panel" aria-label="Abrir sesión">
+          <span class="user-avatar" aria-hidden="true">JP</span>
+        </button>
+        <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-expanded="false" aria-controls="sidebar-nav-panel" aria-label="Abrir menú">
+          <span class="hamburger" aria-hidden="true"></span>
+        </button>
+      </div>
+    </aside>
+
+    <button type="button" class="nav-backdrop" id="nav-backdrop" tabindex="-1" aria-hidden="true"></button>
+
+    <main class="main">
+      <div class="flash" id="flash" role="status"></div>
+
+      <!-- HOME -->
+      <section class="page" id="page-home">
+        <div class="home-hero">
+          <div class="home-watermark" aria-hidden="true">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlNhbmF0b3JpbyBJbnRlZ3JhbCBTYW4gQmVuaXRvIj4KICA8dGl0bGU+U2FuYXRvcmlvIEludGVncmFsIFNhbiBCZW5pdG88L3RpdGxlPgogIDxkZWZzPgogICAgPHBhdGggaWQ9ImFyYy10b3AiIGQ9Ik0gOTIsMjU2IEEgMTY0LDE2NCAwIDAgMSA0MjAsMjU2IiBmaWxsPSJub25lIi8+CiAgICA8cGF0aCBpZD0iYXJjLWJvdHRvbSIgZD0iTSAxMjQsMjU2IEEgMTY0LDE2NCAwIDAgMCAzODgsMjU2IiBmaWxsPSJub25lIi8+CiAgPC9kZWZzPgoKICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjI0NiIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjMjMxRjUyIiBzdHJva2Utd2lkdGg9IjUuNSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTgwIiBmaWxsPSJub25lIiBzdHJva2U9IiMyMzFGNTIiIHN0cm9rZS13aWR0aD0iNC41Ii8+CgogIDx0ZXh0IGZpbGw9IiMyMzFGNTIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI1IiBmb250LXdlaWdodD0iNzAwIiBsZXR0ZXItc3BhY2luZz0iMi4yIj4KICAgIDx0ZXh0UGF0aCBocmVmPSIjYXJjLXRvcCIgc3RhcnRPZmZzZXQ9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U0FOQVRPUklPIElOVEVHUkFMPC90ZXh0UGF0aD4KICA8L3RleHQ+CiAgPHRleHQgZmlsbD0iIzIzMUY1MiIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjUiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIzLjIiPgogICAgPHRleHRQYXRoIGhyZWY9IiNhcmMtYm90dG9tIiBzdGFydE9mZnNldD0iNTAlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5TQU4gQkVOSVRPPC90ZXh0UGF0aD4KICA8L3RleHQ+CgogIDwhLS0gQ2hlc3RwaWVjZSAtLT4KICA8Y2lyY2xlIGN4PSIxNDgiIGN5PSIzMTgiIHI9IjI3IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iOCIvPgogIDxjaXJjbGUgY3g9IjE0OCIgY3k9IjMxOCIgcj0iMTEiIGZpbGw9IiNFMzA2MTMiLz4KCiAgPCEtLSBTdGV0aG9zY29wZSB0dWJpbmcgKyBmYW1pbHkgc2lsaG91ZXR0ZXMgKyBiaW5hdXJhbHMgLS0+CiAgPHBhdGgKICAgIGZpbGw9Im5vbmUiCiAgICBzdHJva2U9IiNFMzA2MTMiCiAgICBzdHJva2Utd2lkdGg9IjguNSIKICAgIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAgIHN0cm9rZS1saW5lam9pbj0icm91bmQiCiAgICBkPSIKICAgICAgTSAxNzUgMzE4CiAgICAgIEMgMTk2IDMxOCAyMDggMjk4IDIxNCAyODAKICAgICAgTCAyMjAgMjYyCiAgICAgIEwgMjIwIDMwOAogICAgICBDIDIyMCAzMjAgMjMyIDMyNiAyNDQgMzIwCiAgICAgIEwgMjQ4IDI2MgogICAgICBMIDI1NiAyNTIKICAgICAgTCAyNjQgMjYyCiAgICAgIEwgMjY0IDMwMAogICAgICBDIDI2NCAzMTIgMjc2IDMxOCAyODggMzEwCiAgICAgIEwgMjkyIDI1OAogICAgICBMIDMwOCAyNDYKICAgICAgTCAzMjggMjcwCiAgICAgIEwgMzQyIDMwOAogICAgICBDIDM1MCAzMjIgMzY4IDMyNCAzODQgMzE2CiAgICAgIEMgNDA4IDMwNCA0MjQgMjc2IDQyMiAyNDgKICAgICAgQyA0MjAgMjEwIDM5NiAxODIgMzYwIDE3MgogICAgICBDIDMzNiAxNjYgMzE0IDE3NCAzMDAgMTkyCiAgICAgIEMgMjg4IDIwOCAyOTAgMjI4IDMwNCAyNDAKICAgICIKICAvPgoKICA8cGF0aCBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iMTAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAgICAgICBkPSJNIDMwMCAxOTIgQyAyOTIgMTgwIDI5NCAxNjQgMzA4IDE1NiIvPgogIDxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UzMDYxMyIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogICAgICAgIGQ9Ik0gMzYwIDE3MiBDIDM3MiAxNjAgMzg4IDE2MCA0MDAgMTcyIi8+CgogIDxjaXJjbGUgY3g9IjIzNCIgY3k9IjIzNiIgcj0iMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0UzMDYxMyIgc3Ryb2tlLXdpZHRoPSI4Ii8+CiAgPGNpcmNsZSBjeD0iMjc2IiBjeT0iMjI4IiByPSIxMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTMwNjEzIiBzdHJva2Utd2lkdGg9IjgiLz4KICA8Y2lyY2xlIGN4PSIzMTgiIGN5PSIyMzAiIHI9IjE0IiBmaWxsPSJub25lIiBzdHJva2U9IiNFMzA2MTMiIHN0cm9rZS13aWR0aD0iOCIvPgo8L3N2Zz4K" alt="" />
+          </div>
+          <h1 id="home-greeting">Hola</h1>
+          <p>¿Cómo podemos ayudarte hoy?</p>
+          <div class="home-cards">
+            <button type="button" class="home-card" data-nav="doctors">
+              <h2>Doctores</h2>
+              <p>Buscá profesionales por especialidad o nombre.</p>
+              <span class="home-card-go">Ver doctores →</span>
+            </button>
+            <button type="button" class="home-card" data-nav="my">
+              <h2>Mis turnos</h2>
+              <p>Revisá, organizá o cancelá tus reservas.</p>
+              <span class="home-card-go">Ver mis turnos →</span>
+            </button>
+            <button type="button" class="home-card" data-nav="book">
+              <h2>Reservar turno</h2>
+              <p>Elegí especialidad, doctor y horario en tres pasos.</p>
+              <span class="home-card-go">Reservar →</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- DOCTORS -->
+      <section class="page" id="page-doctors">
+        <header class="page-header">
+          <div>
+            <h1>Doctores</h1>
+            <p>Elegí especialidad o buscá por nombre.</p>
+          </div>
+        </header>
+        <div class="center-stage">
+          <form class="filters" id="doctors-filter">
+            <div class="field" style="margin:0">
+              <label for="specialty">Especialidad</label>
+              <select id="specialty"></select>
+            </div>
+            <div class="field" style="margin:0">
+              <label for="doctor-name">Nombre</label>
+              <input id="doctor-name" type="search" placeholder="Ej. Ana" />
+            </div>
+            <button type="submit" class="btn">Buscar</button>
+          </form>
+          <div class="doctor-results">
+            <div id="doctors-list" class="doctor-grid"></div>
+            <p class="empty" id="doctors-empty">Seleccioná una especialidad o escribí un nombre para ver profesionales.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLOTS -->
+      <section class="page" id="page-slots">
+        <header class="page-header page-header--back-title">
+          <div class="page-header-copy">
+            <div class="page-back-slot">
+              <button type="button" class="back-link" data-go="doctors">← Atrás</button>
+            </div>
+            <h1>Turnos disponibles</h1>
+            <p id="slots-subtitle">—</p>
+          </div>
+        </header>
+        <div class="agenda">
+          <div class="cal" id="slots-cal"></div>
+          <div class="panel" id="slots-panel"></div>
+        </div>
+      </section>
+
+      <!-- BOOK WIZARD -->
+      <section class="page" id="page-book">
+        <header class="page-header page-header--book">
+          <div class="page-header-copy">
+            <div class="page-back-slot" id="book-back-slot"></div>
+            <h1>Reservar turno</h1>
+            <div class="steps" id="book-steps" aria-label="Progreso de reserva">
+              <div class="step-pill" data-step="1">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Especialidad</span>
+              </div>
+              <div class="step-pill" data-step="2">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Doctor</span>
+              </div>
+              <div class="step-pill" data-step="3">
+                <span class="step-node" aria-hidden="true"></span>
+                <span class="step-label">Horario</span>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div id="book-body"></div>
+      </section>
+
+      <!-- MY APPOINTMENTS -->
+      <section class="page" id="page-my">
+        <header class="page-header">
+          <div>
+            <h1>Mis turnos</h1>
+            <p id="my-subtitle">Tus reservas próximas.</p>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="my-all-btn">Ver calendario</button>
+            <button type="button" class="btn btn-sm" data-nav="book">Reservar turno</button>
+          </div>
+        </header>
+        <div id="my-body"></div>
+      </section>
+    </main>
+  </div>
+  </div>
+
+  <script>
+(() => {
+  const DELAY_MS = 900;
+
+  function isEstable() { return true; }
+
+  function ensure() {
+    let root = document.getElementById('route-loader');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'route-loader';
+    root.className = 'route-loader';
+    root.setAttribute('aria-hidden', 'true');
+    root.innerHTML = `
+      <div class="route-loader-track">
+        <div class="route-loader-bar"></div>
+      </div>
+    `;
+    document.body.appendChild(root);
+    return root;
+  }
+
+  let pending = null;
+  let token = 0;
+
+  function startBar() {
+    const root = ensure();
+    const bar = root.querySelector('.route-loader-bar');
+    root.classList.add('is-on');
+    document.documentElement.classList.add('route-loading');
+    root.setAttribute('aria-busy', 'true');
+    bar.style.animation = 'none';
+    void bar.offsetWidth;
+    bar.style.animation = '';
+    return root;
+  }
+
+  function stopBar(root) {
+    root.classList.remove('is-on');
+    document.documentElement.classList.remove('route-loading');
+    root.removeAttribute('aria-busy');
+  }
+
+  function run(callback, { keep = false } = {}) {
+    if (isEstable()) {
+      callback();
+      return;
+    }
+
+    const root = startBar();
+    const my = ++token;
+    if (pending) clearTimeout(pending);
+
+    pending = setTimeout(() => {
+      pending = null;
+      if (my !== token) return;
+      try {
+        callback();
+      } finally {
+        if (!keep) stopBar(root);
+      }
+    }, DELAY_MS);
+  }
+
+  /** Full-page navigation: keep the bar until unload. */
+  function navigate(href) {
+    if (isEstable()) {
+      location.href = href;
+      return;
+    }
+    run(() => {
+      location.href = href;
+    }, { keep: true });
+  }
+
+  window.DemoRouteLoader = { run, navigate, DELAY_MS };
+})();
+
+</script>
+<script>
+(() => {
+  const OPEN_CLASS = 'is-open';
+  let openPicker = null;
+
+  function close(picker) {
+    if (!picker) return;
+    picker.classList.remove(OPEN_CLASS);
+    const btn = picker.querySelector('.mock-picker-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    if (openPicker === picker) openPicker = null;
+  }
+
+  function closeAll() {
+    document.querySelectorAll(`.mock-picker.${OPEN_CLASS}`).forEach(close);
+  }
+
+  function normalizeItems(items) {
+    return (items || []).map((item) => {
+      if (typeof item === 'string') return { value: item, label: item, meta: '' };
+      return {
+        value: String(item.value ?? ''),
+        label: String(item.label ?? item.value ?? ''),
+        meta: String(item.meta ?? ''),
+      };
+    }).filter((item) => item.value);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function applyValue(field, value) {
+    if (field.tagName === 'SELECT') {
+      const options = Array.from(field.options);
+      const match = options.find((o) => o.value === value)
+        || options.find((o) => o.textContent.trim() === value)
+        || options.find((o) => o.textContent.trim().toLowerCase().includes(value.toLowerCase()));
+      if (match) field.value = match.value;
+      else field.value = value;
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+    field.value = value;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function filterItems(items, q) {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter((item) =>
+      item.label.toLowerCase().includes(needle)
+      || item.value.toLowerCase().includes(needle)
+      || item.meta.toLowerCase().includes(needle));
+  }
+
+  function renderList(listEl, items, field, picker) {
+    if (!items.length) {
+      listEl.innerHTML = '<li class="mock-picker-empty">Sin coincidencias</li>';
+      return;
+    }
+    listEl.innerHTML = items.map((item, i) => `
+      <li>
+        <button type="button" class="mock-picker-option" data-idx="${i}">
+          <span class="mock-picker-option-label">${escapeHtml(item.label)}</span>
+          ${item.meta ? `<span class="mock-picker-option-meta">${escapeHtml(item.meta)}</span>` : ''}
+        </button>
+      </li>
+    `).join('');
+    listEl.querySelectorAll('.mock-picker-option').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = items[Number(btn.dataset.idx)];
+        if (!item) return;
+        applyValue(field, item.value);
+        close(picker);
+        field.focus();
+      });
+    });
+  }
+
+  function findPicker(field) {
+    const host = field.closest('.field') || field.parentElement;
+    return host ? host.querySelector('.mock-picker') : null;
+  }
+
+  function buildPicker(title) {
+    const picker = document.createElement('div');
+    picker.className = 'mock-picker';
+    picker.innerHTML = `
+      <button type="button" class="mock-picker-btn" aria-expanded="false" aria-haspopup="dialog" title="Datos de prueba">
+        <span aria-hidden="true">?</span>
+        <span class="sr-only">Ver datos de prueba</span>
+      </button>
+      <div class="mock-picker-pop" role="dialog" aria-label="${escapeHtml(title)}">
+        <p class="mock-picker-title">${escapeHtml(title)}</p>
+        <input type="search" class="mock-picker-search" placeholder="Buscar…" autocomplete="off" />
+        <ul class="mock-picker-list"></ul>
+      </div>
+    `;
+    return picker;
+  }
+
+  function bindPicker(picker, field) {
+    if (picker.dataset.bound) return;
+    picker.dataset.bound = '1';
+
+    const btn = picker.querySelector('.mock-picker-btn');
+    const search = picker.querySelector('.mock-picker-search');
+    const list = picker.querySelector('.mock-picker-list');
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const willOpen = !picker.classList.contains(OPEN_CLASS);
+      closeAll();
+      if (!willOpen) return;
+      picker.classList.add(OPEN_CLASS);
+      btn.setAttribute('aria-expanded', 'true');
+      openPicker = picker;
+      search.value = '';
+      renderList(list, picker._mockCatalog, field, picker);
+      search.focus();
+    });
+
+    search.addEventListener('input', () => {
+      renderList(list, filterItems(picker._mockCatalog, search.value), field, picker);
+    });
+
+    search.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close(picker);
+        btn.focus();
+      }
+    });
+  }
+
+  /**
+   * Attach a searchable mock-data floater next to an input/select.
+   * Idempotent: re-calling updates the catalog.
+   */
+  function attach(field, items, opts = {}) {
+    if (!field || field.dataset.mockPicker === 'skip') return null;
+    const catalog = normalizeItems(typeof items === 'function' ? items() : items);
+    if (!catalog.length) return null;
+
+    let picker = findPicker(field);
+    if (!picker) {
+      const title = opts.title || 'Datos de prueba';
+      picker = buildPicker(title);
+      const fieldEl = field.closest('.field');
+      const label = fieldEl ? fieldEl.querySelector(':scope > label') : null;
+
+      if (label) {
+        let head = fieldEl.querySelector(':scope > .mock-picker-head');
+        if (!head) {
+          head = document.createElement('div');
+          head.className = 'mock-picker-head';
+          label.replaceWith(head);
+          head.appendChild(label);
+        }
+        head.appendChild(picker);
+      } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'mock-picker-control';
+        field.before(wrap);
+        wrap.appendChild(field);
+        wrap.appendChild(picker);
+      }
+      field.dataset.mockPicker = '1';
+      bindPicker(picker, field);
+    }
+
+    picker._mockCatalog = catalog;
+    const titleEl = picker.querySelector('.mock-picker-title');
+    if (titleEl && opts.title) titleEl.textContent = opts.title;
+    return picker;
+  }
+
+  function attachMany(pairs) {
+    pairs.forEach((pair) => {
+      let field = pair[0];
+      const items = pair[1];
+      const opts = pair[2];
+      if (typeof field === 'string') field = document.getElementById(field);
+      attach(field, items, opts);
+    });
+  }
+
+  document.addEventListener('pointerdown', (e) => {
+    if (!openPicker) return;
+    if (e.target.closest('.mock-picker')) return;
+    closeAll();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openPicker) closeAll();
+  });
+
+  window.DemoMockPicker = { attach, attachMany, closeAll };
+})();
+
+</script>
+<script>
+    /* ========== Fake data ========== */
+    const PATIENT = {
+      name: 'Juan Paciente',
+      email: 'juan@sanbenito.test',
+      password: 'password',
+      dni: '30111222',
+    };
+
+    const SPECIALTIES = [
+      { id: 1, name: 'Clínica médica' },
+      { id: 2, name: 'Cardiología' },
+      { id: 3, name: 'Pediatría' },
+      { id: 4, name: 'Traumatología' },
+      { id: 5, name: 'Dermatología' },
+      { id: 6, name: 'Ginecología' },
+      { id: 7, name: 'Oftalmología' },
+      { id: 8, name: 'Neurología' },
+    ];
+
+    const DOCTORS = [
+      { id: 1, name: 'Dra. Ana Pérez', specialtyId: 1, specialty: 'Clínica médica' },
+      { id: 2, name: 'Dr. Luis Gómez', specialtyId: 2, specialty: 'Cardiología' },
+      { id: 3, name: 'Dra. María López', specialtyId: 3, specialty: 'Pediatría' },
+      { id: 4, name: 'Dr. Martín Ríos', specialtyId: 1, specialty: 'Clínica médica' },
+      { id: 5, name: 'Dra. Valentina Sosa', specialtyId: 2, specialty: 'Cardiología' },
+      { id: 6, name: 'Dr. Pablo Fernández', specialtyId: 4, specialty: 'Traumatología' },
+      { id: 7, name: 'Dra. Camila Herrera', specialtyId: 5, specialty: 'Dermatología' },
+      { id: 8, name: 'Dra. Florencia Díaz', specialtyId: 6, specialty: 'Ginecología' },
+      { id: 9, name: 'Dr. Diego Álvarez', specialtyId: 7, specialty: 'Oftalmología' },
+      { id: 10, name: 'Dra. Sofía Navarro', specialtyId: 8, specialty: 'Neurología' },
+      { id: 11, name: 'Dr. Andrés Molina', specialtyId: 3, specialty: 'Pediatría' },
+      { id: 12, name: 'Dra. Lucía Benítez', specialtyId: 1, specialty: 'Clínica médica' },
+      { id: 13, name: 'Dr. Julián Castro', specialtyId: 4, specialty: 'Traumatología' },
+      { id: 14, name: 'Dra. Paula Romero', specialtyId: 5, specialty: 'Dermatología' },
+      { id: 15, name: 'Dr. Nicolás Aguirre', specialtyId: 2, specialty: 'Cardiología' },
+      { id: 16, name: 'Dra. Elena Quiroga', specialtyId: 8, specialty: 'Neurología' },
+    ];
+
+    /** Seed available slots for the next ~3 weeks (weekdays). */
+    function seedSlots() {
+      const slots = [];
+      let id = 1;
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      for (let d = 1; d <= 21; d++) {
+        const day = new Date(start);
+        day.setDate(start.getDate() + d);
+        const wd = day.getDay();
+        if (wd === 0 || wd === 6) continue;
+        for (const doc of DOCTORS) {
+          const hours = doc.id % 2 === 0 ? [9, 10, 11] : [14, 15, 16];
+          for (const h of hours) {
+            if ((d + doc.id + h) % 5 !== 0) continue; // sparse with more doctors
+            const s = new Date(day);
+            s.setHours(h, 0, 0, 0);
+            const e = new Date(s);
+            e.setMinutes(20);
+            slots.push({
+              id: id++,
+              doctorId: doc.id,
+              startsAt: s.toISOString(),
+              endsAt: e.toISOString(),
+              status: 'available',
+            });
+          }
+        }
+      }
+      return slots;
+    }
+
+    const state = {
+      route: 'home',
+      authed: false,
+      role: null,
+      flash: '',
+      slots: seedSlots(),
+      bookings: [],
+      doctorsFilter: { specialty: '', name: '' },
+      slotsDoctorId: null,
+      slotsDate: null,
+      book: { step: 1, specialtyId: null, doctorId: null, date: null },
+      myView: 'list', // list | calendar | day
+      myDate: null,
+      monthCursor: new Date(),
+    };
+
+    // Prefill one existing booking so Mis turnos isn't empty on first login
+    (function seedBooking() {
+      const slot = state.slots.find((s) => s.doctorId === 1 && s.status === 'available');
+      if (!slot) return;
+      slot.status = 'booked';
+      state.bookings.push({
+        id: slot.id,
+        doctorId: slot.doctorId,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+      });
+    })();
+
+    /* ========== Helpers ========== */
+    const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const DOW = ['D','L','M','X','J','V','S'];
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function dateKey(iso) {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+    function formatDateLabel(key) {
+      const [y, m, day] = key.split('-').map(Number);
+      const d = new Date(y, m - 1, day);
+      return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
+    function formatTime(iso) {
+      const d = new Date(iso);
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function doctorById(id) { return DOCTORS.find((d) => d.id === id); }
+    function showFlash(msg) {
+      state.flash = msg;
+      const el = document.getElementById('flash');
+      el.textContent = msg;
+      el.classList.toggle('show', Boolean(msg));
+      if (msg) setTimeout(() => { if (state.flash === msg) { state.flash = ''; el.classList.remove('show'); } }, 3200);
+    }
+
+    function persist() {
+      sessionStorage.setItem('sb-demo-old', JSON.stringify({
+        authed: state.authed,
+        role: state.role,
+        bookings: state.bookings,
+        slots: state.slots,
+        route: state.route,
+      }));
+    }
+    function restore() {
+      try {
+        const raw = sessionStorage.getItem('sb-demo-old');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        state.authed = !!data.authed;
+        state.role = data.role || null;
+        if (Array.isArray(data.slots)) state.slots = data.slots;
+        if (Array.isArray(data.bookings)) state.bookings = data.bookings;
+        if (data.route && data.authed) state.route = data.route;
+      } catch (_) { /* ignore */ }
+    }
+
+    function requirePatientSession() {
+      if (!state.authed || state.role !== 'patient') {
+        state.authed = true;
+        state.role = 'patient';
+        state.route = state.route && state.route !== 'welcome' && state.route !== 'login' ? state.route : 'home';
+        persist();
+      }
+      return true;
+    }
+
+    /* ========== Calendar ========== */
+    function buildMonthCells(cursor) {
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth();
+      const first = new Date(y, m, 1);
+      const startPad = first.getDay(); // Sunday-first
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const dayNum = i - startPad + 1;
+        if (dayNum < 1 || dayNum > daysInMonth) {
+          cells.push({ key: null, label: '', muted: true });
+        } else {
+          cells.push({
+            key: `${y}-${pad(m + 1)}-${pad(dayNum)}`,
+            label: String(dayNum),
+            muted: false,
+          });
+        }
+      }
+      return cells;
+    }
+
+    function renderCalendar(container, { markedKeys, selectedKey, onSelect, showLegend, legendEmpty, legendMarked }) {
+      const cursor = state.monthCursor;
+      const cells = buildMonthCells(cursor);
+      const title = `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
+      const emptyLabel = legendEmpty || 'Sin turnos';
+      const markedLabel = legendMarked || 'Con turnos';
+      container.innerHTML = `
+        <div class="cal-head">
+          <button type="button" class="btn btn-outline btn-sm" data-cal="-1">←</button>
+          <h2>${title}</h2>
+          <button type="button" class="btn btn-outline btn-sm" data-cal="1">→</button>
+        </div>
+        <div class="cal-grid">
+          ${DOW.map((d) => `<div class="cal-dow">${d}</div>`).join('')}
+          ${cells.map((c) => {
+            if (!c.key) return `<button type="button" class="day muted" disabled>&nbsp;</button>`;
+            const has = markedKeys.has(c.key);
+            const sel = selectedKey === c.key;
+            return `<button type="button" class="day${has ? ' has' : ''}${sel ? ' selected' : ''}" data-day="${c.key}">${c.label}</button>`;
+          }).join('')}
+        </div>
+        ${showLegend ? `<div class="legend"><span><i class="swatch"></i> ${emptyLabel}</span><span><i class="swatch has"></i> ${markedLabel}</span></div>` : ''}
+      `;
+      container.querySelector('[data-cal="-1"]').onclick = () => {
+        state.monthCursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1);
+        render();
+      };
+      container.querySelector('[data-cal="1"]').onclick = () => {
+        state.monthCursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        render();
+      };
+      container.querySelectorAll('[data-day]').forEach((btn) => {
+        btn.onclick = () => onSelect(btn.getAttribute('data-day'));
+      });
+    }
+
+    /* ========== Views ========== */
+    function renderDoctors() {
+      const { specialty, name } = state.doctorsFilter;
+      const list = document.getElementById('doctors-list');
+      const empty = document.getElementById('doctors-empty');
+      document.getElementById('specialty').value = specialty;
+      document.getElementById('doctor-name').value = name;
+
+      let doctors = [];
+      const hasSpecialty = specialty !== '';
+      const hasName = name.trim() !== '';
+      if (hasSpecialty || hasName) {
+        doctors = DOCTORS.filter((d) => {
+          const okSpec = !hasSpecialty || specialty === 'all' || String(d.specialtyId) === specialty;
+          const okName = !hasName || d.name.toLowerCase().includes(name.trim().toLowerCase());
+          return okSpec && okName;
+        });
+      }
+
+      if (!doctors.length) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        empty.textContent = hasSpecialty || hasName
+          ? 'No hay profesionales con ese filtro.'
+          : 'Seleccioná una especialidad o escribí un nombre para ver profesionales.';
+        return;
+      }
+      empty.classList.add('hidden');
+      list.innerHTML = doctors.map((d) => `
+        <article class="doctor-card" data-open-slots="${d.id}">
+          <h3>${d.name}</h3>
+          <p class="hint">${d.specialty}</p>
+          <button type="button" class="btn btn-sm" style="align-self:flex-start;margin-top:0.35rem">Ver turnos</button>
+        </article>
+      `).join('');
+      list.querySelectorAll('[data-open-slots]').forEach((el) => {
+        el.onclick = () => {
+          state.slotsDoctorId = Number(el.getAttribute('data-open-slots'));
+          state.slotsDate = null;
+          state.monthCursor = new Date();
+          go('slots');
+        };
+      });
+    }
+
+    function slotsForDoctor(doctorId) {
+      return state.slots
+        .filter((s) => s.doctorId === doctorId && s.status === 'available')
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+    }
+
+    function renderSlots() {
+      const doc = doctorById(state.slotsDoctorId);
+      if (!doc) { go('doctors'); return; }
+      document.getElementById('slots-subtitle').textContent = `${doc.name} · ${doc.specialty}. Elegí un día marcado.`;
+      const slots = slotsForDoctor(doc.id);
+      const byDate = new Map();
+      for (const s of slots) {
+        const k = dateKey(s.startsAt);
+        if (!byDate.has(k)) byDate.set(k, []);
+        byDate.get(k).push(s);
+      }
+      const marked = new Set(byDate.keys());
+      renderCalendar(document.getElementById('slots-cal'), {
+        markedKeys: marked,
+        selectedKey: state.slotsDate,
+        showLegend: true,
+        legendEmpty: 'Sin turnos',
+        legendMarked: 'Con turnos',
+        onSelect: (key) => { state.slotsDate = key; render(); },
+      });
+
+      const panel = document.getElementById('slots-panel');
+      if (!state.slotsDate) {
+        const upcomingDays = [...byDate.entries()].slice(0, 5);
+        panel.innerHTML = `
+          <h2 style="font-size:var(--text-lg)">Turnos próximos</h2>
+          <p class="hint" style="margin-top:0.25rem">Tocá uno para ver el día.</p>
+          ${upcomingDays.length ? `
+            <div class="panel-scroll">
+              ${upcomingDays.map(([k, list]) => `
+                <button type="button" class="list-row" data-pick-day="${k}">
+                  <p class="list-line">
+                    <strong style="text-transform:capitalize">${formatDateLabel(k)}</strong>
+                    <span class="muted"> · Disponible · ${list.length} turno${list.length === 1 ? '' : 's'}</span>
+                  </p>
+                </button>
+              `).join('')}
+            </div>
+          ` : '<p class="empty" style="margin-top:0.75rem">No hay turnos próximos disponibles.</p>'}
+        `;
+        panel.querySelectorAll('[data-pick-day]').forEach((b) => {
+          b.onclick = () => { state.slotsDate = b.getAttribute('data-pick-day'); render(); };
+        });
+        return;
+      }
+
+      const daySlots = byDate.get(state.slotsDate) || [];
+      panel.innerHTML = `
+        <button type="button" class="back-link" id="slots-back-day">← Atrás</button>
+        <h2 style="font-size:var(--text-xl);text-transform:capitalize">${formatDateLabel(state.slotsDate)}</h2>
+        <p class="hint">${daySlots.length ? `${daySlots.length} horario(s) disponible(s).` : 'No hay turnos disponibles este día.'}</p>
+        ${daySlots.length ? `
+          <div class="panel-scroll">
+            ${daySlots.map((s) => `
+              <div class="slot-row">
+                <p class="list-line">
+                  <span class="mono">${formatTime(s.startsAt)} — ${formatTime(s.endsAt)}</span>
+                  <span class="muted"> · ${doc.name}</span>
+                </p>
+                <button type="button" class="btn btn-sm" data-book="${s.id}">Reservar</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<p class="empty" style="margin-top:0.75rem">Sin turnos este día.</p>'}
+      `;
+      document.getElementById('slots-back-day').onclick = () => { state.slotsDate = null; render(); };
+      panel.querySelectorAll('[data-book]').forEach((b) => {
+        b.onclick = () => bookSlot(Number(b.getAttribute('data-book')));
+      });
+    }
+
+    function bookSlot(slotId) {
+      const slot = state.slots.find((s) => s.id === slotId && s.status === 'available');
+      if (!slot) {
+        showFlash('El turno ya no está disponible.');
+        render();
+        return;
+      }
+      slot.status = 'booked';
+      state.bookings.push({
+        id: slot.id,
+        doctorId: slot.doctorId,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+      });
+      state.bookings.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      persist();
+      showFlash('Turno reservado.');
+      state.myView = 'all';
+      state.myDate = null;
+      go('my');
+    }
+
+    function renderBookBackSlot() {
+      const header = document.querySelector('#page-book > .page-header');
+      const slot = document.getElementById('book-back-slot');
+      const pastFirst = state.book.step > 1;
+      header?.classList.toggle('page-header--back-title', pastFirst);
+      if (!pastFirst) {
+        slot.innerHTML = '';
+        return;
+      }
+      const prev = state.book.step - 1;
+      slot.innerHTML = `<button type="button" class="back-link" id="book-back">← Atrás</button>`;
+      document.getElementById('book-back').onclick = () => {
+        state.book.step = prev;
+        if (prev === 1) {
+          state.book.doctorId = null;
+          state.book.date = null;
+        }
+        if (prev === 2) state.book.date = null;
+        render();
+      };
+    }
+
+    function renderBook() {
+      const steps = document.querySelectorAll('#book-steps .step-pill');
+      steps.forEach((el) => {
+        const n = Number(el.dataset.step);
+        el.classList.toggle('on', n === state.book.step);
+        el.classList.toggle('done', n < state.book.step);
+        el.setAttribute('aria-current', n === state.book.step ? 'step' : 'false');
+      });
+      renderBookBackSlot();
+      const body = document.getElementById('book-body');
+
+      if (state.book.step === 1) {
+        body.innerHTML = `
+          <div class="center-stage">
+            <div class="doctor-results book-specialty-panel">
+              <div class="field" style="margin:0">
+                <label for="book-specialty">Especialidad</label>
+                <select id="book-specialty">
+                  <option value="">Seleccionar especialidad</option>
+                  ${SPECIALTIES.map((s) => `<option value="${s.id}" ${state.book.specialtyId === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+                </select>
+              </div>
+              <button type="button" class="btn book-next-btn" id="book-next-1" ${state.book.specialtyId ? '' : 'disabled'}>Continuar →</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('book-specialty').onchange = (e) => {
+          state.book.specialtyId = e.target.value ? Number(e.target.value) : null;
+          state.book.doctorId = null;
+          state.book.date = null;
+          render();
+        };
+        document.getElementById('book-next-1').onclick = () => {
+          if (!state.book.specialtyId) return;
+          state.book.step = 2;
+          render();
+        };
+        return;
+      }
+
+      if (state.book.step === 2) {
+        const docs = DOCTORS.filter((d) => d.specialtyId === state.book.specialtyId);
+        const spec = SPECIALTIES.find((s) => s.id === state.book.specialtyId);
+        body.innerHTML = `
+          <div class="center-stage">
+            <p class="hint" style="margin-bottom:var(--space-sm)">Especialidad: <strong>${spec?.name || ''}</strong></p>
+            <div class="doctor-results book-doctors-panel">
+              <div class="doctor-grid doctor-grid--3">
+                ${docs.map((d) => `
+                  <article class="doctor-card${state.book.doctorId === d.id ? ' is-selected' : ''}" data-pick-doc="${d.id}" role="button" tabindex="0" aria-pressed="${state.book.doctorId === d.id ? 'true' : 'false'}">
+                    <h3>${d.name}</h3>
+                    <p class="hint">${d.specialty}</p>
+                  </article>
+                `).join('')}
+              </div>
+              <button type="button" class="btn book-next-btn" id="book-next-2" ${state.book.doctorId ? '' : 'disabled'}>Continuar →</button>
+            </div>
+          </div>
+        `;
+        body.querySelectorAll('[data-pick-doc]').forEach((el) => {
+          const pick = () => {
+            state.book.doctorId = Number(el.getAttribute('data-pick-doc'));
+            state.book.date = null;
+            render();
+          };
+          el.onclick = pick;
+          el.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              pick();
+            }
+          };
+        });
+        document.getElementById('book-next-2').onclick = () => {
+          if (!state.book.doctorId) return;
+          state.book.step = 3;
+          state.monthCursor = new Date();
+          render();
+        };
+        return;
+      }
+
+      // step 3
+      const doc = doctorById(state.book.doctorId);
+      const slots = slotsForDoctor(doc.id);
+      const byDate = new Map();
+      for (const s of slots) {
+        const k = dateKey(s.startsAt);
+        if (!byDate.has(k)) byDate.set(k, []);
+        byDate.get(k).push(s);
+      }
+      body.innerHTML = `
+        <p class="hint" style="margin-bottom:var(--space-sm)">${doc.name} · ${doc.specialty}</p>
+        <div class="agenda">
+          <div class="cal" id="book-cal"></div>
+          <div class="panel" id="book-panel"></div>
+        </div>
+      `;
+      renderCalendar(document.getElementById('book-cal'), {
+        markedKeys: new Set(byDate.keys()),
+        selectedKey: state.book.date,
+        showLegend: true,
+        legendEmpty: 'Sin turnos',
+        legendMarked: 'Con turnos',
+        onSelect: (key) => { state.book.date = key; render(); },
+      });
+      const panel = document.getElementById('book-panel');
+      if (!state.book.date) {
+        const upcomingDays = [...byDate.entries()].slice(0, 5);
+        panel.innerHTML = `
+          <h2 style="font-size:var(--text-lg)">Turnos próximos</h2>
+          <p class="hint" style="margin-top:0.25rem">Tocá uno para ver el día.</p>
+          ${upcomingDays.length ? `
+            <div class="panel-scroll">
+              ${upcomingDays.map(([k, list]) => `
+                <button type="button" class="list-row" data-pick-day="${k}">
+                  <p class="list-line">
+                    <strong style="text-transform:capitalize">${formatDateLabel(k)}</strong>
+                    <span class="muted"> · Disponible · ${list.length} turno${list.length === 1 ? '' : 's'}</span>
+                  </p>
+                </button>
+              `).join('')}
+            </div>
+          ` : '<p class="empty" style="margin-top:0.75rem">No hay turnos disponibles.</p>'}
+        `;
+        panel.querySelectorAll('[data-pick-day]').forEach((b) => {
+          b.onclick = () => { state.book.date = b.getAttribute('data-pick-day'); render(); };
+        });
+      } else {
+        const daySlots = byDate.get(state.book.date) || [];
+        panel.innerHTML = `
+          <button type="button" class="back-link" id="book-clear-day">← Atrás</button>
+          <h2 style="font-size:var(--text-xl);text-transform:capitalize">${formatDateLabel(state.book.date)}</h2>
+          <p class="hint">${daySlots.length ? `${daySlots.length} horario(s) disponible(s).` : 'No hay turnos este día.'}</p>
+          ${daySlots.length ? `
+            <div class="panel-scroll">
+              ${daySlots.map((s) => `
+                <div class="slot-row">
+                  <p class="list-line">
+                    <span class="mono">${formatTime(s.startsAt)} — ${formatTime(s.endsAt)}</span>
+                    <span class="muted"> · ${doc.name}</span>
+                  </p>
+                  <button type="button" class="btn btn-sm" data-book="${s.id}">Reservar</button>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p class="empty" style="margin-top:0.75rem">Sin turnos este día.</p>'}
+        `;
+        document.getElementById('book-clear-day').onclick = () => { state.book.date = null; render(); };
+        panel.querySelectorAll('[data-book]').forEach((b) => {
+          b.onclick = () => {
+            bookSlot(Number(b.getAttribute('data-book')));
+            state.book = { step: 1, specialtyId: null, doctorId: null, date: null };
+          };
+        });
+      }
+    }
+
+    function renderMy() {
+      const body = document.getElementById('my-body');
+      const switchBtn = document.getElementById('my-all-btn');
+      const subtitle = document.getElementById('my-subtitle');
+      const bookings = [...state.bookings].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      const byDate = new Map();
+      for (const b of bookings) {
+        const k = dateKey(b.startsAt);
+        if (!byDate.has(k)) byDate.set(k, []);
+        byDate.get(k).push(b);
+      }
+
+      // Legacy views from older sessions
+      if (state.myView === 'all') state.myView = 'list';
+      if (state.myView === 'upcoming') state.myView = 'calendar';
+
+      const onList = state.myView === 'list';
+      switchBtn.textContent = onList ? 'Ver calendario' : 'Ver lista';
+      subtitle.textContent = onList
+        ? 'Tus reservas próximas.'
+        : 'Elegí un día en el calendario para ver el detalle.';
+      switchBtn.onclick = () => {
+        if (onList) {
+          state.myView = 'calendar';
+          state.myDate = null;
+        } else {
+          state.myView = 'list';
+          state.myDate = null;
+        }
+        render();
+      };
+
+      if (onList) {
+        body.innerHTML = `
+          <section class="surface">
+            <h2 style="font-size:var(--text-lg)">Próximos turnos</h2>
+            <p class="hint" style="margin-top:0.25rem">${bookings.length ? `${bookings.length} turno(s) próximo(s).` : 'No tenés turnos próximos.'}</p>
+            ${bookings.length ? `
+              <div class="panel-scroll" style="flex:none;overflow:visible;padding-top:0.75rem">
+                ${bookings.map((b) => {
+                  const doc = doctorById(b.doctorId);
+                  return `
+                    <div class="slot-row">
+                      <p class="list-line">
+                        <strong>${doc.name}</strong>
+                        <span class="muted"> · ${doc.specialty} · ${formatDateLabel(dateKey(b.startsAt))} · </span>
+                        <span class="mono">${formatTime(b.startsAt)} — ${formatTime(b.endsAt)}</span>
+                      </p>
+                      <button type="button" class="btn btn-danger btn-sm" data-cancel="${b.id}">Cancelar</button>
+                    </div>`;
+                }).join('')}
+              </div>
+            ` : '<p class="empty" style="margin-top:0.75rem">Sin turnos.</p>'}
+          </section>
+        `;
+        body.querySelectorAll('[data-cancel]').forEach((btn) => {
+          btn.onclick = () => cancelBooking(Number(btn.getAttribute('data-cancel')));
+        });
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="agenda">
+          <div class="cal" id="my-cal"></div>
+          <div class="panel" id="my-panel"></div>
+        </div>
+      `;
+      renderCalendar(document.getElementById('my-cal'), {
+        markedKeys: new Set(byDate.keys()),
+        selectedKey: state.myDate,
+        showLegend: true,
+        legendEmpty: 'Sin turnos',
+        legendMarked: 'Con turnos',
+        onSelect: (key) => { state.myDate = key; state.myView = 'day'; render(); },
+      });
+      const panel = document.getElementById('my-panel');
+
+      if (state.myView !== 'day' || !state.myDate) {
+        panel.innerHTML = `
+          <h2 style="font-size:var(--text-lg)">Calendario</h2>
+          <p class="hint" style="margin-top:0.25rem">Elegí un día marcado para ver tus turnos.</p>
+          <p class="empty" style="margin-top:0.75rem">${bookings.length ? `${bookings.length} turno(s) en total.` : 'No tenés turnos próximos.'}</p>
+        `;
+        return;
+      }
+
+      const dayList = byDate.get(state.myDate) || [];
+      panel.innerHTML = `
+        <button type="button" class="back-link" id="my-back-day">← Atrás</button>
+        <h2 style="font-size:var(--text-xl);text-transform:capitalize">${formatDateLabel(state.myDate)}</h2>
+        <p class="hint">${dayList.length ? `${dayList.length} turno(s) este día.` : 'No tenés turnos este día.'}</p>
+        ${dayList.length ? `
+          <div class="panel-scroll">
+            ${dayList.map((b) => {
+              const doc = doctorById(b.doctorId);
+              return `
+                <div class="slot-row">
+                  <p class="list-line">
+                    <strong>${doc.name}</strong>
+                    <span class="muted"> · ${doc.specialty} · </span>
+                    <span class="mono">${formatTime(b.startsAt)} — ${formatTime(b.endsAt)}</span>
+                  </p>
+                  <button type="button" class="btn btn-danger btn-sm" data-cancel="${b.id}">Cancelar</button>
+                </div>`;
+            }).join('')}
+          </div>
+        ` : '<p class="empty" style="margin-top:0.75rem">Sin turnos este día.</p>'}
+      `;
+      document.getElementById('my-back-day').onclick = () => { state.myDate = null; state.myView = 'calendar'; render(); };
+      panel.querySelectorAll('[data-cancel]').forEach((btn) => {
+        btn.onclick = () => cancelBooking(Number(btn.getAttribute('data-cancel')));
+      });
+    }
+
+    function cancelBooking(id) {
+      if (!confirm('¿Cancelar este turno?')) return;
+      const booking = state.bookings.find((b) => b.id === id);
+      if (!booking) return;
+      state.bookings = state.bookings.filter((b) => b.id !== id);
+      const slot = state.slots.find((s) => s.id === id);
+      if (slot) slot.status = 'available';
+      persist();
+      showFlash('Turno cancelado. El horario volvió a estar disponible.');
+      render();
+    }
+
+    /* ========== Router ========== */
+    function go(route) {
+      const navigate = () => {
+        state.route = route;
+        if (route === 'book') {
+          state.book = { step: 1, specialtyId: null, doctorId: null, date: null };
+        }
+        if (route === 'my') {
+          state.myView = 'list';
+          state.myDate = null;
+        }
+        persist();
+        render();
+        const scroller = document.querySelector('.app.is-authed .main') || document.querySelector('.app') || window;
+        if (scroller === window) {
+          window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+        } else {
+          scroller.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+        }
+      };
+      if (window.DemoRouteLoader) window.DemoRouteLoader.run(navigate);
+      else navigate();
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      app.classList.add('is-authed');
+
+      if (!['home', 'doctors', 'slots', 'book', 'my'].includes(state.route)) {
+        state.route = 'home';
+      }
+
+      app.classList.toggle('is-home', state.route === 'home');
+
+      document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+      const page = document.getElementById(`page-${state.route}`);
+      if (page) page.classList.add('active');
+
+      document.querySelectorAll('[data-nav]').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-nav') === state.route);
+      });
+
+      document.getElementById('user-name').textContent = PATIENT.name;
+      const userNameMobile = document.getElementById('user-name-mobile');
+      if (userNameMobile) userNameMobile.textContent = PATIENT.name;
+      const initials = PATIENT.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+      const avatar = document.querySelector('.user-avatar');
+      if (avatar) avatar.textContent = initials || 'U';
+      const firstName = PATIENT.name.split(' ')[0];
+      document.getElementById('home-greeting').textContent = `Hola, ${firstName}`;
+
+      if (state.route === 'doctors') renderDoctors();
+      if (state.route === 'slots') renderSlots();
+      if (state.route === 'book') renderBook();
+      if (state.route === 'my') renderMy();
+      wireMockPickers();
+    }
+
+    /* ========== Mobile nav / user drawers ========== */
+    const appEl = document.getElementById('app');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileUserBtn = document.getElementById('mobile-user-btn');
+    const userPanel = document.getElementById('sidebar-user-panel');
+    const navBackdrop = document.getElementById('nav-backdrop');
+
+    function syncBackdrop() {
+      const anyOpen = appEl.classList.contains('nav-open') || appEl.classList.contains('user-open');
+      navBackdrop.setAttribute('aria-hidden', anyOpen ? 'false' : 'true');
+    }
+    function setNavOpen(open) {
+      if (open) {
+        appEl.classList.remove('user-open');
+        mobileUserBtn.setAttribute('aria-expanded', 'false');
+        mobileUserBtn.setAttribute('aria-label', 'Abrir cuenta');
+        userPanel.setAttribute('hidden', '');
+      }
+      appEl.classList.toggle('nav-open', open);
+      mobileMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mobileMenuBtn.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+      syncBackdrop();
+    }
+    function setUserOpen(open) {
+      if (open) {
+        appEl.classList.remove('nav-open');
+        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        mobileMenuBtn.setAttribute('aria-label', 'Abrir menú');
+      }
+      appEl.classList.toggle('user-open', open);
+      mobileUserBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mobileUserBtn.setAttribute('aria-label', open ? 'Cerrar cuenta' : 'Abrir cuenta');
+      if (open) userPanel.removeAttribute('hidden');
+      else userPanel.setAttribute('hidden', '');
+      syncBackdrop();
+    }
+    function closeDrawers() {
+      appEl.classList.remove('nav-open', 'user-open');
+      mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      mobileMenuBtn.setAttribute('aria-label', 'Abrir menú');
+      mobileUserBtn.setAttribute('aria-expanded', 'false');
+      mobileUserBtn.setAttribute('aria-label', 'Abrir cuenta');
+      userPanel.setAttribute('hidden', '');
+      syncBackdrop();
+    }
+    function toggleNav() {
+      setNavOpen(!appEl.classList.contains('nav-open'));
+    }
+    function toggleUser() {
+      setUserOpen(!appEl.classList.contains('user-open'));
+    }
+    mobileMenuBtn.addEventListener('click', toggleNav);
+    mobileUserBtn.addEventListener('click', toggleUser);
+    navBackdrop.addEventListener('click', closeDrawers);
+
+    /* ========== Events ========== */
+    document.querySelectorAll('[data-go]').forEach((btn) => {
+      btn.addEventListener('click', () => go(btn.getAttribute('data-go')));
+    });
+    document.querySelectorAll('[data-nav]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        closeDrawers();
+        go(btn.getAttribute('data-nav'));
+      });
+    });
+    document.getElementById('brand-home').onclick = () => {
+      closeDrawers();
+      go('home');
+    };
+    function logout() {
+      sessionStorage.removeItem('sb-demo-old');
+      sessionStorage.removeItem('sb-demo-role');
+      state.authed = true;
+      state.role = 'patient';
+      state.route = 'home';
+      state.bookings = [];
+      persist();
+      location.reload();
+    }
+    document.querySelectorAll('.logout-btn').forEach((btn) => {
+      btn.addEventListener('click', logout);
+    });
+    window.addEventListener('resize', () => {
+      if (window.matchMedia('(min-width: 1200px)').matches) closeDrawers();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawers();
+    });
+    const demoToggle = document.getElementById('demo-toggle');
+    const demoPanel = document.getElementById('demo-panel');
+    demoToggle.onclick = () => {
+      const open = demoPanel.classList.toggle('open');
+      demoToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    document.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest('.demo-chip') && demoPanel.classList.contains('open')) {
+        demoPanel.classList.remove('open');
+        demoToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.getElementById('reset-demo').onclick = () => {
+      sessionStorage.removeItem('sb-demo-old');
+      sessionStorage.removeItem('sb-demo-role');
+      location.reload();
+    };
+    document.getElementById('doctors-filter').onsubmit = (e) => {
+      e.preventDefault();
+      state.doctorsFilter = {
+        specialty: document.getElementById('specialty').value,
+        name: document.getElementById('doctor-name').value,
+      };
+      render();
+    };
+    (function fillSpecialtySelects() {
+      const sel = document.getElementById('specialty');
+      sel.innerHTML = [
+        '<option value="">Seleccionar especialidad</option>',
+        '<option value="all">Todas</option>',
+        ...SPECIALTIES.map((s) => `<option value="${s.id}">${s.name}</option>`),
+      ].join('');
+    })();
+
+    function mockDoctorItems() {
+      return DOCTORS.map((d) => ({
+        value: d.name.replace(/^(Dra?\.?\s*)/i, '').split(/\s+/)[0],
+        label: d.name,
+        meta: d.specialty,
+      }));
+    }
+
+    function mockSpecialtyItems(includeAll) {
+      const items = SPECIALTIES.map((s) => ({
+        value: String(s.id),
+        label: s.name,
+      }));
+      if (includeAll) items.unshift({ value: 'all', label: 'Todas' });
+      return items;
+    }
+
+    function wireMockPickers() {
+      if (!window.DemoMockPicker) return;
+      DemoMockPicker.attach(document.getElementById('specialty'), mockSpecialtyItems(true), {
+        title: 'Especialidades mock',
+      });
+      DemoMockPicker.attach(document.getElementById('doctor-name'), mockDoctorItems(), {
+        title: 'Doctores mock',
+      });
+      const bookSpec = document.getElementById('book-specialty');
+      if (bookSpec) {
+        DemoMockPicker.attach(bookSpec, mockSpecialtyItems(false), {
+          title: 'Especialidades mock',
+        });
+      }
+    }
+
+    restore();
+    if (!requirePatientSession()) { /* redirecting */ }
+    else {
+      if (!state.route || state.route === 'welcome' || state.route === 'login') state.route = 'home';
+      state.authed = true;
+      state.role = 'patient';
+      persist();
+      render();
+      wireMockPickers();
+    }
+
+
+</script>
+</body>
+</html>

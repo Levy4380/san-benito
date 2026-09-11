@@ -18,12 +18,8 @@ services:
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
-            COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
-            COREPACK_HOME: /usr/local/share/corepack
-        entrypoint: ['/var/www/html/docker/sail-entrypoint.sh']
         volumes:
             - '.:/var/www/html'
-            - 'sail-corepack:/usr/local/share/corepack'
         networks:
             - sail
         depends_on:
@@ -43,12 +39,8 @@ services:
         environment:
             WWWUSER: '${WWWUSER}'
             LARAVEL_SAIL: 1
-            COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
-            COREPACK_HOME: /usr/local/share/corepack
-        entrypoint: ['/var/www/html/docker/sail-entrypoint.sh']
         volumes:
             - '.:/var/www/html'
-            - 'sail-corepack:/usr/local/share/corepack'
         networks:
             - sail
         depends_on:
@@ -88,6 +80,4 @@ networks:
         driver: bridge
 volumes:
     sail-mysql:
-        driver: local
-    sail-corepack:
         driver: local

@@ -11,12 +11,7 @@ Todo corre en **Laravel Sail** (Docker). **yarn**, no npm. `vendor/` y `.env` no
 ## Prerrequisitos
 
 - Docker en ejecución (`sudo systemctl start docker` si hace falta; usuario en el grupo `docker`).
-- PHP y Composer **en el host no son obligatorios**. Yarn 4.9.2 lo activa Sail al arrancar el contenedor (`docker/sail-entrypoint.sh`); `sail down` no lo pierde. Node/Yarn en el host solo hacen falta si corrés `yarn` fuera de Sail:
-
-```bash
-corepack enable
-corepack prepare yarn@4.9.2 --activate
-```
+- PHP y Composer **en el host no son obligatorios**. Si no están, el primer `composer install` se hace con un contenedor (ver más abajo).
 
 ## Primera vez (clone limpio)
 
@@ -183,13 +178,9 @@ La página corre en `sanbenito.local` y los scripts de Vite en `localhost:5174`:
 
 Qué hacer: `APP_URL=http://sanbenito.local`, reiniciar `./vendor/bin/sail yarn dev`, recargar. Si vuelve, o usás setup A (`localhost:8080` para app y Vite), o en `vite.config.js` alineás CORS/`server.origin` con el host de la app. No abras el 5174 como URL de la aplicación.
 
-### `yarn`: packageManager yarn@4.9.2 vs Yarn 1.22.22
-
-Sail activa Yarn 4 al arrancar (`docker/sail-entrypoint.sh`). Si ves ese error, el contenedor no está usando ese entrypoint: `./vendor/bin/sail up -d --force-recreate`. No hace falta evitar `sail down`.
-
 ### `yarn`: package doesn't seem to be present in your lockfile
 
-Dentro de Sail, `yarn install` (Yarn 4 / Corepack). No `npm install`.
+Dentro de Sail, `yarn install`. No `npm install`.
 
 ### Puerto ocupado
 

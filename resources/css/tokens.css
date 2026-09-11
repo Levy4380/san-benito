@@ -1,0 +1,68 @@
+:root {
+  --color-paper: oklch(99% 0.006 255);
+  --color-paper-2: oklch(96.5% 0.01 255);
+  --color-paper-3: oklch(93.5% 0.014 255);
+  --color-ink: oklch(22% 0.02 255);
+  --color-ink-2: oklch(48% 0.016 255);
+  --color-rule: oklch(88% 0.012 255);
+  --color-accent: oklch(47% 0.16 255);
+  --color-accent-ink: oklch(99% 0.004 255);
+  --color-accent-soft: oklch(92% 0.045 255);
+  --color-focus: oklch(52% 0.18 255);
+  --color-danger: oklch(52% 0.18 25);
+  --font-display: 'Inter Tight', 'Segoe UI', sans-serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-display: clamp(2rem, 3.5vw, 3rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-short: 180ms;
+  --radius-card: 8px;
+  --radius-input: 6px;
+  --rule-hair: 1px solid var(--color-rule);
+  --sidebar-w: 16.75rem;
+  --brand-logo-size: 3.5rem;
+  --sidebar-brand-gap: var(--space-md);
+  --mobile-rail: calc(2.1rem + var(--app-frame));
+  --mobile-header-h: 3rem;
+  --app-frame: 0.45rem;
+  --app-radius: 0.85rem;
+  --shadow-color: oklch(22% 0.02 255 / 0.14);
+  --shadow-sm: 0 1px 2px var(--shadow-color);
+  --shadow-md: 0 6px 18px var(--shadow-color);
+  --shadow-lg: 0 10px 28px var(--shadow-color);
+  --btn-pad-y: 0.5rem;
+  --btn-pad-x: 0.85rem;
+  --focus-ring: 2px solid var(--color-focus);
+  /* Shared control size: inputs, selects and adjacent primary buttons */
+  --control-h: 2.75rem;
+  --control-h-sm: 2.25rem;
+  /* Same footprint for every page header variant (title + subtitle|timeline) */
+  --page-header-h: 5.75rem;
+  --page-header-title-h: calc(var(--text-xl) * 1.25);
+  --page-header-sub-h: 2.35rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --text-display: 1.45rem;
+    --page-header-h: auto;
+    --page-header-title-h: auto;
+    --page-header-sub-h: auto;
+    --control-h: 2.35rem;
+    --control-h-sm: 1.95rem;
+    --btn-pad-x: 0.7rem;
+    --mobile-header-h: 2.75rem;
+  }
+}

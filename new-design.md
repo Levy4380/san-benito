@@ -1,10 +1,10 @@
 # new-design.md — san-benito (constitución de producto v1)
 
-Constitución de producto v1 derivada de los **portales del canal Pruebas** (`demo/portal/demo-{paciente,doctor,admin}.html`).
+Constitución de producto v1.
 
 Este archivo es la **única fuente de verdad de producto**. `DESIGN.md` (slots `available` pre-creados) se retiró: contradecía el modelo de franjas. Quien implemente debe seguir **este** documento. Si algo no está acá, **no se inventa: se pregunta** (§12). Visual: [`design.md`](design.md).
 
-La demo de login (`pruebas/index.html`) arranca con botones de rol **sin password**. Eso es atajo de prototipo. El producto usa **Fortify** (`routes/auth.php`): email + contraseña.
+El producto usa **Fortify** (`routes/auth.php`): email + contraseña. No hay atajo de login por rol sin password.
 
 **Modelo de disponibilidad (dueño, 2026-09-09):** no hay fila de “turno disponible”. El doctor (o el admin, para cualquier doctor) persiste **franjas de trabajo**. Los huecos de 20 min (u otra duración) se **calculan** al leer. Recién al reservar o asignar se inserta `appointments`.
 
@@ -51,7 +51,7 @@ Decisiones ya tomadas. **No reabrir** D1, D2, D8, D9, D10.
 - **D3 — Disponibilidad manual por franjas**: el doctor carga a mano **bloques de trabajo** (fechas concretas × rangos horario). No hay agenda recurrente ni rrule. **No** se insertan turnos vacíos.
 - **D4 — Especialidades catalogadas**: tabla `specialties`, FK desde `doctors`. No es texto libre.
 - **D5 — Cancelación**: pueden cancelar el paciente (sus turnos), el doctor (turnos de su agenda) y admin/super admin (cualquiera). **Sin límite horario**: se puede cancelar hasta el horario de inicio del turno.
-- **D6 — Al cancelar se borra la reserva**: hard delete de la fila en `appointments`. La **franja sigue**; ese horario vuelve a ofrecerse al calcular huecos. Sin historial en v1 (aceptado). **Reemplaza** el D6 de `DESIGN.md` (reabrir `status = available`).
+- **D6 — Al cancelar se borra la reserva**: hard delete de la fila en `appointments`. La **franja sigue**; ese horario vuelve a ofrecerse al calcular huecos. Sin historial de **cancelaciones** en v1 (aceptado). Las reservas cuyo horario ya pasó siguen en `appointments` y se listan en **Historial de turnos** (d33). **Reemplaza** el D6 de `DESIGN.md` (reabrir `status = available`).
 - **D7 — Sin estado `completed`** en v1. `appointments` **solo** guarda reservas: no hay enum `available` / `booked`.
 - **D8 — Sin mails** en v1. El contenedor `queue` existe por paridad de stack pero no hay jobs; no crear Mailables ni Notifications.
 - **D9 — Idioma**: código, tablas, rutas y nombres de archivo en **inglés**; todos los textos visibles de UI en **español**.
@@ -65,23 +65,24 @@ Decisiones menores (vetables por el dueño):
 - **d12 — Borrado**: no existe “eliminar horario disponible” como fila. Ese CTA de la demo era del modelo viejo (borrar un `available` que nadie reservó). En v1: se **borra o no se carga la franja**. Una reserva no se “elimina” por ese camino: se **cancela** (D6). Si la franja a borrar todavía tiene reservas futuras → **no borrar** (error); primero cancelar esas reservas, o preguntar al dueño si se permite borrar franja con reservas (hoy: no).
 - **d13 — Registro de paciente**: campos requeridos `name`, `email`, `password`, `dni`, `birth_date`; opcionales `phone`, `health_insurance`.
 - **d14 — Redirección post-login (reemplaza el d14 de DESIGN.md)**: `patient` → home de portal paciente (`#page-home`); `doctor` → home de portal doctor (`#page-home`); `admin` y `super_admin` → `/admin/appointments` (heredado; no hay home admin en la demo). **No** redirigir a `/doctors` ni a `/agenda`.
-- **d15 — Vista calendario**: **Mi agenda** (doctor), **Mis turnos** en modo Calendario (paciente) y **horarios de un doctor** muestran calendario mensual a la izquierda y detalle del día en el **panel derecho** (sin modal). Si no hay día elegido: pista corta (paciente) o “Turnos de hoy” (agenda doctor). Tonos del cal doctor: sin franja / hay huecos libres / todos los huecos de ese día están reservados.
-- **d16 — Cargar un bloque corto (classic)**: en **Mi agenda**, CTA **Cargar un turno**. Solo hora de inicio; el servidor persiste una **franja** de `[starts_at, starts_at + slot_duration_minutes)`. No inserta `appointments`. El range-en-el-día del panel de agenda de `DESIGN.md` no aplica: las franjas largas van a **Programar** (d25).
+- **d15 — Vista calendario**: **Mi agenda** (doctor), **Mis turnos** en modo Calendario (paciente) y **horarios de un doctor** muestran calendario mensual a la izquierda y detalle del día en el **panel derecho** (sin modal). Si no hay día elegido: pista corta (paciente) o “Turnos de hoy” (agenda doctor). En **Mis turnos**, los días anteriores a hoy (zona institucional) están **deshabilitados** (d33). Tonos del cal doctor: sin franja / hay huecos libres / todos los huecos de ese día están reservados.
+- **d16 — Cargar un bloque corto (classic)**: en **Mi agenda**, CTA **Cargar un turno** abre la card de franja corta (el formulario no está siempre visible). Solo hora de inicio; el servidor persiste una **franja** de `[starts_at, starts_at + slot_duration_minutes)`. No inserta `appointments`. El range-en-el-día del panel de agenda de `DESIGN.md` no aplica: las franjas largas van a **Programar** (d25).
 - **d17 — Zona horaria**: `APP_TIMEZONE=America/Argentina/Buenos_Aires`. `starts_at`/`ends_at` son hora de pared de la institución. Serializar sin sufijo `Z`; el frontend formatea sin convertir a UTC del navegador.
 - **d18 — Búsqueda de doctores**: en `#page-doctors` se filtra por **especialidad** (incluye opción “Todas”) y/o **nombre**. Sin ningún filtro la lista queda **vacía** (“Seleccioná una especialidad o escribí un nombre para ver profesionales.”).
-- **d19 — Turnos próximos (ajustado por la demo)**: en el **home** de portal se listan hasta **3** **reservas** de la semana en curso, no los 5 de DESIGN.md. En `#page-slots`, sin día elegido, el panel lista los **5 días** próximos con al menos un hueco calculado libre. En el wizard paso Horario (lista), hasta **12 días**. En **Mis turnos** modo Lista se muestran **todas** las reservas futuras del paciente.
+- **d19 — Turnos próximos (ajustado por la demo)**: en el **home** de portal se listan hasta **3** **reservas** de la semana en curso, no los 5 de DESIGN.md. En `#page-slots`, sin día elegido, el panel lista los **5 días** próximos con al menos un hueco calculado libre. En el wizard paso Horario (lista), hasta **12 días**. En **Mis turnos** modo Lista se muestran **todas** las reservas futuras del paciente. Las pasadas van a **Historial de turnos** (d33).
 - **d20 — Duración de turno por doctor**: `slot_duration_minutes` (default **20**, rango **5–120**). Se configura en **Config. agenda**. Cambiar la duración **no** muta franjas ni reservas ya guardadas. Se usa al **calcular** huecos (y al crear el bloque corto d16). Un hueco que solape una reserva existente no se ofrece.
 - **d21 — Alta manual del vínculo**: el doctor solo vincula pacientes **a sí mismo**; admin/super_admin puede vincular **cualquier paciente a cualquier doctor**. Búsqueda por DNI y/o nombre entre pacientes registrados; **mínimo 2 caracteres**. Par duplicado: idempotente.
 - **d22 — Mis pacientes (UI)**: cards con **nombre, DNI y obra social**. CTA **Asignar turno** y click en la card → perfil. Vacío: “Todavía no tenés pacientes vinculados.”
 - **d23 — Entrada de producto**: pantalla de login Fortify → `#page-home` del rol (paciente o doctor). El login demo (tres botones de rol) **no** se copia. No hay atajo “entrar como admin”; admin entra con email + password si tiene el rol.
 - **d24 — Wizard Reservar turno**: tres pasos **Especialidad → Doctor → Horario**. El paso Horario tiene toggle Lista / Calendario. Reservar **inserta** la cita (no hace UPDATE de un slot).
 - **d25 — Programar franjas (N×M)**: wizard **Cuándo → Horario**. El doctor pinta N días y carga M franjas (inicio/fin). El servidor persiste **N × M filas** en `availability_windows` (cada par día + rango), **all-or-nothing**, sin generar `appointments`. Checkbox **Bloquear fines de semana**. Remanente incompleto **no** se guarda como hueco: se descarta al **calcular** (la franja se guarda entera). Si el rango es más corto que la duración → error al persistir. En la demo, `draftFranjas` + Listo no escriben; Laravel v1 **sí** escribe franjas. `createSlotsFromRange` actual **no cubre** este flujo.
-- **d26 — Asignar (doctor)**: elige un hueco **calculado** y un paciente **ya vinculado**; **inserta** la misma reserva que el book del paciente + `firstOrCreate` en `doctor_patient`. No busca no-vinculados en ese flujo.
+- **d26 — Asignar (doctor)**: CTA **Asignar turno** abre la card de huecos. Elige un hueco **calculado** y un paciente **ya vinculado**; **inserta** la misma reserva que el book del paciente + `firstOrCreate` en `doctor_patient`. No busca no-vinculados en ese flujo.
 - **d27 — Perfiles**: `#page-doctor-profile` (paciente) y `#page-patient-profile` (doctor). Campos demo sin schema → §4 (decisión abierta).
 - **d28 — Lista / Calendario**: **Mis turnos** arranca en Lista; toggle a Calendario. El wizard Horario arranca en Lista; toggle a Calendario.
 - **d29 — Feedback**: toasts flotantes + modal de página para confirmar (cancelar reserva / borrar franja). **No** “silent success” de `design.md`.
 - **d30 — Controles de hora**: `time24Html` (hora 0–23 + minutos, **step 5 min**), no `input type=time` nativo.
 - **d32 — Admin y franjas**: admin/super_admin pueden cargar franjas **para cualquier doctor** (mismo contrato N×M o bloque corto). Sin UI en la demo: solo capacidad + endpoint heredado a adaptar. No inventar wizard admin.
+- **d33 — Historial de turnos (paciente)**: en **Mis turnos** modo Calendario, los días anteriores a **hoy** (zona institucional) están deshabilitados y no se navega a meses ya enteramente pasados. El header tiene **Historial de turnos** (hijo de `#page-my`) con las reservas cuyo `starts_at` ya pasó (`<= now()`), más recientes primero. Sin **Cancelar** ahí (D5: el horario de inicio ya ocurrió). No es historial de cancelaciones (D6 sigue: cancelar borra la fila).
 
 ---
 
@@ -298,14 +299,15 @@ La UI de la demo sigue mostrando listas de horarios; **por detrás ya no hay fil
 | `#page-doctor-profile` | Perfil del profesional | `dl` de §4. CTA **Ver turnos**. Atrás → doctores. Nav pinta **Doctores**. | No (hijo) |
 | `#page-slots` | Turnos disponibles | Cal + panel de **huecos calculados**. Subtítulo “{doctor} · {especialidad}. Elegí un día marcado.” Sin día: hasta 5 días con huecos. Con día: horarios + **Reservar** (INSERT). | No (hijo) |
 | `#page-book` | Reservar turno | Steps Especialidad → Doctor → Horario (Lista / Calendario). **Reservar** inserta y va a `#page-my` + toast “Reservaste el turno.” | Sí |
-| `#page-my` | Mis turnos | Lista de **reservas** + **Cancelar** (DELETE). Toggle Calendario. Header **Reservar turno**. | Sí |
+| `#page-my` | Mis turnos | Lista de **reservas futuras** + **Cancelar** (DELETE). Toggle Calendario (días anteriores a hoy deshabilitados). Header **Historial de turnos** (outline) y **Reservar turno**. | Sí |
+| `#page-my-history` | Historial de turnos | Lista de reservas cuyo `starts_at` ya pasó. Sin Cancelar. Atrás → Mis turnos. Nav pinta **Mis turnos**. | No (hijo) |
 
 ### Doctor
 
 | `#page-*` | Título UI | Qué hace | Nav |
 |---|---|---|---|
 | `#page-home` | “Hola, {Dr./Dra. apellido}” / “Gestioná tu agenda y tus pacientes.” | CTAs agenda / Programar / Mis pacientes. Próximos = 3 **reservas** de la semana. | Brand → home |
-| `#page-agenda` | Mi agenda | Cal por franjas + reservas. Panel del día: huecos calculados (libres) y reservas. **Asignar** en un hueco libre (INSERT). **Cancelar turno** en una reserva (DELETE). **Cargar un turno** = franja corta (d16). No **Eliminar** en el hueco vacío (d12). Header **Programar turnos**. Banner al asignar desde perfil. | Sí |
+| `#page-agenda` | Mi agenda | Cal por franjas + reservas. Panel del día: primero reservas + CTAs **Cargar un turno** / **Asignar turno** (cada uno abre su card). Al elegir otro día vuelve a ese paso. **Asignar** en un hueco libre (INSERT). **Cancelar turno** en una reserva (DELETE). **Cargar un turno** = franja corta (d16). No **Eliminar** en el hueco vacío (d12). Header **Programar turnos**. Desde perfil entra en Asignar con paciente preelegido. | Sí |
 | `#page-program` | Programar turnos | Cuándo / Horario. Listo **persiste franjas** N×M, no turnos. | Sí |
 | `#page-patients` | Mis pacientes | Lista, vincular ≥ 2 caracteres, **Asignar turno** → agenda con paciente preelegido. | Sí |
 | `#page-patient-profile` | Perfil del paciente | `dl` de §4. **Asignar turno** → agenda. | No (hijo) |
@@ -337,13 +339,14 @@ Post-login / post-registro paciente: `#page-home` del rol (d14).
 
 | Método | Ruta | Controller (nombre target) | Página | Demo |
 |---|---|---|---|---|
-| GET | `/home` | `PatientHomeController@index` | `patient/home` | `#page-home` |
-| GET | `/doctors` | `DoctorSearchController@index` | `doctors/index` | `#page-doctors` |
-| GET | `/doctors/{doctor}` | `DoctorProfileController@show` | `doctors/profile` | `#page-doctor-profile` |
-| GET | `/doctors/{doctor}/slots` | `DoctorSlotsController@index` | `doctors/slots` | `#page-slots` (huecos calculados) |
-| GET | `/book` | `BookingWizardController@index` | `patient/book` | `#page-book` |
+| GET | `/home` | `PatientHomeController@index` | `Patient/Home` | `#page-home` |
+| GET | `/doctors` | `DoctorSearchController@index` | `Doctors/Index` | `#page-doctors` |
+| GET | `/doctors/{doctor}` | `DoctorProfileController@show` | `Doctors/Show` | `#page-doctor-profile` |
+| GET | `/doctors/{doctor}/slots` | `DoctorSlotsController@index` | `Doctors/Slots` | `#page-slots` (huecos calculados) |
+| GET | `/book` | `BookingWizardController@index` | `Patient/Book` | `#page-book` |
 | POST | `/doctors/{doctor}/appointments` | `AppointmentBookingController@store` (`starts_at`) | redirect | INSERT reserva |
-| GET | `/my-appointments` | `MyAppointmentsController@index` | `appointments/my-appointments` | `#page-my` |
+| GET | `/my-appointments` | `MyAppointmentsController@index` | `Appointments/Index` | `#page-my` |
+| GET | `/my-appointments/history` | `MyAppointmentsController@history` | `Appointments/History` | `#page-my-history` |
 | DELETE | `/appointments/{appointment}` | `AppointmentCancellationController@destroy` | redirect | cancelar = borrar |
 
 `GET /home` autenticado según rol (o una ruta que elige página). Admin → `/admin/appointments`.
@@ -352,17 +355,17 @@ Post-login / post-registro paciente: `#page-home` del rol (d14).
 
 | Método | Ruta | Controller | Página | Demo |
 |---|---|---|---|---|
-| GET | `/home` | `DoctorHomeController@index` | `doctor/home` | `#page-home` |
-| GET | `/agenda` | `AgendaController@index` | `doctor/agenda` | `#page-agenda` |
+| GET | `/home` | `DoctorHomeController@index` | `Doctor/Home` | `#page-home` |
+| GET | `/agenda` | `AgendaController@index` | `Doctor/Agenda` | `#page-agenda` |
 | POST | `/agenda/windows` | `AvailabilityWindowController@store` | redirect | classic (franja corta) |
 | DELETE | `/agenda/windows/{window}` | `AvailabilityWindowController@destroy` | redirect | borrar franja |
 | POST | `/agenda/appointments` | `AgendaAssignController@store` (`starts_at`, `patient_id`) | redirect | assign INSERT |
-| GET | `/agenda/program` | `AgendaProgramController@create` | `doctor/program` | `#page-program` |
+| GET | `/agenda/program` | `AgendaProgramController@create` | `Doctor/Program` | `#page-program` |
 | POST | `/agenda/program` | `AgendaProgramController@store` | redirect | N×M franjas |
-| GET | `/my-patients` | `MyPatientsController@index` | `doctor/my-patients` | `#page-patients` |
+| GET | `/my-patients` | `MyPatientsController@index` | `Doctor/MyPatients` | `#page-patients` |
 | POST | `/my-patients` | `MyPatientsController@store` | redirect | vincular |
-| GET | `/my-patients/{patient}` | `MyPatientProfileController@show` | `doctor/patient-profile` | `#page-patient-profile` |
-| GET/PATCH | `/settings/agenda` | `Settings\DoctorAgendaSettingsController` | `settings/agenda` | `#page-settings` |
+| GET | `/my-patients/{patient}` | `MyPatientProfileController@show` | `Doctor/PatientProfile` | `#page-patient-profile` |
+| GET/PATCH | `/settings/agenda` | `Settings\DoctorAgendaSettingsController` | `Settings/Agenda` | `#page-settings` |
 
 Cancel de doctor: `DELETE /appointments/{appointment}` (policy).
 
@@ -454,6 +457,7 @@ Feature tests (PHPUnit, `RefreshDatabase`, MySQL `testing`).
 20. **Assign:** INSERT sobre hueco calculado; no-vinculado falla; unique si dos assign/book pisan el mismo inicio.
 21. **Perfiles:** paciente ve doctor; doctor ve paciente vinculado (403 si no).
 22. **Admin** puede persistir franjas para un doctor que no es él.
+23. **Historial de turnos:** `/my-appointments` solo futuras; `/my-appointments/history` solo pasadas del paciente; doctor 403.
 
 ---
 
@@ -461,7 +465,7 @@ Feature tests (PHPUnit, `RefreshDatabase`, MySQL `testing`).
 
 Si durante la implementación aparece una decisión no cubierta, **no improvisar**: preguntar al dueño y registrar en §2.
 
-Abiertos: campos de §4 “Campos demo sin schema”. Ante duda de IA: **gana el portal Pruebas**. Persistencia: **este archivo** (franjas), aunque la demo no escribiera slots.
+Abiertos: campos de §4 “Campos demo sin schema”. Ante duda de IA: **gana este archivo**. Visual: [`design.md`](design.md).
 
 Calidad: `sail artisan test`, Pint, `yarn build` / `lint` al tocar TS (cuando exista el app).
 

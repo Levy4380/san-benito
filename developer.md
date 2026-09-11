@@ -11,14 +11,12 @@ Todo corre en **Laravel Sail** (Docker). **yarn**, no npm. `vendor/` y `.env` no
 ## Prerrequisitos
 
 - Docker en ejecución (`sudo systemctl start docker` si hace falta; usuario en el grupo `docker`).
-- Node 22. Yarn 4 via Corepack (no `npm`):
+- PHP y Composer **en el host no son obligatorios**. Yarn 4.9.2 lo activa Sail al arrancar el contenedor (`docker/sail-entrypoint.sh`); `sail down` no lo pierde. Node/Yarn en el host solo hacen falta si corrés `yarn` fuera de Sail:
 
 ```bash
 corepack enable
 corepack prepare yarn@4.9.2 --activate
 ```
-
-PHP y Composer **en el host no son obligatorios**. Si no están, el primer `composer install` se hace con un contenedor (ver más abajo).
 
 ## Primera vez (clone limpio)
 
@@ -129,11 +127,11 @@ Contraseña de todos: `password`.
 
 | Rol | Email | Tras el login |
 |---|---|---|
-| Paciente | `juan@sanbenito.test` | `/doctors` |
-| Paciente | `laura@sanbenito.test` | `/doctors` |
-| Doctor | `ana.perez@sanbenito.test` | `/agenda` |
-| Doctor | `luis.gomez@sanbenito.test` | `/agenda` |
-| Doctor | `maria.lopez@sanbenito.test` | `/agenda` |
+| Paciente | `juan@sanbenito.test` | `/home` |
+| Paciente | `laura@sanbenito.test` | `/home` |
+| Doctor | `ana.perez@sanbenito.test` | `/home` |
+| Doctor | `luis.gomez@sanbenito.test` | `/home` |
+| Doctor | `maria.lopez@sanbenito.test` | `/home` |
 | Admin | `admin@sanbenito.test` | `/admin/appointments` |
 | Super admin | `superadmin@sanbenito.test` | `/admin/appointments` |
 
@@ -184,6 +182,10 @@ MySQL responde, pero no corriste migraciones. `SESSION_DRIVER=database` lee `ses
 La página corre en `sanbenito.local` y los scripts de Vite en `localhost:5174`: orígenes distintos. Suele aparecer si `APP_URL` no tiene `http://` o si Vite se reinició a mitad de un cambio de host.
 
 Qué hacer: `APP_URL=http://sanbenito.local`, reiniciar `./vendor/bin/sail yarn dev`, recargar. Si vuelve, o usás setup A (`localhost:8080` para app y Vite), o en `vite.config.js` alineás CORS/`server.origin` con el host de la app. No abras el 5174 como URL de la aplicación.
+
+### `yarn`: packageManager yarn@4.9.2 vs Yarn 1.22.22
+
+Sail activa Yarn 4 al arrancar (`docker/sail-entrypoint.sh`). Si ves ese error, el contenedor no está usando ese entrypoint: `./vendor/bin/sail up -d --force-recreate`. No hace falta evitar `sail down`.
 
 ### `yarn`: package doesn't seem to be present in your lockfile
 

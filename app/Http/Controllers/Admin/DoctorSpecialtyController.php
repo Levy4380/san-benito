@@ -14,9 +14,11 @@ class DoctorSpecialtyController extends Controller
     {
         $doctors->syncSpecialties($doctor, $request->validated('specialty_ids'));
 
-        return back()->with('toast', [
-            'message' => 'Actualizaste las especialidades.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('doctors.show', $doctor)
+            ->with('toast', [
+                'message' => 'Actualizaste las especialidades.',
+                'variant' => 'ok',
+            ]);
     }
 }

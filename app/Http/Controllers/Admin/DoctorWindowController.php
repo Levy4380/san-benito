@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProgramAvailabilityWindowsRequest;
 use App\Http\Requests\StoreAvailabilityWindowRequest;
@@ -16,7 +17,7 @@ class DoctorWindowController extends Controller
         Doctor $doctor,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor, 'create');
+        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityCreate);
         $windows->createShortWindow($doctor, $request->validated('starts_at'));
 
         return back()->with('toast', [
@@ -30,7 +31,7 @@ class DoctorWindowController extends Controller
         Doctor $doctor,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor, 'program');
+        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityProgram);
         $data = $request->validated();
 
         $windows->program(

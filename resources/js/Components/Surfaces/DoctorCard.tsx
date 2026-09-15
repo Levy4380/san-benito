@@ -3,10 +3,11 @@ import { focusVisibleClass } from '@/lib/clinico-control';
 import { cn } from '@/lib/utils';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
-const doctorCardClass = cn(
-    'flex cursor-pointer flex-col items-stretch gap-[0.65rem] rounded-lg border border-rule bg-paper px-[var(--space-sm)] py-[0.7rem] text-left font-inherit text-ink no-underline transition-[border-color,background-color] duration-short ease-out hover:border-accent max-md:px-[0.9rem] max-md:py-[0.85rem] [&_strong]:font-display [&_strong]:text-[length:var(--text-md)] [&_strong]:font-semibold [&_span]:text-sm [&_span]:text-ink-2',
-    focusVisibleClass,
+const doctorCardBase = cn(
+    'flex flex-col items-stretch gap-[0.65rem] rounded-lg border border-rule bg-paper px-[var(--space-sm)] py-[0.7rem] text-left font-inherit text-ink no-underline transition-[border-color,background-color] duration-short ease-out max-md:px-[0.9rem] max-md:py-[0.85rem] [&_strong]:font-display [&_strong]:text-[length:var(--text-md)] [&_strong]:font-semibold [&_span:not([class*="inline-flex"])]:text-sm [&_span:not([class*="inline-flex"])]:text-ink-2',
 );
+
+const doctorCardInteractive = cn('cursor-pointer hover:border-accent', focusVisibleClass);
 
 type Common = {
     children: ReactNode;
@@ -28,7 +29,8 @@ type DivProps = Common &
 type Props = ButtonProps | DivProps;
 
 export default function DoctorCard({ as = 'button', asChild = false, selected = false, className, children, ...props }: Props) {
-    const classes = cn(doctorCardClass, selected && 'border-accent bg-accent-soft', className);
+    const interactive = asChild || as === 'button' || typeof (props as { onClick?: unknown }).onClick === 'function';
+    const classes = cn(doctorCardBase, interactive && doctorCardInteractive, selected && 'border-accent bg-accent-soft', className);
 
     if (asChild) {
         return (
@@ -51,6 +53,10 @@ export default function DoctorCard({ as = 'button', asChild = false, selected = 
             {children}
         </button>
     );
+}
+
+export function DoctorCardActions({ children, className }: { children: ReactNode; className?: string }) {
+    return <div className={cn('mt-auto flex flex-wrap gap-[0.35rem]', className)}>{children}</div>;
 }
 
 export function DoctorGrid({ children, className }: { children: ReactNode; className?: string }) {

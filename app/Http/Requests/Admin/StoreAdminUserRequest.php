@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -10,7 +11,7 @@ class StoreAdminUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('staff.admins.manage') ?? false;
+        return Permission::AdminsManage->allows($this->user());
     }
 
     /**

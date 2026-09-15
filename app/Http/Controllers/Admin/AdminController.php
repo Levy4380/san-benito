@@ -29,13 +29,20 @@ class AdminController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/AdminCreate');
+    }
+
     public function store(StoreAdminUserRequest $request, AdminUserService $users): RedirectResponse
     {
         $users->create($request->validated());
 
-        return back()->with('toast', [
-            'message' => 'Creaste el administrador.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('admin.admins.index')
+            ->with('toast', [
+                'message' => 'Creaste el administrador.',
+                'variant' => 'ok',
+            ]);
     }
 }

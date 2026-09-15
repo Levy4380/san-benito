@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Http\Requests\ProgramAvailabilityWindowsRequest;
 use App\Services\AgendaService;
 use App\Services\AvailabilityWindowService;
@@ -29,7 +30,7 @@ class AgendaProgramController extends Controller
         AvailabilityWindowService $windows,
     ): RedirectResponse {
         $doctor = $doctors->forUser($request->user());
-        $windows->assertOwnedBy($request->user(), $doctor, 'program');
+        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityProgram);
         $data = $request->validated();
 
         $windows->program(

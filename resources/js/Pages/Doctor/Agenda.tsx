@@ -27,6 +27,7 @@ type PanelStep = 'day' | 'load' | 'assign';
 type Props = {
     doctor: DoctorRecord;
     selectedDate: string;
+    panel: PanelStep;
     windows: AvailabilityWindowRecord[];
     slots: Slot[];
     appointments: AppointmentRecord[];
@@ -35,9 +36,22 @@ type Props = {
     preselectedPatient: PatientRecord | null;
 };
 
-export default function Agenda({ doctor, selectedDate, windows, slots, appointments, tones, patients, preselectedPatient }: Props) {
+function agendaHref(date: string, panel: PanelStep = 'day', patientId?: string) {
+    const params = new URLSearchParams({ date });
+
+    if (panel !== 'day') {
+        params.set('panel', panel);
+    }
+
+    if (panel === 'assign' && patientId) {
+        params.set('patient_id', patientId);
+    }
+
+    return `/agenda?${params.toString()}`;
+}
+
+export default function Agenda({ doctor, selectedDate, panel, windows, slots, appointments, tones, patients, preselectedPatient }: Props) {
     const [month, setMonth] = useState(selectedDate.slice(0, 7) + '-01');
-    const [step, setStep] = useState<PanelStep>(preselectedPatient ? 'assign' : 'day');
     const [patientId, setPatientId] = useState(preselectedPatient?.id?.toString() ?? '');
     const [specialtyId, setSpecialtyId] = useState(doctor.specialties.length === 1 ? String(doctor.specialties[0].id) : '');
     const [start, setStart] = useState('09:00');
@@ -45,19 +59,18 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
     const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
 
     const go = (date: string) => {
-        setStep('day');
-        router.get('/agenda', { date, patient_id: patientId || undefined }, { preserveState: true });
+        router.get('/agenda', { date }, { preserveState: true });
     };
 
     const assign = (startsAt: string) => {
         if (!patientId || !specialtyId) {
             return;
         }
-        router.post(
-            '/agenda/appointments',
-            { starts_at: startsAt, patient_id: Number(patientId), specialty_id: Number(specialtyId) },
-            { onSuccess: () => setStep('day') },
-        );
+        router.post('/agenda/appointments', {
+            starts_at: startsAt,
+            patient_id: Number(patientId),
+            specialty_id: Number(specialtyId),
+        });
     };
 
     const cancel = async (id: number) => {
@@ -85,9 +98,9 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
     };
 
     const panelTitle =
-        step === 'load'
+        panel === 'load'
             ? 'Cargar un turno'
-            : step === 'assign'
+            : panel === 'assign'
               ? 'Asignar turno'
               : `Turnos de ${formatDateLabel(selectedDate).replace(/^./, (letter) => letter.toUpperCase())}`;
 
@@ -125,7 +138,7 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
                         ]}
                     />
                     <Panel sheet title={panelTitle}>
-                        {step === 'day' ? (
+                        {panel === 'day' ? (
                             <>
                                 <Hint className="mt-[0.25rem] shrink-0">
                                     {appointments.length} reserva{appointments.length === 1 ? '' : 's'} · {slots.length} hueco
@@ -157,20 +170,24 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
                                     )}
                                 </BookingList>
                                 <div className="mt-auto grid shrink-0 grid-cols-2 gap-[0.55rem] pt-[var(--space-sm)]">
-                                    <Btn type="button" block onClick={() => setStep('load')}>
-                                        <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Cargar un turno
+                                    <Btn block asChild>
+                                        <Link href={agendaHref(selectedDate, 'load')} preserveState>
+                                            <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                            Cargar un turno
+                                        </Link>
                                     </Btn>
-                                    <Btn type="button" variant="outline" block onClick={() => setStep('assign')}>
-                                        <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Asignar turno
+                                    <Btn variant="outline" block asChild>
+                                        <Link href={agendaHref(selectedDate, 'assign')} preserveState>
+                                            <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                            Asignar turno
+                                        </Link>
                                     </Btn>
                                 </div>
                             </>
                         ) : null}
-                        {step === 'load' ? (
+                        {panel === 'load' ? (
                             <>
-                                <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" onClick={() => setStep('day')}>
+                                <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" href={agendaHref(selectedDate)}>
                                     Atrás
                                 </BackLink>
                                 <PanelScroll className="pt-0">
@@ -192,7 +209,7 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
                                     onSubmit={(event) => {
                                         event.preventDefault();
                                         shortForm.setData('starts_at', `${selectedDate} ${start}:00`);
-                                        shortForm.post('/agenda/windows', { onSuccess: () => setStep('day') });
+                                        shortForm.post('/agenda/windows');
                                     }}
                                 >
                                     <h3>Cargar un turno</h3>
@@ -206,9 +223,9 @@ export default function Agenda({ doctor, selectedDate, windows, slots, appointme
                                 </Surface>
                             </>
                         ) : null}
-                        {step === 'assign' ? (
+                        {panel === 'assign' ? (
                             <>
-                                <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" onClick={() => setStep('day')}>
+                                <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" href={agendaHref(selectedDate)}>
                                     Atrás
                                 </BackLink>
                                 {preselectedPatient && patientId === String(preselectedPatient.id) ? (

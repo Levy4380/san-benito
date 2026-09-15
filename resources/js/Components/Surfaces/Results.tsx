@@ -5,6 +5,20 @@ type Props = HTMLAttributes<HTMLDivElement> & {
     children: ReactNode;
 };
 
+export function ResultList({ className, children, ...props }: Props) {
+    return (
+        <div
+            {...props}
+            className={cn(
+                'grid min-h-0 w-full flex-1 content-start gap-[0.65rem] overflow-x-hidden overflow-y-auto max-md:gap-[0.75rem]',
+                className,
+            )}
+        >
+            {children}
+        </div>
+    );
+}
+
 export default function Results({ className, children, ...props }: Props) {
     return (
         <div

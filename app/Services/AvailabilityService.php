@@ -62,6 +62,18 @@ class AvailabilityService
         return $slots->sortBy('starts_at')->values();
     }
 
+    /**
+     * First future non-overlapping slot per civil day (institutional timezone).
+     *
+     * @return Collection<int, array{starts_at: string, ends_at: string}>
+     */
+    public function nextOfferableSlotPerDay(Doctor $doctor, Carbon $rangeStart, Carbon $rangeEnd): Collection
+    {
+        return $this->calculateSlots($doctor, $rangeStart, $rangeEnd)
+            ->unique(fn (array $slot): string => substr($slot['starts_at'], 0, 10))
+            ->values();
+    }
+
     public function isBookableSlot(Doctor $doctor, Carbon $startsAt): bool
     {
         $duration = (int) $doctor->slot_duration_minutes;
@@ -110,5 +122,16 @@ class AvailabilityService
             ->unique()
             ->take($limitDays)
             ->values();
+    }
+
+    public function nextAvailableStartsAt(Doctor $doctor, ?Carbon $until = null): ?string
+    {
+        $slot = $this->calculateSlots(
+            $doctor,
+            now(),
+            $until ?? now()->addDays(60)->endOfDay(),
+        )->first();
+
+        return is_array($slot) ? $slot['starts_at'] : null;
     }
 }

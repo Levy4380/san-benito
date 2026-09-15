@@ -11,15 +11,17 @@ class AppointmentBookingController extends Controller
 {
     public function store(BookAppointmentRequest $request, Doctor $doctor, AppointmentService $appointments): RedirectResponse
     {
-        $appointments->book(
+        $appointment = $appointments->book(
             $request->user(),
             $doctor,
             $request->validated('starts_at'),
             (int) $request->validated('specialty_id'),
         );
 
+        $wall = $appointment->starts_at->format('Y-m-d').' · '.$appointment->starts_at->format('H:i');
+
         return redirect()->route('my-appointments')->with('toast', [
-            'message' => 'Reservaste el turno.',
+            'message' => 'Reservaste el turno. '.$wall,
             'variant' => 'ok',
         ]);
     }

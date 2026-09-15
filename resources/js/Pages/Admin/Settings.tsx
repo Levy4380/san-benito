@@ -2,7 +2,7 @@ import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import ListRow from '@/Components/Surfaces/ListRow';
-import Results from '@/Components/Surfaces/Results';
+import Results, { ResultList } from '@/Components/Surfaces/Results';
 import { Head, Link } from '@inertiajs/react';
 import { ChevronRight, Stethoscope } from 'lucide-react';
 
@@ -17,7 +17,7 @@ export default function AdminSettings() {
             >
                 <StageCard>
                     <Results>
-                        <div className="grid min-h-0 flex-1 content-start gap-[0.65rem] overflow-auto">
+                        <ResultList>
                             <ListRow asChild>
                                 <Link href="/admin/settings/specialties">
                                     <span className="flex min-w-0 items-center gap-[0.65rem]">
@@ -27,7 +27,7 @@ export default function AdminSettings() {
                                     <ChevronRight className="size-[1.05rem] shrink-0 text-ink-2" aria-hidden strokeWidth={2} />
                                 </Link>
                             </ListRow>
-                        </div>
+                        </ResultList>
                     </Results>
                 </StageCard>
             </PageScreen>

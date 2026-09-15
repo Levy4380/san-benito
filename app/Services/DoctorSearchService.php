@@ -25,13 +25,17 @@ class DoctorSearchService
     /**
      * @return Collection<int, Doctor>
      */
-    public function search(?int $specialtyId, ?string $name, bool $filtered): Collection
+    public function search(?int $specialtyId, ?string $name, bool $filtered, bool $onlyWithSpecialties = false): Collection
     {
         if (! $filtered) {
             return new Collection;
         }
 
         $query = Doctor::query()->with(['user', 'specialties']);
+
+        if ($onlyWithSpecialties) {
+            $query->withSpecialties();
+        }
 
         if ($specialtyId !== null) {
             $query->forSpecialty($specialtyId);
@@ -56,8 +60,14 @@ class DoctorSearchService
     /**
      * @return Collection<int, Specialty>
      */
-    public function specialties(): Collection
+    public function specialties(bool $onlyWithDoctors = false): Collection
     {
-        return Specialty::query()->orderBy('name')->get();
+        $query = Specialty::query()->orderBy('name');
+
+        if ($onlyWithDoctors) {
+            $query->has('doctors');
+        }
+
+        return $query->get();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Permission;
 use App\Models\Specialty;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,7 +11,7 @@ class UpdateSpecialtyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('specialties.manage') ?? false;
+        return Permission::SpecialtiesManage->allows($this->user());
     }
 
     /**

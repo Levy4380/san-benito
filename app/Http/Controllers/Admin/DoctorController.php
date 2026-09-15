@@ -28,13 +28,22 @@ class DoctorController extends Controller
         ]);
     }
 
+    public function create(DoctorSearchService $search): Response
+    {
+        return Inertia::render('Admin/DoctorCreate', [
+            'specialties' => $search->specialties(),
+        ]);
+    }
+
     public function store(StoreDoctorRequest $request, DoctorService $doctors): RedirectResponse
     {
         $doctors->create($request->validated());
 
-        return back()->with('toast', [
-            'message' => 'Creaste al profesional.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('admin.doctors.index')
+            ->with('toast', [
+                'message' => 'Creaste al profesional.',
+                'variant' => 'ok',
+            ]);
     }
 }

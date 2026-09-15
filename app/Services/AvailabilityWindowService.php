@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Permission;
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
 use App\Models\Doctor;
@@ -109,13 +110,15 @@ class AvailabilityWindowService
         $window->delete();
     }
 
-    public function assertOwnedBy(User $user, Doctor $doctor, string $ability = 'create'): void
+    public function assertOwnedBy(User $user, Doctor $doctor, Permission $ability): void
     {
-        if ($user->can('availability.'.$ability)) {
+        if ($ability->allows($user)) {
             return;
         }
 
-        if ($user->can('own.availability.'.$ability) && $user->doctor?->is($doctor)) {
+        $own = $ability->own();
+
+        if ($own !== null && $own->allows($user) && $user->doctor?->is($doctor)) {
             return;
         }
 

@@ -41,7 +41,7 @@ export default function PatientProfile({ patient }: Props) {
                             </div>
                         </dl>
                         <Btn className="mt-auto pt-[var(--space-md)]" asChild>
-                            <Link href={`/agenda?patient_id=${patient.id}`}>
+                            <Link href={`/agenda?patient_id=${patient.id}&panel=assign`}>
                                 <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Asignar turno
                             </Link>

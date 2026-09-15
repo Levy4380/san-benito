@@ -33,4 +33,25 @@ class PermissionAuthorizationTest extends TestCase
         $this->assertSame(0, DB::table('model_has_permissions')->count());
         $this->assertDatabaseHas('permissions', ['name' => 'portal.home', 'guard_name' => 'web']);
     }
+
+    public function test_create_and_associate_gets_follow_post_permissions(): void
+    {
+        $patient = $this->makePatient();
+        $doctor = $this->makeDoctor();
+        $admin = $this->makeAdmin();
+        $super = $this->makeSuperAdmin();
+
+        $this->actingAs($admin)->get('/admin/doctors/create')->assertOk();
+        $this->actingAs($super)->get('/admin/doctors/create')->assertOk();
+        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
+        $this->actingAs($super)->get('/admin/admins/create')->assertOk();
+        $this->actingAs($super)->get('/admin/patients/create')->assertOk();
+        $this->actingAs($super)->get('/admin/settings/specialties/create')->assertOk();
+        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertForbidden();
+        $this->actingAs($patient->user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+        $this->actingAs($admin)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+        $this->actingAs($super)->get('/doctors/'.$doctor->id.'/specialties')->assertOk();
+        $this->actingAs($doctor->user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+    }
 }

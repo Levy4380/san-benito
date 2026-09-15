@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\AvailabilityWindow;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\User;
@@ -25,8 +26,69 @@ class AppointmentService
     public function book(User $actor, Doctor $doctor, string $startsAt, int $specialtyId): Appointment
     {
         $patient = $this->patients->forUser($actor);
+        $this->assertSpecialtyOfDoctor($doctor, $specialtyId);
 
-        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
+        $requested = Carbon::parse($startsAt);
+        $dayStart = $requested->copy()->startOfDay();
+        $dayEnd = $requested->copy()->endOfDay();
+
+        try {
+            return DB::transaction(function () use ($doctor, $patient, $requested, $dayStart, $dayEnd, $specialtyId) {
+                AvailabilityWindow::query()
+                    ->forDoctor($doctor)
+                    ->overlapping($dayStart, $dayEnd)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $first = $this->availability->nextOfferableSlotPerDay($doctor, $dayStart, $dayEnd)->first();
+
+                if (! is_array($first)) {
+                    throw ValidationException::withMessages([
+                        'starts_at' => 'El turno ya no está disponible',
+                    ]);
+                }
+
+                $firstStart = Carbon::parse($first['starts_at']);
+
+                if ($requested->gt($firstStart)) {
+                    throw ValidationException::withMessages([
+                        'starts_at' => 'El turno ya no está disponible',
+                    ]);
+                }
+
+                $candidates = $this->availability->calculateSlots($doctor, $dayStart, $dayEnd);
+
+                foreach ($candidates as $slot) {
+                    $start = Carbon::parse($slot['starts_at']);
+                    $end = $start->copy()->addMinutes((int) $doctor->slot_duration_minutes);
+
+                    try {
+                        $appointment = Appointment::query()->create([
+                            'doctor_id' => $doctor->id,
+                            'patient_id' => $patient->id,
+                            'specialty_id' => $specialtyId,
+                            'starts_at' => $start,
+                            'ends_at' => $end,
+                        ]);
+
+                        $this->links->link($doctor, $patient);
+
+                        return $appointment;
+                    } catch (UniqueConstraintViolationException) {
+                        continue;
+                    }
+                }
+
+                throw ValidationException::withMessages([
+                    'starts_at' => 'El turno ya no está disponible',
+                ]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'El turno ya no está disponible',
+            ]);
+        }
     }
 
     public function assign(User $actor, Doctor $doctor, int $patientId, string $startsAt, int $specialtyId): Appointment

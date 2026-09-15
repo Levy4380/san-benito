@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAgendaSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('own.agenda.settings.update') ?? false;
+        return Permission::OwnAgendaSettingsUpdate->allows($this->user());
     }
 
     /**

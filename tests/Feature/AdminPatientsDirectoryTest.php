@@ -26,7 +26,9 @@ class AdminPatientsDirectoryTest extends TestCase
 
         foreach ([$patient->user, $doctor->user, $admin] as $user) {
             $this->actingAs($user)->get('/admin/patients')->assertForbidden();
+            $this->actingAs($user)->get('/admin/patients/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/admins')->assertForbidden();
+            $this->actingAs($user)->get('/admin/admins/create')->assertForbidden();
             $this->actingAs($user)->post('/admin/patients', [
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
@@ -48,6 +50,11 @@ class AdminPatientsDirectoryTest extends TestCase
         $super = $this->makeSuperAdmin();
 
         $this->actingAs($super)
+            ->get('/admin/patients/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Admin/PatientCreate'));
+
+        $this->actingAs($super)
             ->post('/admin/patients', [
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
@@ -57,7 +64,7 @@ class AdminPatientsDirectoryTest extends TestCase
                 'phone' => '1144445555',
                 'health_insurance' => 'OSDE',
             ])
-            ->assertRedirect();
+            ->assertRedirect('/admin/patients');
 
         $this->assertAuthenticatedAs($super);
 

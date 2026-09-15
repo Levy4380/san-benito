@@ -1,11 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CalendarClock, Search } from 'lucide-react';
+import { CalendarClock, Info, Search } from 'lucide-react';
 import { FormEventHandler } from 'react';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
-import DoctorCard, { DoctorGrid } from '@/Components/Surfaces/DoctorCard';
+import DoctorCard, { DoctorCardActions, DoctorGrid } from '@/Components/Surfaces/DoctorCard';
 import Empty from '@/Components/Surfaces/Empty';
 import Field from '@/Components/Form/Field';
 import Filters from '@/Components/Surfaces/Filters';
@@ -62,17 +62,23 @@ export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
                         ) : (
                             <DoctorGrid>
                                 {doctors.map((doctor) => (
-                                    <DoctorCard key={doctor.id} asChild>
-                                        <Link href={`/doctors/${doctor.id}`}>
-                                            <strong>{doctor.user.name}</strong>
-                                            <span>{specialtyNames(doctor.specialties)}</span>
+                                    <DoctorCard key={doctor.id} as="div">
+                                        <strong>{doctor.user.name}</strong>
+                                        <span>{specialtyNames(doctor.specialties)}</span>
+                                        <DoctorCardActions>
+                                            <Btn size="sm" variant="outline" asChild>
+                                                <Link href={`/doctors/${doctor.id}`}>
+                                                    <Info className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                                    Más información
+                                                </Link>
+                                            </Btn>
                                             <Btn size="sm" asChild>
-                                                <span>
+                                                <Link href={`/doctors/${doctor.id}/slots`}>
                                                     <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                                     Ver turnos
-                                                </span>
+                                                </Link>
                                             </Btn>
-                                        </Link>
+                                        </DoctorCardActions>
                                     </DoctorCard>
                                 ))}
                             </DoctorGrid>

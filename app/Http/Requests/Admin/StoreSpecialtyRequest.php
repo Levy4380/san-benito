@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSpecialtyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('specialties.manage') ?? false;
+        return Permission::SpecialtiesManage->allows($this->user());
     }
 
     /**

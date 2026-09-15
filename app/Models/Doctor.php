@@ -71,4 +71,12 @@ class Doctor extends Model
             $specialties->whereKey($specialtyId);
         });
     }
+
+    /**
+     * @param  Builder<Doctor>  $query
+     */
+    public function scopeWithSpecialties(Builder $query): void
+    {
+        $query->whereHas('specialties');
+    }
 }

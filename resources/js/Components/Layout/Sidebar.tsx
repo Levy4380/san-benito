@@ -16,28 +16,29 @@ import {
 import { useEffect, useState } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import { focusVisibleClass } from '@/lib/clinico-control';
+import { hasPermission, Permission, type PermissionName } from '@/lib/permissions';
 import { primaryRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { RoleName, SharedData } from '@/types';
 
-type NavItem = { href: string; label: string; icon: LucideIcon; permission: string };
+type NavItem = { href: string; label: string; icon: LucideIcon; permission: PermissionName };
 
 const portalNav: NavItem[] = [
-    { href: '/doctors', label: 'Doctores', icon: Stethoscope, permission: 'doctors.browse' },
-    { href: '/my-appointments', label: 'Mis turnos', icon: CalendarClock, permission: 'own.appointments.view' },
-    { href: '/book', label: 'Reservar turno', icon: NotebookPen, permission: 'appointments.book' },
-    { href: '/agenda', label: 'Mi agenda', icon: Calendar, permission: 'own.agenda.view' },
-    { href: '/agenda/program', label: 'Programar turnos', icon: CalendarPlus, permission: 'own.availability.program' },
-    { href: '/my-patients', label: 'Mis pacientes', icon: Users, permission: 'own.patients.view' },
-    { href: '/settings/agenda', label: 'Config. agenda', icon: Settings, permission: 'own.agenda.settings.update' },
+    { href: '/doctors', label: 'Doctores', icon: Stethoscope, permission: Permission.DoctorsBrowse },
+    { href: '/my-appointments', label: 'Mis turnos', icon: CalendarClock, permission: Permission.OwnAppointmentsView },
+    { href: '/book', label: 'Reservar turno', icon: NotebookPen, permission: Permission.AppointmentsBook },
+    { href: '/agenda', label: 'Mi agenda', icon: Calendar, permission: Permission.OwnAgendaView },
+    { href: '/agenda/program', label: 'Programar turnos', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
+    { href: '/my-patients', label: 'Mis pacientes', icon: Users, permission: Permission.OwnPatientsView },
+    { href: '/settings/agenda', label: 'Config. agenda', icon: Settings, permission: Permission.OwnAgendaSettingsUpdate },
 ];
 
 const staffNav: NavItem[] = [
-    { href: '/admin/appointments', label: 'Reservas', icon: ClipboardList, permission: 'appointments.view-all' },
-    { href: '/admin/doctors', label: 'Doctores', icon: Stethoscope, permission: 'doctors.catalog.view' },
-    { href: '/admin/patients', label: 'Pacientes', icon: Users, permission: 'staff.users.directory' },
-    { href: '/admin/admins', label: 'Administradores', icon: Shield, permission: 'staff.admins.manage' },
-    { href: '/admin/settings', label: 'Configuración', icon: Settings, permission: 'specialties.manage' },
+    { href: '/admin/appointments', label: 'Reservas', icon: ClipboardList, permission: Permission.AppointmentsCatalogView },
+    { href: '/admin/doctors', label: 'Doctores', icon: Stethoscope, permission: Permission.DoctorsCatalogView },
+    { href: '/admin/patients', label: 'Pacientes', icon: Users, permission: Permission.PatientsCatalogView },
+    { href: '/admin/admins', label: 'Administradores', icon: Shield, permission: Permission.AdminsManage },
+    { href: '/admin/settings', label: 'Configuración', icon: Settings, permission: Permission.SpecialtiesManage },
 ];
 
 type Props = {
@@ -66,7 +67,7 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
     }
 
     const role = primaryRole(user.roles);
-    const hasHome = user.permissions.includes('portal.home');
+    const hasHome = hasPermission(user.permissions, Permission.PortalHome);
     const nav = navFor(user.permissions);
     const roleLabel = roleLabelFor(role);
 
@@ -195,9 +196,9 @@ export function isActiveRoute(path: string, href: string): boolean {
 }
 
 function navFor(permissions: string[]): NavItem[] {
-    const items = permissions.includes('portal.home') ? portalNav : staffNav;
+    const items = hasPermission(permissions, Permission.PortalHome) ? portalNav : staffNav;
 
-    return items.filter((item) => permissions.includes(item.permission));
+    return items.filter((item) => hasPermission(permissions, item.permission));
 }
 
 function roleLabelFor(role: RoleName): string {

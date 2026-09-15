@@ -5,7 +5,7 @@ import PageScreen from '@/Components/Common/PageScreen';
 import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
-import DoctorCard, { DoctorGrid } from '@/Components/Surfaces/DoctorCard';
+import DoctorCard, { DoctorCardActions, DoctorGrid } from '@/Components/Surfaces/DoctorCard';
 import Empty from '@/Components/Surfaces/Empty';
 import Field from '@/Components/Form/Field';
 import Filters from '@/Components/Surfaces/Filters';
@@ -72,20 +72,18 @@ export default function MyPatients({ patients, candidates, filters }: Props) {
                         <DoctorGrid>
                             {patients.map((patient) => (
                                 <DoctorCard key={patient.id} as="div">
-                                    <Link href={`/my-patients/${patient.id}`} className="grid min-w-0 gap-[0.2rem] text-inherit no-underline">
-                                        <strong>{patient.user.name}</strong>
-                                        <span>DNI {patient.dni}</span>
-                                        <span>{patient.health_insurance ?? 'Sin obra social'}</span>
-                                    </Link>
-                                    <div className="mt-auto flex flex-wrap gap-[0.35rem]">
+                                    <strong>{patient.user.name}</strong>
+                                    <span>DNI {patient.dni}</span>
+                                    <span>{patient.health_insurance ?? 'Sin obra social'}</span>
+                                    <DoctorCardActions>
                                         <PatientProfileBtn patientId={patient.id} name={patient.user.name} />
                                         <Btn size="sm" asChild>
-                                            <Link href={`/agenda?patient_id=${patient.id}`}>
+                                            <Link href={`/agenda?patient_id=${patient.id}&panel=assign`}>
                                                 <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                                 Asignar turno
                                             </Link>
                                         </Btn>
-                                    </div>
+                                    </DoctorCardActions>
                                 </DoctorCard>
                             ))}
                         </DoctorGrid>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Services\AppointmentService;
 use App\Services\DoctorService;
 use App\Services\PatientService;
@@ -22,7 +23,7 @@ class HomeController extends Controller
     ): Response|RedirectResponse {
         $user = $request->user();
 
-        if (! $user->can('portal.home')) {
+        if (! Permission::PortalHome->allows($user)) {
             return redirect()->to(RoleRedirector::intendedPath($user));
         }
 

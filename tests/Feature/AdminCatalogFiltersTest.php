@@ -24,15 +24,24 @@ class AdminCatalogFiltersTest extends TestCase
         $specialty = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
         $this->makeDoctor(['name' => 'Ana Pérez'], ['specialty_id' => $specialty->id]);
         $this->makeDoctor(['name' => 'Luis Gómez']);
+        $this->makeDoctor(['name' => 'Sin Especialidad'], ['specialty_ids' => []]);
 
         $this->actingAs($admin)
             ->get('/admin/doctors')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Doctors')
-                ->has('doctors', 2)
+                ->has('doctors', 3)
                 ->where('filters.specialty_id', 'all')
-                ->where('filters.q', ''));
+                ->where('filters.q', ''))
+            ->assertDontSee('Matrícula');
+
+        $this->actingAs($admin)
+            ->get('/admin/doctors/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/DoctorCreate')
+                ->has('specialties'));
 
         $this->actingAs($admin)
             ->get('/admin/doctors?specialty_id='.$specialty->id)
@@ -47,7 +56,7 @@ class AdminCatalogFiltersTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/doctors?specialty_id=all')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('doctors', 2));
+            ->assertInertia(fn ($page) => $page->has('doctors', 3));
     }
 
     public function test_super_admin_admins_list_all_without_filters_and_filter_by_name_and_email(): void

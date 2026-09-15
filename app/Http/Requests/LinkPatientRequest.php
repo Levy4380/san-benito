@@ -2,23 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Permission;
+use App\Http\Requests\Concerns\AuthorizesStaffOrOwn;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LinkPatientRequest extends FormRequest
 {
+    use AuthorizesStaffOrOwn;
+
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        if ($this->routeIs('admin.*')) {
-            return $user->can('patients.link');
-        }
-
-        return $user->can('own.patients.link');
+        return $this->staffOrOwn(Permission::PatientsLink, Permission::OwnPatientsLink);
     }
 
     /**

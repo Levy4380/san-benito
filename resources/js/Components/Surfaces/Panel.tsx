@@ -1,3 +1,4 @@
+import { ResultList } from '@/Components/Surfaces/Results';
 import { cn } from '@/lib/utils';
 import { CSSProperties, PointerEvent, ReactNode, useRef, useState } from 'react';
 
@@ -13,16 +14,7 @@ type Props = {
 };
 
 export function PanelScroll({ children, className }: { children: ReactNode; className?: string }) {
-    return (
-        <div
-            className={cn(
-                'grid min-h-0 flex-1 content-start gap-[0.65rem] overflow-y-auto pt-[0.75rem] max-md:gap-[0.75rem] max-md:pt-[0.5rem]',
-                className,
-            )}
-        >
-            {children}
-        </div>
-    );
+    return <ResultList className={cn('pt-[0.75rem] max-md:pt-[0.5rem]', className)}>{children}</ResultList>;
 }
 
 export default function Panel({ children, className, title, sheet = false }: Props) {

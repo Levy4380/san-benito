@@ -16,6 +16,11 @@ class AgendaController extends Controller
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
         $patientId = $request->filled('patient_id') ? $request->integer('patient_id') : null;
 
-        return Inertia::render('Doctor/Agenda', $agenda->pageData($doctor, $date, $patientId));
+        return Inertia::render('Doctor/Agenda', $agenda->pageData(
+            $doctor,
+            $date,
+            $patientId,
+            $request->input('panel'),
+        ));
     }
 }

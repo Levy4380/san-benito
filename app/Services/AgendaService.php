@@ -18,7 +18,7 @@ class AgendaService
     /**
      * @return array<string, mixed>
      */
-    public function pageData(Doctor $doctor, ?string $date, ?int $preselectedPatientId): array
+    public function pageData(Doctor $doctor, ?string $date, ?int $preselectedPatientId, mixed $panel = null): array
     {
         $selected = $date ? Carbon::parse($date) : now();
         $monthStart = $selected->copy()->startOfMonth()->startOfDay();
@@ -51,13 +51,17 @@ class AgendaService
         $tones = $this->calendarTones($doctor, $monthStart, $monthEnd, $slots, $appointments, $windows);
 
         $patients = $this->links->patientsFor($doctor);
-        $preselected = $preselectedPatientId
+        $step = is_string($panel) && in_array($panel, ['day', 'load', 'assign'], true)
+            ? $panel
+            : 'day';
+        $preselected = ($step === 'assign' && $preselectedPatientId)
             ? $patients->firstWhere('id', $preselectedPatientId)
             : null;
 
         return [
             'doctor' => $doctor->load(['user', 'specialties']),
             'selectedDate' => $dayKey,
+            'panel' => $step,
             'windows' => $dayWindows,
             'slots' => $daySlots,
             'appointments' => $dayAppointments,

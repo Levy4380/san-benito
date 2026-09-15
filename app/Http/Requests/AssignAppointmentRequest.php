@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AssignAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('own.appointments.assign') ?? false;
+        return Permission::OwnAppointmentsAssign->allows($this->user());
     }
 
     /**

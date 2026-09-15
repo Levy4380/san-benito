@@ -15,7 +15,12 @@ class DoctorSearchController extends Controller
         $name = $request->input('q');
 
         return Inertia::render('Doctors/Index', [
-            'doctors' => $search->search($specialty['id'], is_string($name) ? $name : null, true),
+            'doctors' => $search->search(
+                $specialty['id'],
+                is_string($name) ? $name : null,
+                true,
+                onlyWithSpecialties: true,
+            ),
             'specialties' => $search->specialties(),
             'filters' => [
                 'specialty_id' => $specialty['value'],

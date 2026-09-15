@@ -30,10 +30,12 @@ class AdminSpecialtySettingsTest extends TestCase
         foreach ([$patient->user, $doctor->user, $admin] as $user) {
             $this->actingAs($user)->get('/admin/settings')->assertForbidden();
             $this->actingAs($user)->get('/admin/settings/specialties')->assertForbidden();
+            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
             $this->actingAs($user)->post('/admin/settings/specialties', ['name' => 'Oftalmología'])->assertForbidden();
             $this->actingAs($user)->patch('/admin/settings/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertForbidden();
             $this->actingAs($user)->delete('/admin/settings/specialties/'.$specialty->id)->assertForbidden();
+            $this->actingAs($user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
             $this->actingAs($user)->patch('/admin/doctors/'.$doctor->id.'/specialties', [
                 'specialty_ids' => [$specialty->id],
             ])->assertForbidden();
@@ -64,8 +66,13 @@ class AdminSpecialtySettingsTest extends TestCase
                 ->has('specialties'));
 
         $this->actingAs($super)
+            ->get('/admin/settings/specialties/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Admin/SpecialtyCreate'));
+
+        $this->actingAs($super)
             ->post('/admin/settings/specialties', ['name' => '  Oftalmología  '])
-            ->assertRedirect();
+            ->assertRedirect('/admin/settings/specialties');
 
         $this->assertDatabaseHas('specialties', ['name' => 'Oftalmología']);
 
@@ -198,27 +205,38 @@ class AdminSpecialtySettingsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Doctors/Show')
-                ->has('specialties', 0));
+                ->missing('specialties'));
 
         $this->actingAs($this->makeAdmin())
             ->get('/doctors/'.$doctor->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Doctors/Show')
-                ->has('specialties', 0));
+                ->missing('specialties'));
+
+        $this->actingAs($this->makeAdmin())
+            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->assertForbidden();
 
         $this->actingAs($super)
             ->get('/doctors/'.$doctor->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Doctors/Show')
+                ->missing('specialties'));
+
+        $this->actingAs($super)
+            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Doctors/Specialties')
                 ->has('specialties', Specialty::query()->count()));
 
         $this->actingAs($super)
             ->patch('/admin/doctors/'.$doctor->id.'/specialties', [
                 'specialty_ids' => [$added->id],
             ])
-            ->assertRedirect();
+            ->assertRedirect('/doctors/'.$doctor->id);
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
@@ -229,7 +247,7 @@ class AdminSpecialtySettingsTest extends TestCase
             ->patch('/admin/doctors/'.$doctor->id.'/specialties', [
                 'specialty_ids' => [],
             ])
-            ->assertRedirect();
+            ->assertRedirect('/doctors/'.$doctor->id);
 
         $this->assertTrue($doctor->fresh()->specialties()->doesntExist());
     }

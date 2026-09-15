@@ -31,14 +31,21 @@ class PatientController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/PatientCreate');
+    }
+
     public function store(StoreAdminPatientRequest $request, PatientService $patients): RedirectResponse
     {
         $patients->register($request->validated());
 
-        return back()->with('toast', [
-            'message' => 'Creaste el paciente.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('admin.patients.index')
+            ->with('toast', [
+                'message' => 'Creaste el paciente.',
+                'variant' => 'ok',
+            ]);
     }
 
     public function show(Patient $patient, DoctorPatientService $links): Response

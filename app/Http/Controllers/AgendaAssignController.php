@@ -6,6 +6,7 @@ use App\Http\Requests\AssignAppointmentRequest;
 use App\Services\AppointmentService;
 use App\Services\DoctorService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 
 class AgendaAssignController extends Controller
 {
@@ -16,17 +17,21 @@ class AgendaAssignController extends Controller
     ): RedirectResponse {
         $doctor = $doctors->forUser($request->user());
 
+        $startsAt = $request->validated('starts_at');
+
         $appointments->assign(
             $request->user(),
             $doctor,
             (int) $request->validated('patient_id'),
-            $request->validated('starts_at'),
+            $startsAt,
             (int) $request->validated('specialty_id'),
         );
 
-        return back()->with('toast', [
-            'message' => 'Asignaste el turno.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('agenda', ['date' => Carbon::parse($startsAt)->toDateString()])
+            ->with('toast', [
+                'message' => 'Asignaste el turno.',
+                'variant' => 'ok',
+            ]);
     }
 }

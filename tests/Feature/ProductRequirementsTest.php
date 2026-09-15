@@ -55,6 +55,7 @@ class ProductRequirementsTest extends TestCase
         $specialty = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
         $this->makeDoctor(['name' => 'Ana Pérez'], ['specialty_id' => $specialty->id]);
         $this->makeDoctor(['name' => 'Luis Gómez']);
+        $this->makeDoctor(['name' => 'Sin Especialidad'], ['specialty_ids' => []]);
 
         $this->actingAs($patient->user)
             ->get('/doctors')
@@ -63,7 +64,9 @@ class ProductRequirementsTest extends TestCase
                 ->component('Doctors/Index')
                 ->has('doctors', 2)
                 ->where('filters.specialty_id', 'all')
-                ->where('filters.q', ''));
+                ->where('filters.q', '')
+                ->where('doctors.0.user.name', 'Ana Pérez')
+                ->where('doctors.1.user.name', 'Luis Gómez'));
 
         $this->actingAs($patient->user)
             ->get('/doctors?specialty_id='.$specialty->id)
@@ -74,6 +77,11 @@ class ProductRequirementsTest extends TestCase
             ->get('/doctors?q=Ana')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('doctors', 1));
+
+        $this->actingAs($patient->user)
+            ->get('/doctors?q=Sin')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('doctors', 0));
 
         $derm = Specialty::query()->where('name', 'Dermatología')->firstOrFail();
         $pedia = Specialty::query()->where('name', 'Pediatría')->firstOrFail();
@@ -126,7 +134,8 @@ class ProductRequirementsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Doctors/Slots')
-                ->has('slots', 3));
+                ->has('slots', 1)
+                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s')));
     }
 
     public function test_4_successful_booking_inserts_appointment_and_pivot(): void
@@ -158,7 +167,11 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($patient->user)
             ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start))
-            ->assertRedirect('/my-appointments');
+            ->assertRedirect('/my-appointments')
+            ->assertSessionHas('toast', function (array $toast) use ($start): bool {
+                return ($toast['variant'] ?? null) === 'ok'
+                    && $toast['message'] === 'Reservaste el turno. '.$start->format('Y-m-d').' · '.$start->format('H:i');
+            });
 
         $this->assertDatabaseCount('appointments', 1);
         $this->assertDatabaseHas('appointments', [
@@ -173,7 +186,7 @@ class ProductRequirementsTest extends TestCase
         ]);
     }
 
-    public function test_5_second_booking_of_same_starts_at_fails(): void
+    public function test_5_second_booking_of_same_starts_at_overflows_to_next_slot(): void
     {
         $patientA = $this->makePatient();
         $patientB = $this->makePatient();
@@ -187,18 +200,206 @@ class ProductRequirementsTest extends TestCase
             'ends_at' => $start->copy()->addHour(),
         ]);
 
+        $this->assertTrue(
+            collect(Schema::getIndexes('appointments'))->contains(
+                fn (array $index): bool => ($index['unique'] ?? false)
+                    && ($index['columns'] ?? []) === ['doctor_id', 'starts_at']
+            )
+        );
+
         $this->actingAs($patientA->user)
             ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start, $cardio->id))
             ->assertRedirect('/my-appointments');
 
+        $overflow = $start->copy()->addMinutes(20);
+
         $this->actingAs($patientB->user)
             ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start, $derm->id))
-            ->assertSessionHasErrors('starts_at');
+            ->assertRedirect('/my-appointments')
+            ->assertSessionHas('toast', function (array $toast) use ($overflow): bool {
+                return ($toast['variant'] ?? null) === 'ok'
+                    && $toast['message'] === 'Reservaste el turno. '.$overflow->format('Y-m-d').' · '.$overflow->format('H:i');
+            });
 
-        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseCount('appointments', 2);
         $this->assertDatabaseHas('appointments', [
             'patient_id' => $patientA->id,
             'specialty_id' => $cardio->id,
+            'starts_at' => $start->format('Y-m-d H:i:s'),
+        ]);
+        $this->assertDatabaseHas('appointments', [
+            'patient_id' => $patientB->id,
+            'specialty_id' => $derm->id,
+            'starts_at' => $overflow->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function test_patient_skip_later_slot_of_same_day_is_unavailable(): void
+    {
+        $patient = $this->makePatient();
+        $doctor = $this->makeDoctor();
+        $start = $this->nextWeekdayNine();
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $start,
+            'ends_at' => $start->copy()->addHours(2),
+        ]);
+        $afternoon = $start->copy()->setTime(14, 0, 0);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $afternoon,
+            'ends_at' => $afternoon->copy()->addHours(2),
+        ]);
+
+        $this->actingAs($patient->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start->copy()->addMinutes(40)))
+            ->assertSessionHasErrors(['starts_at' => 'El turno ya no está disponible']);
+
+        $this->actingAs($patient->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $afternoon))
+            ->assertSessionHasErrors(['starts_at' => 'El turno ya no está disponible']);
+
+        $this->assertDatabaseCount('appointments', 0);
+    }
+
+    public function test_patient_race_overflows_to_next_window_same_day(): void
+    {
+        $patientA = $this->makePatient();
+        $patientB = $this->makePatient();
+        $doctor = $this->makeDoctor();
+        $start = $this->nextWeekdayNine();
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $start,
+            'ends_at' => $start->copy()->addMinutes(20),
+        ]);
+        $afternoon = $start->copy()->setTime(14, 0, 0);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $afternoon,
+            'ends_at' => $afternoon->copy()->addHours(2),
+        ]);
+
+        $this->actingAs($patientA->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start))
+            ->assertRedirect('/my-appointments');
+
+        $this->actingAs($patientB->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start))
+            ->assertRedirect('/my-appointments');
+
+        $this->assertDatabaseCount('appointments', 2);
+        $this->assertDatabaseHas('appointments', [
+            'patient_id' => $patientA->id,
+            'starts_at' => $start->format('Y-m-d H:i:s'),
+        ]);
+        $this->assertDatabaseHas('appointments', [
+            'patient_id' => $patientB->id,
+            'starts_at' => $afternoon->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function test_patient_booking_does_not_spill_to_next_day(): void
+    {
+        $patientA = $this->makePatient();
+        $patientB = $this->makePatient();
+        $doctor = $this->makeDoctor();
+        $start = $this->nextWeekdayNine();
+        $nextDay = $start->copy()->addDay();
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $start,
+            'ends_at' => $start->copy()->addMinutes(20),
+        ]);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $nextDay,
+            'ends_at' => $nextDay->copy()->addHour(),
+        ]);
+
+        $this->actingAs($patientA->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start))
+            ->assertRedirect('/my-appointments');
+
+        $this->actingAs($patientB->user)
+            ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start))
+            ->assertSessionHasErrors(['starts_at' => 'El turno ya no está disponible']);
+
+        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseMissing('appointments', [
+            'starts_at' => $nextDay->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    public function test_patient_offer_is_one_slot_per_civil_day(): void
+    {
+        $patient = $this->makePatient();
+        $doctor = $this->makeDoctor();
+        $start = $this->nextWeekdayNine();
+        $afternoon = $start->copy()->setTime(14, 0, 0);
+        $nextDay = $start->copy()->addDay();
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $start,
+            'ends_at' => $start->copy()->addHours(2),
+        ]);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $afternoon,
+            'ends_at' => $afternoon->copy()->addHours(2),
+        ]);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $doctor->id,
+            'starts_at' => $nextDay,
+            'ends_at' => $nextDay->copy()->addHour(),
+        ]);
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Patient/Book')
+                ->has('slots', 2)
+                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s'))
+                ->where('slots.1.starts_at', $nextDay->format('Y-m-d H:i:s')));
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id.'&date='.$start->toDateString())
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('slots', 1)
+                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s')));
+
+        $this->actingAs($patient->user)
+            ->get('/doctors/'.$doctor->id.'/slots?date='.$start->toDateString())
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('slots', 1)
+                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s')));
+
+        $this->actingAs($doctor->user)
+            ->get('/agenda?date='.$start->toDateString().'&panel=assign')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('slots', 12)
+                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s'))
+                ->where('slots.6.starts_at', $afternoon->format('Y-m-d H:i:s')));
+
+        $linked = $this->makePatient();
+        $doctor->patients()->syncWithoutDetaching([$linked->id]);
+
+        $this->actingAs($doctor->user)
+            ->post('/agenda/appointments', [
+                'starts_at' => $afternoon->format('Y-m-d H:i:s'),
+                'patient_id' => $linked->id,
+                'specialty_id' => $this->specialtyIdOf($doctor),
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('appointments', [
+            'doctor_id' => $doctor->id,
+            'patient_id' => $linked->id,
+            'starts_at' => $afternoon->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -242,7 +443,7 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($patient->user)
             ->get('/doctors/'.$doctor->id.'/slots?date='.$start->toDateString())
-            ->assertInertia(fn ($page) => $page->has('slots', 3));
+            ->assertInertia(fn ($page) => $page->has('slots', 1));
     }
 
     public function test_8_patient_cannot_cancel_someone_elses_appointment(): void
@@ -367,17 +568,24 @@ class ProductRequirementsTest extends TestCase
         foreach ([$patient->user, $doctor->user] as $user) {
             $this->actingAs($user)->get('/admin/appointments')->assertForbidden();
             $this->actingAs($user)->get('/admin/doctors')->assertForbidden();
+            $this->actingAs($user)->get('/admin/doctors/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/patients')->assertForbidden();
+            $this->actingAs($user)->get('/admin/patients/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/admins')->assertForbidden();
+            $this->actingAs($user)->get('/admin/admins/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/settings')->assertForbidden();
             $this->actingAs($user)->get('/admin/settings/specialties')->assertForbidden();
+            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertForbidden();
             $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
         }
 
         $this->actingAs($admin)->get('/admin/patients')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
         $this->actingAs($admin)->get('/admin/admins')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
         $this->actingAs($admin)->get('/admin/settings')->assertForbidden();
         $this->actingAs($admin)->get('/admin/settings/specialties')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertForbidden();
         $this->actingAs($admin)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
     }
 
@@ -387,6 +595,13 @@ class ProductRequirementsTest extends TestCase
         $specialty = Specialty::query()->firstOrFail();
 
         $this->actingAs($admin)
+            ->get('/admin/doctors/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/DoctorCreate')
+                ->has('specialties'));
+
+        $this->actingAs($admin)
             ->post('/admin/doctors', [
                 'name' => 'Carla Ruiz',
                 'email' => 'carla@example.com',
@@ -394,7 +609,7 @@ class ProductRequirementsTest extends TestCase
                 'license_number' => 'MN-88888',
                 'specialty_ids' => [$specialty->id],
             ])
-            ->assertRedirect();
+            ->assertRedirect('/admin/doctors');
 
         $user = User::query()->where('email', 'carla@example.com')->first();
         $this->assertNotNull($user);
@@ -433,7 +648,7 @@ class ProductRequirementsTest extends TestCase
         );
 
         $this->actingAs($admin)
-            ->from('/admin/doctors')
+            ->from('/admin/doctors/create')
             ->post('/admin/doctors', [
                 'name' => 'Sin Especialidad',
                 'email' => 'sin.esp@example.com',
@@ -444,7 +659,7 @@ class ProductRequirementsTest extends TestCase
             ->assertSessionHasErrors('specialty_ids');
 
         $this->actingAs($admin)
-            ->from('/admin/doctors')
+            ->from('/admin/doctors/create')
             ->post('/admin/doctors', [
                 'name' => 'Escalar Solo',
                 'email' => 'escalar@example.com',
@@ -594,6 +809,7 @@ class ProductRequirementsTest extends TestCase
         $doctor = $this->makeDoctor(['name' => 'Ana Pérez'], ['specialty_ids' => [$cardio->id, $derm->id]]);
         $other = Specialty::query()->where('name', 'Pediatría')->firstOrFail();
         $this->makeDoctor(['name' => 'Otro'], ['specialty_id' => $other->id]);
+        $empty = Specialty::factory()->create(['name' => 'Oftalmología']);
         $start = $this->nextWeekdayNine();
         AvailabilityWindow::factory()->create([
             'doctor_id' => $doctor->id,
@@ -602,11 +818,46 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($patient->user)
+            ->get('/book')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('nearest_doctor_id', null)
+                ->where('specialties', function ($specialties) use ($cardio, $empty): bool {
+                    $ids = collect($specialties)->pluck('id')->all();
+
+                    return in_array($cardio->id, $ids, true)
+                        && ! in_array($empty->id, $ids, true);
+                }));
+
+        $this->actingAs($patient->user)
             ->get('/book?specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('doctors', 1)
-                ->where('doctors.0.user.name', 'Ana Pérez'));
+                ->where('doctors.0.user.name', 'Ana Pérez')
+                ->where('filters.doctor_id', null)
+                ->where('nearest_doctor_id', $doctor->id));
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$cardio->id.'&doctor_id='.$doctor->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.specialty_id', $cardio->id)
+                ->where('filters.doctor_id', $doctor->id));
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$cardio->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('doctors', 1)
+                ->where('filters.doctor_id', null));
+
+        $this->actingAs($patient->user)
+            ->get('/book')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('filters.specialty_id', null)
+                ->where('filters.doctor_id', null));
 
         $this->actingAs($patient->user)
             ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start, $cardio->id))
@@ -626,6 +877,53 @@ class ProductRequirementsTest extends TestCase
             'doctor_id' => $doctor->id,
             'patient_id' => $patient->id,
         ]);
+    }
+
+    public function test_18_wizard_doctor_step_marks_nearest_available_slot(): void
+    {
+        $patient = $this->makePatient();
+        $cardio = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
+        $later = $this->makeDoctor(['name' => 'Ana Pérez'], ['specialty_id' => $cardio->id]);
+        $sooner = $this->makeDoctor(['name' => 'Luis Gómez'], ['specialty_id' => $cardio->id]);
+        $this->makeDoctor(['name' => 'Sin Agenda'], ['specialty_id' => $cardio->id]);
+
+        $soon = $this->nextWeekdayNine();
+        $late = $soon->copy()->addDay();
+
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $later->id,
+            'starts_at' => $late,
+            'ends_at' => $late->copy()->addMinutes($later->slot_duration_minutes),
+        ]);
+        AvailabilityWindow::factory()->create([
+            'doctor_id' => $sooner->id,
+            'starts_at' => $soon,
+            'ends_at' => $soon->copy()->addMinutes($sooner->slot_duration_minutes),
+        ]);
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$cardio->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('doctors', 2)
+                ->where('nearest_doctor_id', $sooner->id)
+                ->where('doctors.0.id', $sooner->id)
+                ->where('doctors.0.user.name', 'Luis Gómez')
+                ->where('doctors', function ($doctors): bool {
+                    return collect($doctors)->pluck('user.name')->doesntContain('Sin Agenda');
+                }));
+
+        $this->actingAs($patient->user)
+            ->post('/doctors/'.$sooner->id.'/appointments', $this->reservationPayload($sooner, $soon, $cardio->id))
+            ->assertRedirect('/my-appointments');
+
+        $this->actingAs($patient->user)
+            ->get('/book?specialty_id='.$cardio->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('doctors', 1)
+                ->where('nearest_doctor_id', $later->id)
+                ->where('doctors.0.id', $later->id));
     }
 
     public function test_19_program_persists_n_by_m_windows_and_zero_appointments(): void
@@ -690,6 +988,11 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($doctor->user)
+            ->get('/agenda?date='.$start->toDateString().'&panel=assign')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('slots', 3));
+
+        $this->actingAs($doctor->user)
             ->post('/agenda/appointments', [
                 'starts_at' => $start->format('Y-m-d H:i:s'),
                 'patient_id' => $unlinked->id,
@@ -704,6 +1007,22 @@ class ProductRequirementsTest extends TestCase
             ])
             ->assertSessionHasErrors('specialty_id');
 
+        $later = $start->copy()->addMinutes(40);
+
+        $this->actingAs($doctor->user)
+            ->post('/agenda/appointments', [
+                'starts_at' => $later->format('Y-m-d H:i:s'),
+                'patient_id' => $linked->id,
+                'specialty_id' => $this->specialtyIdOf($doctor),
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('appointments', [
+            'doctor_id' => $doctor->id,
+            'patient_id' => $linked->id,
+            'starts_at' => $later->format('Y-m-d H:i:s'),
+        ]);
+
         $this->actingAs($doctor->user)
             ->post('/agenda/appointments', [
                 'starts_at' => $start->format('Y-m-d H:i:s'),
@@ -712,11 +1031,12 @@ class ProductRequirementsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseCount('appointments', 2);
         $this->assertDatabaseHas('appointments', [
             'doctor_id' => $doctor->id,
             'patient_id' => $linked->id,
             'specialty_id' => $this->specialtyIdOf($doctor),
+            'starts_at' => $start->format('Y-m-d H:i:s'),
         ]);
 
         $other = Specialty::query()->where('name', 'Dermatología')->firstOrFail();
@@ -737,7 +1057,7 @@ class ProductRequirementsTest extends TestCase
             ])
             ->assertSessionHasErrors('starts_at');
 
-        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseCount('appointments', 2);
     }
 
     public function test_21_profiles_patient_sees_doctor_doctor_sees_linked_patient(): void
@@ -843,6 +1163,89 @@ class ProductRequirementsTest extends TestCase
         $this->actingAs($this->makeDoctor()->user)
             ->get('/my-appointments/history')
             ->assertForbidden();
+    }
+
+    public function test_get_urls_choose_create_associate_and_agenda_panel_screens(): void
+    {
+        $admin = $this->makeAdmin();
+        $super = $this->makeSuperAdmin();
+        $doctor = $this->makeDoctor();
+        $linked = $this->makePatient();
+        $doctor->patients()->syncWithoutDetaching([$linked->id]);
+        $date = $this->nextWeekdayNine()->toDateString();
+
+        $this->actingAs($admin)
+            ->get('/admin/doctors')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Admin/Doctors'))
+            ->assertDontSee('Matrícula');
+
+        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
+
+        $this->actingAs($super)
+            ->get('/admin/admins/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Admin/AdminCreate'));
+
+        $this->actingAs($super)
+            ->get('/admin/patients/create')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Admin/PatientCreate'));
+
+        $this->actingAs($this->makePatient()->user)
+            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->assertForbidden();
+
+        $this->actingAs($super)
+            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Doctors/Specialties')
+                ->where('doctor.id', $doctor->id)
+                ->has('specialties'));
+
+        $this->actingAs($doctor->user)
+            ->get('/agenda?panel=load&date='.$date)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Doctor/Agenda')
+                ->where('panel', 'load')
+                ->where('selectedDate', $date));
+
+        $this->actingAs($doctor->user)
+            ->get('/agenda?patient_id='.$linked->id.'&panel=assign')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('panel', 'assign')
+                ->where('preselectedPatient.id', $linked->id));
+
+        $this->actingAs($doctor->user)
+            ->get('/agenda?date='.$date)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('panel', 'day')
+                ->where('preselectedPatient', null));
+
+        $this->actingAs($doctor->user)
+            ->get('/agenda?date='.$date.'&patient_id='.$linked->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('panel', 'day')
+                ->where('preselectedPatient', null));
+
+        $this->actingAs($this->makePatient()->user)
+            ->get('/book?specialty_id='.Specialty::query()->firstOrFail()->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Patient/Book'));
+
+        $this->actingAs($this->makePatient()->user)->get('/book/specialty')->assertNotFound();
+        $this->actingAs($doctor->user)->get('/agenda/program')->assertOk();
+        $this->actingAs($doctor->user)->get('/agenda/program/hours')->assertNotFound();
     }
 
     /**

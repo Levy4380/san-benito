@@ -2,13 +2,14 @@
 
 namespace App\Support;
 
+use App\Enums\Permission;
 use App\Models\User;
 
 class RoleRedirector
 {
     public static function intendedPath(User $user): string
     {
-        if ($user->can('portal.home')) {
+        if (Permission::PortalHome->allows($user)) {
             return '/home';
         }
 

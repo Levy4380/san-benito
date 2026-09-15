@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -10,7 +11,7 @@ class StoreAdminPatientRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('patients.create') ?? false;
+        return Permission::PatientsCreate->allows($this->user());
     }
 
     /**

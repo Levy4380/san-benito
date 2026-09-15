@@ -8,6 +8,7 @@ const PRODUCT_PAGES = new Set([
     'Doctor/PatientProfile',
     'Doctors/Index',
     'Doctors/Show',
+    'Doctors/Specialties',
     'Doctors/Slots',
     'Appointments/Index',
     'Appointments/History',
@@ -16,11 +17,15 @@ const PRODUCT_PAGES = new Set([
     'Settings/Password',
     'Admin/Appointments',
     'Admin/Doctors',
+    'Admin/DoctorCreate',
     'Admin/Patients',
+    'Admin/PatientCreate',
     'Admin/Admins',
+    'Admin/AdminCreate',
     'Admin/UserPatient',
     'Admin/Settings',
     'Admin/Specialties',
+    'Admin/SpecialtyCreate',
     'Admin/SpecialtyEdit',
 ]);
 

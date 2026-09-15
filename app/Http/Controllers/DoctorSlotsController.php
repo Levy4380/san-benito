@@ -22,13 +22,14 @@ class DoctorSlotsController extends Controller
         $day = $request->string('date')->toString();
         $selectedDate = $day !== '' ? Carbon::parse($day)->toDateString() : null;
 
-        $rangeStart = now();
-        $rangeEnd = now()->addDays(60)->endOfDay();
-        $slots = $availability->calculateSlots($doctor, $rangeStart, $rangeEnd);
         $daysWithSlots = $availability->upcomingDaysWithSlots($doctor, 5);
 
         $daySlots = $selectedDate
-            ? $slots->filter(fn (array $slot) => str_starts_with($slot['starts_at'], $selectedDate))->values()
+            ? $availability->nextOfferableSlotPerDay(
+                $doctor,
+                Carbon::parse($selectedDate)->startOfDay(),
+                Carbon::parse($selectedDate)->endOfDay(),
+            )
             : collect();
 
         $requestedSpecialtyId = $request->filled('specialty_id') ? $request->integer('specialty_id') : null;
@@ -40,7 +41,7 @@ class DoctorSlotsController extends Controller
             'doctor' => $doctor,
             'selectedDate' => $selectedDate,
             'daysWithSlots' => $daysWithSlots,
-            'slots' => $selectedDate ? $daySlots : $slots,
+            'slots' => $daySlots,
             'previewDays' => $daysWithSlots,
             'specialtyId' => $specialty?->id,
         ]);

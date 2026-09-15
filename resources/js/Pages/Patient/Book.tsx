@@ -11,27 +11,35 @@ import DoctorCard from '@/Components/Surfaces/DoctorCard';
 import Empty from '@/Components/Surfaces/Empty';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
-import Results from '@/Components/Surfaces/Results';
+import Results, { ResultList } from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import StepPills from '@/Components/Common/StepPills';
 import { wallTime } from '@/lib/datetime';
 import { specialtyNames } from '@/lib/specialties';
+import { cn } from '@/lib/utils';
 import type { DoctorRecord, Slot, Specialty } from '@/types';
 
 type Props = {
     specialties: Specialty[];
     doctors: DoctorRecord[];
+    nearest_doctor_id: number | null;
     doctor: DoctorRecord | null;
     slots: Slot[];
     daysWithSlots: string[];
     filters: { specialty_id: number | null; doctor_id: number | null; date: string | null };
 };
 
-export default function Book({ specialties, doctors, doctor, slots, daysWithSlots, filters }: Props) {
+export default function Book({ specialties, doctors, nearest_doctor_id, doctor, slots, daysWithSlots, filters }: Props) {
     const step = !filters.specialty_id ? 'specialty' : !filters.doctor_id ? 'doctor' : 'horario';
     const [mode, setMode] = useState<'list' | 'cal'>('list');
     const [month, setMonth] = useState((filters.date ?? daysWithSlots[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const tones = Object.fromEntries((daysWithSlots ?? []).map((day) => [day, 'has' as const]));
+    const backHref =
+        step === 'doctor'
+            ? '/book'
+            : step === 'horario' && filters.specialty_id
+              ? `/book?specialty_id=${filters.specialty_id}`
+              : undefined;
 
     const go = (query: Record<string, string | number>) => {
         router.get('/book', query, { preserveState: true });
@@ -44,6 +52,8 @@ export default function Book({ specialties, doctors, doctor, slots, daysWithSlot
                 header={
                     <PageHeader
                         title="Reservar turno"
+                        backHref={backHref}
+                        backLabel="Atrás"
                         steps={
                             <StepPills
                                 steps={[
@@ -60,29 +70,64 @@ export default function Book({ specialties, doctors, doctor, slots, daysWithSlot
                 <StageCard id="book-body">
                     {step === 'specialty' ? (
                         <Results>
-                            {specialties.map((specialty) => (
-                                <ListRow key={specialty.id} as="button" onClick={() => go({ specialty_id: specialty.id })}>
-                                    {specialty.name}
-                                </ListRow>
-                            ))}
+                            {specialties.length === 0 ? (
+                                <Empty>No hay especialidades con profesionales.</Empty>
+                            ) : (
+                                <ResultList>
+                                    {specialties.map((specialty) => (
+                                        <ListRow key={specialty.id} as="button" onClick={() => go({ specialty_id: specialty.id })}>
+                                            {specialty.name}
+                                        </ListRow>
+                                    ))}
+                                </ResultList>
+                            )}
                         </Results>
                     ) : null}
                     {step === 'doctor' ? (
                         <Results>
-                            {doctors.map((item) => (
-                                <DoctorCard
-                                    key={item.id}
-                                    onClick={() => go({ specialty_id: filters.specialty_id ?? '', doctor_id: item.id })}
-                                >
-                                    <strong>{item.user.name}</strong>
-                                    <span>{specialtyNames(item.specialties)}</span>
-                                </DoctorCard>
-                            ))}
+                            {doctors.length === 0 ? (
+                                <Empty>No hay profesionales con turnos disponibles.</Empty>
+                            ) : (
+                                <ResultList>
+                                    {doctors.map((item) => (
+                                        <DoctorCard
+                                            key={item.id}
+                                            className={cn(
+                                                'flex-row items-center justify-between gap-[var(--space-sm)]',
+                                                item.id === nearest_doctor_id && 'border-accent bg-accent/[0.06]',
+                                            )}
+                                            onClick={() => go({ specialty_id: filters.specialty_id ?? '', doctor_id: item.id })}
+                                        >
+                                            <div className="flex min-w-0 flex-1 flex-col gap-[0.65rem]">
+                                                <strong>{item.user.name}</strong>
+                                                <span>{specialtyNames(item.specialties)}</span>
+                                            </div>
+                                            {item.id === nearest_doctor_id ? (
+                                                <span className="shrink-0 self-center text-right !font-medium !text-accent">
+                                                    Turno más cercano
+                                                </span>
+                                            ) : null}
+                                        </DoctorCard>
+                                    ))}
+                                </ResultList>
+                            )}
                         </Results>
                     ) : null}
                     {step === 'horario' && doctor ? (
                         <>
-                            <ViewSwitch className="mb-3 self-start" value={mode} onChange={setMode} />
+                            <ViewSwitch
+                                className="mb-3 self-start"
+                                value={mode}
+                                onChange={(next) => {
+                                    setMode(next);
+                                    if (next === 'list' && filters.date) {
+                                        go({
+                                            specialty_id: filters.specialty_id ?? '',
+                                            doctor_id: doctor.id,
+                                        });
+                                    }
+                                }}
+                            />
                             {mode === 'cal' ? (
                                 <StageCard layout="split" nested>
                                     <CalendarMonth

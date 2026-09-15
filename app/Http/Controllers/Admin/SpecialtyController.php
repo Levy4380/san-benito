@@ -20,6 +20,11 @@ class SpecialtyController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/SpecialtyCreate');
+    }
+
     public function edit(Specialty $specialty, SpecialtyService $specialties): Response
     {
         return Inertia::render('Admin/SpecialtyEdit', $specialties->editForm($specialty));
@@ -29,10 +34,12 @@ class SpecialtyController extends Controller
     {
         $specialties->create($request->validated());
 
-        return back()->with('toast', [
-            'message' => 'Creaste la especialidad.',
-            'variant' => 'ok',
-        ]);
+        return redirect()
+            ->route('admin.settings.specialties.index')
+            ->with('toast', [
+                'message' => 'Creaste la especialidad.',
+                'variant' => 'ok',
+            ]);
     }
 
     public function update(UpdateSpecialtyRequest $request, Specialty $specialty, SpecialtyService $specialties): RedirectResponse

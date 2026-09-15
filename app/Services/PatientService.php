@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Patient;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -44,5 +45,33 @@ class PatientService
         }
 
         return $patient;
+    }
+
+    /**
+     * @return Collection<int, Patient>
+     */
+    public function list(?string $name = null, ?string $email = null)
+    {
+        $query = Patient::query()
+            ->with('user')
+            ->orderBy('id');
+
+        $name = trim((string) $name);
+
+        if ($name !== '') {
+            $query->whereHas('user', function ($users) use ($name) {
+                $users->where('name', 'like', '%'.$name.'%');
+            });
+        }
+
+        $email = trim((string) $email);
+
+        if ($email !== '') {
+            $query->whereHas('user', function ($users) use ($email) {
+                $users->where('email', 'like', '%'.$email.'%');
+            });
+        }
+
+        return $query->get();
     }
 }

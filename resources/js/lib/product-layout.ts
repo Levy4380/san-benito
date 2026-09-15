@@ -16,7 +16,12 @@ const PRODUCT_PAGES = new Set([
     'Settings/Password',
     'Admin/Appointments',
     'Admin/Doctors',
-    'Admin/Users',
+    'Admin/Patients',
+    'Admin/Admins',
+    'Admin/UserPatient',
+    'Admin/Settings',
+    'Admin/Specialties',
+    'Admin/SpecialtyEdit',
 ]);
 
 const HOME_PAGES = new Set(['Patient/Home', 'Doctor/Home']);

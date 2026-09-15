@@ -7,6 +7,7 @@ import {
     LogOut,
     NotebookPen,
     Settings,
+    Shield,
     Stethoscope,
     User,
     Users,
@@ -15,27 +16,28 @@ import {
 import { useEffect, useState } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import { focusVisibleClass } from '@/lib/clinico-control';
+import { primaryRole } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { RoleName, SharedData } from '@/types';
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavItem = { href: string; label: string; icon: LucideIcon; permission: string };
 
-const patientNav: NavItem[] = [
-    { href: '/doctors', label: 'Doctores', icon: Stethoscope },
-    { href: '/my-appointments', label: 'Mis turnos', icon: CalendarClock },
-    { href: '/book', label: 'Reservar turno', icon: NotebookPen },
+const portalNav: NavItem[] = [
+    { href: '/doctors', label: 'Doctores', icon: Stethoscope, permission: 'doctors.browse' },
+    { href: '/my-appointments', label: 'Mis turnos', icon: CalendarClock, permission: 'own.appointments.view' },
+    { href: '/book', label: 'Reservar turno', icon: NotebookPen, permission: 'appointments.book' },
+    { href: '/agenda', label: 'Mi agenda', icon: Calendar, permission: 'own.agenda.view' },
+    { href: '/agenda/program', label: 'Programar turnos', icon: CalendarPlus, permission: 'own.availability.program' },
+    { href: '/my-patients', label: 'Mis pacientes', icon: Users, permission: 'own.patients.view' },
+    { href: '/settings/agenda', label: 'Config. agenda', icon: Settings, permission: 'own.agenda.settings.update' },
 ];
 
-const doctorNav: NavItem[] = [
-    { href: '/agenda', label: 'Mi agenda', icon: Calendar },
-    { href: '/agenda/program', label: 'Programar turnos', icon: CalendarPlus },
-    { href: '/my-patients', label: 'Mis pacientes', icon: Users },
-    { href: '/settings/agenda', label: 'Config. agenda', icon: Settings },
-];
-
-const adminNav: NavItem[] = [
-    { href: '/admin/appointments', label: 'Reservas', icon: ClipboardList },
-    { href: '/admin/doctors', label: 'Doctores', icon: Stethoscope },
+const staffNav: NavItem[] = [
+    { href: '/admin/appointments', label: 'Reservas', icon: ClipboardList, permission: 'appointments.view-all' },
+    { href: '/admin/doctors', label: 'Doctores', icon: Stethoscope, permission: 'doctors.catalog.view' },
+    { href: '/admin/patients', label: 'Pacientes', icon: Users, permission: 'staff.users.directory' },
+    { href: '/admin/admins', label: 'Administradores', icon: Shield, permission: 'staff.admins.manage' },
+    { href: '/admin/settings', label: 'Configuración', icon: Settings, permission: 'specialties.manage' },
 ];
 
 type Props = {
@@ -64,7 +66,8 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
     }
 
     const role = primaryRole(user.roles);
-    const nav = navFor(role);
+    const hasHome = user.permissions.includes('portal.home');
+    const nav = navFor(user.permissions);
     const roleLabel = roleLabelFor(role);
 
     return (
@@ -80,7 +83,7 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
             )}
         >
             <Link
-                href="/home"
+                href={hasHome ? '/home' : '/admin/appointments'}
                 id="brand-home"
                 aria-label="Ir al inicio"
                 className={cn(
@@ -191,29 +194,10 @@ export function isActiveRoute(path: string, href: string): boolean {
     return path === href || path.startsWith(`${href}/`);
 }
 
-function primaryRole(roles: RoleName[]): RoleName {
-    if (roles.includes('super_admin')) {
-        return 'super_admin';
-    }
-    if (roles.includes('admin')) {
-        return 'admin';
-    }
-    if (roles.includes('doctor')) {
-        return 'doctor';
-    }
+function navFor(permissions: string[]): NavItem[] {
+    const items = permissions.includes('portal.home') ? portalNav : staffNav;
 
-    return 'patient';
-}
-
-function navFor(role: RoleName): NavItem[] {
-    if (role === 'doctor') {
-        return doctorNav;
-    }
-    if (role === 'admin' || role === 'super_admin') {
-        return role === 'super_admin' ? [...adminNav, { href: '/admin/users', label: 'Usuarios', icon: Users }] : adminNav;
-    }
-
-    return patientNav;
+    return items.filter((item) => permissions.includes(item.permission));
 }
 
 function roleLabelFor(role: RoleName): string {

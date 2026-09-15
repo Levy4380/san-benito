@@ -109,7 +109,7 @@ function ConfirmActionIcon({ label }: { label: string }) {
         return <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />;
     }
 
-    if (label === 'Borrar' || label === 'Borrar franja' || label === 'Eliminar cuenta') {
+    if (label === 'Borrar' || label === 'Borrar franja' || label === 'Eliminar cuenta' || label === 'Eliminar') {
         return <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />;
     }
 

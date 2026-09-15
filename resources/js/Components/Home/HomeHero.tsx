@@ -52,13 +52,10 @@ export function HomeUpcomingList({ children }: { children: ReactNode }) {
     return <div className="grid gap-[0.35rem] text-left">{children}</div>;
 }
 
-export function HomeUpcomingItem({ title, meta, actions }: { title: ReactNode; meta: ReactNode; actions?: ReactNode }) {
+export function HomeUpcomingItem({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
     return (
-        <div className="flex w-full items-center justify-between gap-[0.65rem] rounded-md py-[0.35rem] text-left">
-            <div className="grid min-w-0 flex-1 gap-[0.1rem]">
-                <strong className="text-sm font-medium text-ink">{title}</strong>
-                <span className="text-xs text-ink-2">{meta}</span>
-            </div>
+        <div className="flex w-full items-start justify-between gap-[0.65rem] rounded-md py-[0.35rem] text-left">
+            <div className="min-w-0 flex-1">{children}</div>
             {actions ? <div className="shrink-0">{actions}</div> : null}
         </div>
     );

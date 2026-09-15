@@ -12,6 +12,7 @@ import Filters from '@/Components/Surfaces/Filters';
 import NativeSelect from '@/Components/Form/NativeSelect';
 import Results from '@/Components/Surfaces/Results';
 import TextInput from '@/Components/Form/TextInput';
+import { specialtyNames } from '@/lib/specialties';
 import type { DoctorRecord, Specialty } from '@/types';
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
 };
 
 export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
+    const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
+
     const submit: FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
@@ -35,8 +38,7 @@ export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
                     <Results>
                         <Filters onSubmit={submit}>
                             <Field label="Especialidad" htmlFor="specialty_id" flush className="min-w-0">
-                                <NativeSelect id="specialty_id" name="specialty_id" defaultValue={filters.specialty_id}>
-                                    <option value="">Elegí</option>
+                                <NativeSelect id="specialty_id" name="specialty_id" defaultValue={filters.specialty_id || 'all'}>
                                     <option value="all">Todas</option>
                                     {specialties.map((specialty) => (
                                         <option key={specialty.id} value={specialty.id}>
@@ -54,14 +56,16 @@ export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
                             </Btn>
                         </Filters>
                         {doctors.length === 0 ? (
-                            <Empty>Seleccioná una especialidad o escribí un nombre para ver profesionales.</Empty>
+                            <Empty>
+                                {hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
+                            </Empty>
                         ) : (
                             <DoctorGrid>
                                 {doctors.map((doctor) => (
                                     <DoctorCard key={doctor.id} asChild>
                                         <Link href={`/doctors/${doctor.id}`}>
                                             <strong>{doctor.user.name}</strong>
-                                            <span>{doctor.specialty.name}</span>
+                                            <span>{specialtyNames(doctor.specialties)}</span>
                                             <Btn size="sm" asChild>
                                                 <span>
                                                     <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

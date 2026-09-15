@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\SerializesInstitutionalDates;
 use Database\Factories\DoctorFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,7 +21,6 @@ class Doctor extends Model
      */
     protected $fillable = [
         'user_id',
-        'specialty_id',
         'license_number',
         'slot_duration_minutes',
     ];
@@ -40,9 +40,11 @@ class Doctor extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function specialty(): BelongsTo
+    public function specialties(): BelongsToMany
     {
-        return $this->belongsTo(Specialty::class);
+        return $this->belongsToMany(Specialty::class, 'doctor_specialty')
+            ->withTimestamps()
+            ->orderBy('specialties.name');
     }
 
     public function availabilityWindows(): HasMany
@@ -58,5 +60,15 @@ class Doctor extends Model
     public function patients(): BelongsToMany
     {
         return $this->belongsToMany(Patient::class, 'doctor_patient')->withTimestamps();
+    }
+
+    /**
+     * @param  Builder<Doctor>  $query
+     */
+    public function scopeForSpecialty(Builder $query, int $specialtyId): void
+    {
+        $query->whereHas('specialties', function (Builder $specialties) use ($specialtyId): void {
+            $specialties->whereKey($specialtyId);
+        });
     }
 }

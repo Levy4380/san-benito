@@ -22,14 +22,14 @@ class AppointmentService
         private readonly DoctorService $doctors,
     ) {}
 
-    public function book(User $actor, Doctor $doctor, string $startsAt): Appointment
+    public function book(User $actor, Doctor $doctor, string $startsAt, int $specialtyId): Appointment
     {
         $patient = $this->patients->forUser($actor);
 
-        return $this->insertReservation($doctor, $patient, $startsAt);
+        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
     }
 
-    public function assign(User $actor, Doctor $doctor, int $patientId, string $startsAt): Appointment
+    public function assign(User $actor, Doctor $doctor, int $patientId, string $startsAt, int $specialtyId): Appointment
     {
         $this->doctors->forUser($actor);
 
@@ -45,7 +45,7 @@ class AppointmentService
             ]);
         }
 
-        return $this->insertReservation($doctor, $patient, $startsAt);
+        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
     }
 
     public function cancel(Appointment $appointment): void
@@ -83,7 +83,7 @@ class AppointmentService
         return Appointment::query()
             ->forPatient($patient)
             ->upcoming()
-            ->with(['doctor.user', 'doctor.specialty'])
+            ->with(['doctor.user', 'doctor.specialties', 'specialty'])
             ->get();
     }
 
@@ -95,7 +95,7 @@ class AppointmentService
         return Appointment::query()
             ->forPatient($patient)
             ->past()
-            ->with(['doctor.user', 'doctor.specialty'])
+            ->with(['doctor.user', 'doctor.specialties', 'specialty'])
             ->get();
     }
 
@@ -109,7 +109,7 @@ class AppointmentService
         $weekEnd = now()->endOfWeek(Carbon::SUNDAY);
 
         return $query
-            ->with(['doctor.user', 'doctor.specialty', 'patient.user'])
+            ->with(['doctor.user', 'doctor.specialties', 'patient.user', 'specialty'])
             ->where('starts_at', '>', now())
             ->whereBetween('starts_at', [$weekStart, $weekEnd])
             ->orderBy('starts_at')
@@ -117,8 +117,10 @@ class AppointmentService
             ->get();
     }
 
-    private function insertReservation(Doctor $doctor, Patient $patient, string $startsAt): Appointment
+    private function insertReservation(Doctor $doctor, Patient $patient, string $startsAt, int $specialtyId): Appointment
     {
+        $this->assertSpecialtyOfDoctor($doctor, $specialtyId);
+
         $start = Carbon::parse($startsAt);
         $end = $start->copy()->addMinutes((int) $doctor->slot_duration_minutes);
 
@@ -129,7 +131,7 @@ class AppointmentService
         }
 
         try {
-            return DB::transaction(function () use ($doctor, $patient, $start, $end) {
+            return DB::transaction(function () use ($doctor, $patient, $start, $end, $specialtyId) {
                 if (! $this->availability->isBookableSlot($doctor, $start)) {
                     throw ValidationException::withMessages([
                         'starts_at' => 'El turno ya no está disponible',
@@ -139,6 +141,7 @@ class AppointmentService
                 $appointment = Appointment::query()->create([
                     'doctor_id' => $doctor->id,
                     'patient_id' => $patient->id,
+                    'specialty_id' => $specialtyId,
                     'starts_at' => $start,
                     'ends_at' => $end,
                 ]);
@@ -152,5 +155,16 @@ class AppointmentService
                 'starts_at' => 'El turno ya no está disponible',
             ]);
         }
+    }
+
+    private function assertSpecialtyOfDoctor(Doctor $doctor, int $specialtyId): void
+    {
+        if ($doctor->specialties()->whereKey($specialtyId)->exists()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'specialty_id' => 'La especialidad no corresponde a este profesional.',
+        ]);
     }
 }

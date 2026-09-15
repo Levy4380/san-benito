@@ -23,14 +23,35 @@ trait CreatesDomainUsers
     protected function makeDoctor(array $user = [], array $doctor = []): Doctor
     {
         $userModel = User::factory()->create($user);
-        $specialty = Specialty::query()->first() ?? Specialty::factory()->create(['name' => 'Clínica Médica']);
+        $specialtyIds = $this->specialtyIdsFromDoctorAttributes($doctor);
+        unset($doctor['specialty_id'], $doctor['specialty_ids']);
+
         $doctorModel = Doctor::factory()->create(array_merge([
             'user_id' => $userModel->id,
-            'specialty_id' => $specialty->id,
         ], $doctor));
+        $doctorModel->specialties()->sync($specialtyIds);
         $userModel->assignRole('doctor');
 
-        return $doctorModel->load(['user', 'specialty']);
+        return $doctorModel->load(['user', 'specialties']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $doctor
+     * @return list<int>
+     */
+    private function specialtyIdsFromDoctorAttributes(array $doctor): array
+    {
+        if (array_key_exists('specialty_ids', $doctor)) {
+            return array_values(array_map('intval', (array) $doctor['specialty_ids']));
+        }
+
+        if (array_key_exists('specialty_id', $doctor)) {
+            return [(int) $doctor['specialty_id']];
+        }
+
+        $specialty = Specialty::query()->first() ?? Specialty::factory()->create(['name' => 'Clínica Médica']);
+
+        return [$specialty->id];
     }
 
     protected function makeAdmin(array $user = []): User

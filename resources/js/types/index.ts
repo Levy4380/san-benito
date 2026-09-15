@@ -8,6 +8,7 @@ export type AuthUser = {
     email: string;
     phone: string | null;
     roles: RoleName[];
+    permissions: string[];
 };
 
 export type SharedData = {
@@ -27,9 +28,8 @@ export type DoctorRecord = {
     id: number;
     license_number: string;
     slot_duration_minutes: number;
-    specialty_id: number;
     user: { id: number; name: string; email: string; phone: string | null };
-    specialty: Specialty;
+    specialties: Specialty[];
 };
 
 export type PatientRecord = {
@@ -49,10 +49,12 @@ export type AppointmentRecord = {
     id: number;
     doctor_id: number;
     patient_id: number;
+    specialty_id: number;
     starts_at: string;
     ends_at: string;
     doctor?: DoctorRecord;
     patient?: PatientRecord;
+    specialty?: Specialty;
 };
 
 export type AvailabilityWindowRecord = {

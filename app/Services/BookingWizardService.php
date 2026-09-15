@@ -27,7 +27,7 @@ class BookingWizardService
         $daysWithSlots = collect();
 
         if ($doctorId) {
-            $doctor = Doctor::query()->with(['user', 'specialty'])->find($doctorId);
+            $doctor = Doctor::query()->with(['user', 'specialties'])->find($doctorId);
             if ($doctor) {
                 $daysWithSlots = $this->availability->upcomingDaysWithSlots($doctor, 12);
                 if ($date) {

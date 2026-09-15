@@ -7,16 +7,24 @@ use App\Http\Requests\Admin\StoreDoctorRequest;
 use App\Services\DoctorSearchService;
 use App\Services\DoctorService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DoctorController extends Controller
 {
-    public function index(DoctorSearchService $search): Response
+    public function index(Request $request, DoctorSearchService $search): Response
     {
+        $specialty = $search->parseSpecialtyFilter($request->input('specialty_id'));
+        $name = $request->input('q');
+
         return Inertia::render('Admin/Doctors', [
-            'doctors' => $search->search(null, null, true),
+            'doctors' => $search->search($specialty['id'], is_string($name) ? $name : null, true),
             'specialties' => $search->specialties(),
+            'filters' => [
+                'specialty_id' => $specialty['value'],
+                'q' => is_string($name) ? $name : '',
+            ],
         ]);
     }
 

@@ -3,9 +3,9 @@ import { CalendarClock, CalendarPlus, Users } from 'lucide-react';
 import PageScreen from '@/Components/Common/PageScreen';
 import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import { Btn } from '@/Components/Form/Btn';
-import Empty from '@/Components/Surfaces/Empty';
 import HomeHero, { HomeStartPrimary, HomeStartSecondary, HomeUpcoming, HomeUpcomingItem, HomeUpcomingList } from '@/Components/Home/HomeHero';
-import { wallDate, wallTime } from '@/lib/datetime';
+import { BookingCardFields } from '@/Components/Surfaces/BookingCard';
+import Empty from '@/Components/Surfaces/Empty';
 import type { AppointmentRecord, SharedData } from '@/types';
 
 type Props = {
@@ -59,15 +59,15 @@ export default function DoctorHome({ upcoming }: Props) {
                                 {upcoming.map((appointment) => (
                                     <HomeUpcomingItem
                                         key={appointment.id}
-                                        title={`${wallDate(appointment.starts_at)} · ${wallTime(appointment.starts_at)}`}
-                                        meta={appointment.patient?.user.name}
                                         actions={
                                             <PatientProfileBtn
                                                 patientId={appointment.patient_id}
                                                 name={appointment.patient?.user.name}
                                             />
                                         }
-                                    />
+                                    >
+                                        <BookingCardFields appointment={appointment} />
+                                    </HomeUpcomingItem>
                                 ))}
                             </HomeUpcomingList>
                         )}

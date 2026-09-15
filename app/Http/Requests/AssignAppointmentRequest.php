@@ -8,7 +8,7 @@ class AssignAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('doctor') ?? false;
+        return $this->user()?->can('own.appointments.assign') ?? false;
     }
 
     /**
@@ -19,6 +19,19 @@ class AssignAppointmentRequest extends FormRequest
         return [
             'starts_at' => ['required', 'date_format:Y-m-d H:i:s'],
             'patient_id' => ['required', 'integer', 'exists:patients,id'],
+            'specialty_id' => ['required', 'integer', 'exists:specialties,id'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'starts_at' => 'horario',
+            'patient_id' => 'paciente',
+            'specialty_id' => 'especialidad',
         ];
     }
 }

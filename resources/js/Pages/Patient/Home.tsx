@@ -2,9 +2,10 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { CalendarClock, NotebookPen, Search } from 'lucide-react';
 import PageScreen from '@/Components/Common/PageScreen';
 import { Btn } from '@/Components/Form/Btn';
-import Empty from '@/Components/Surfaces/Empty';
 import HomeHero, { HomeStartPrimary, HomeUpcoming, HomeUpcomingItem, HomeUpcomingList } from '@/Components/Home/HomeHero';
-import { firstName, wallDate, wallTime } from '@/lib/datetime';
+import { BookingCardFields } from '@/Components/Surfaces/BookingCard';
+import Empty from '@/Components/Surfaces/Empty';
+import { firstName } from '@/lib/datetime';
 import type { AppointmentRecord, SharedData } from '@/types';
 
 type Props = {
@@ -48,11 +49,9 @@ export default function PatientHome({ upcoming }: Props) {
                         ) : (
                             <HomeUpcomingList>
                                 {upcoming.map((appointment) => (
-                                    <HomeUpcomingItem
-                                        key={appointment.id}
-                                        title={`${wallDate(appointment.starts_at)} · ${wallTime(appointment.starts_at)}`}
-                                        meta={appointment.doctor?.user.name}
-                                    />
+                                    <HomeUpcomingItem key={appointment.id}>
+                                        <BookingCardFields appointment={appointment} />
+                                    </HomeUpcomingItem>
                                 ))}
                             </HomeUpcomingList>
                         )}

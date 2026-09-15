@@ -18,7 +18,7 @@ class AgendaProgramController extends Controller
         $doctor = $doctors->forUser($request->user());
 
         return Inertia::render('Doctor/Program', [
-            'doctor' => $doctor->load(['user', 'specialty']),
+            'doctor' => $doctor->load(['user', 'specialties']),
             'tones' => $agenda->tonesForNearbyMonths($doctor),
         ]);
     }
@@ -29,7 +29,7 @@ class AgendaProgramController extends Controller
         AvailabilityWindowService $windows,
     ): RedirectResponse {
         $doctor = $doctors->forUser($request->user());
-        $windows->assertOwnedBy($request->user(), $doctor);
+        $windows->assertOwnedBy($request->user(), $doctor, 'program');
         $data = $request->validated();
 
         $windows->program(

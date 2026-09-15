@@ -6,12 +6,12 @@ import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
-import BookingCard, { BookingCardActions, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
+import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Empty from '@/Components/Surfaces/Empty';
 import Panel from '@/Components/Surfaces/Panel';
-import { wallDate, wallTime } from '@/lib/datetime';
+import { wallDate } from '@/lib/datetime';
 import type { AppointmentRecord } from '@/types';
 
 type Props = {
@@ -106,14 +106,8 @@ function AppointmentList({ appointments, onCancel }: { appointments: Appointment
         <BookingList>
             {appointments.map((appointment) => (
                 <BookingCard key={appointment.id}>
-                    <strong>
-                        {wallDate(appointment.starts_at)} · {wallTime(appointment.starts_at)}
-                    </strong>
                     <BookingCardRow>
-                        <span className="min-w-0 truncate text-sm">
-                            {appointment.doctor?.user.name}
-                            {appointment.doctor?.specialty.name ? ` · ${appointment.doctor.specialty.name}` : ''}
-                        </span>
+                        <BookingCardFields appointment={appointment} />
                         <BookingCardActions>
                             <Btn type="button" variant="danger" size="xs" onClick={() => onCancel(appointment.id)}>
                                 <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />

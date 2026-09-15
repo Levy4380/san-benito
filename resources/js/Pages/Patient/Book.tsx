@@ -15,6 +15,7 @@ import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import StepPills from '@/Components/Common/StepPills';
 import { wallTime } from '@/lib/datetime';
+import { specialtyNames } from '@/lib/specialties';
 import type { DoctorRecord, Slot, Specialty } from '@/types';
 
 type Props = {
@@ -74,7 +75,7 @@ export default function Book({ specialties, doctors, doctor, slots, daysWithSlot
                                     onClick={() => go({ specialty_id: filters.specialty_id ?? '', doctor_id: item.id })}
                                 >
                                     <strong>{item.user.name}</strong>
-                                    <span>{item.specialty.name}</span>
+                                    <span>{specialtyNames(item.specialties)}</span>
                                 </DoctorCard>
                             ))}
                         </Results>
@@ -96,11 +97,15 @@ export default function Book({ specialties, doctors, doctor, slots, daysWithSlot
                                         ]}
                                     />
                                     <Panel sheet>
-                                        <SlotList slots={filters.date ? slots : []} doctorId={doctor.id} />
+                                        <SlotList
+                                            slots={filters.date ? slots : []}
+                                            doctorId={doctor.id}
+                                            specialtyId={filters.specialty_id}
+                                        />
                                     </Panel>
                                 </StageCard>
                             ) : (
-                                <SlotList slots={slots.slice(0, 40)} doctorId={doctor.id} />
+                                <SlotList slots={slots.slice(0, 40)} doctorId={doctor.id} specialtyId={filters.specialty_id} />
                             )}
                         </>
                     ) : null}
@@ -110,7 +115,7 @@ export default function Book({ specialties, doctors, doctor, slots, daysWithSlot
     );
 }
 
-function SlotList({ slots, doctorId }: { slots: Slot[]; doctorId: number }) {
+function SlotList({ slots, doctorId, specialtyId }: { slots: Slot[]; doctorId: number; specialtyId: number | null }) {
     if (slots.length === 0) {
         return <Empty>No hay horarios para mostrar.</Empty>;
     }
@@ -126,7 +131,13 @@ function SlotList({ slots, doctorId }: { slots: Slot[]; doctorId: number }) {
                         type="button"
                         size="sm"
                         className="shrink-0"
-                        onClick={() => router.post(`/doctors/${doctorId}/appointments`, { starts_at: slot.starts_at })}
+                        disabled={!specialtyId}
+                        onClick={() =>
+                            router.post(`/doctors/${doctorId}/appointments`, {
+                                starts_at: slot.starts_at,
+                                specialty_id: specialtyId,
+                            })
+                        }
                     >
                         <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         Reservar

@@ -31,12 +31,18 @@ class DoctorSlotsController extends Controller
             ? $slots->filter(fn (array $slot) => str_starts_with($slot['starts_at'], $selectedDate))->values()
             : collect();
 
+        $requestedSpecialtyId = $request->filled('specialty_id') ? $request->integer('specialty_id') : null;
+        $specialty = $requestedSpecialtyId
+            ? $doctor->specialties->firstWhere('id', $requestedSpecialtyId)
+            : null;
+
         return Inertia::render('Doctors/Slots', [
             'doctor' => $doctor,
             'selectedDate' => $selectedDate,
             'daysWithSlots' => $daysWithSlots,
             'slots' => $selectedDate ? $daySlots : $slots,
             'previewDays' => $daysWithSlots,
+            'specialtyId' => $specialty?->id,
         ]);
     }
 }

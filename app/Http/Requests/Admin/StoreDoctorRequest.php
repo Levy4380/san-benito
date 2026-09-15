@@ -10,7 +10,7 @@ class StoreDoctorRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(['admin', 'super_admin']) ?? false;
+        return $this->user()?->can('doctors.create') ?? false;
     }
 
     /**
@@ -23,9 +23,25 @@ class StoreDoctorRequest extends FormRequest
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', Password::defaults()],
             'license_number' => ['required', 'string', 'max:64', 'unique:doctors,license_number'],
-            'specialty_id' => ['required', 'integer', 'exists:specialties,id'],
+            'specialty_ids' => ['required', 'array', 'min:1'],
+            'specialty_ids.*' => ['integer', 'distinct', 'exists:specialties,id'],
             'phone' => ['nullable', 'string', 'max:32'],
             'slot_duration_minutes' => ['nullable', 'integer', 'min:5', 'max:120'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'specialty_ids.required' => 'Elegí al menos una especialidad.',
+            'specialty_ids.array' => 'Elegí al menos una especialidad.',
+            'specialty_ids.min' => 'Elegí al menos una especialidad.',
+            'specialty_ids.*.integer' => 'La especialidad seleccionada no existe.',
+            'specialty_ids.*.distinct' => 'No repetí una especialidad.',
+            'specialty_ids.*.exists' => 'La especialidad seleccionada no existe.',
         ];
     }
 }

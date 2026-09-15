@@ -45,9 +45,9 @@ class DemoSeeder extends Seeder
         $pediatria = Specialty::query()->where('name', 'Pediatría')->firstOrFail();
         $cardio = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
 
-        $this->createDoctor('Ana Pérez', 'ana.perez@sanbenito.test', $password, $clinica->id, 'MN-10001');
-        $this->createDoctor('Luis Gómez', 'luis.gomez@sanbenito.test', $password, $pediatria->id, 'MN-10002');
-        $this->createDoctor('María López', 'maria.lopez@sanbenito.test', $password, $cardio->id, 'MN-10003');
+        $this->createDoctor('Ana Pérez', 'ana.perez@sanbenito.test', $password, [$clinica->id, $cardio->id], 'MN-10001');
+        $this->createDoctor('Luis Gómez', 'luis.gomez@sanbenito.test', $password, [$pediatria->id], 'MN-10002');
+        $this->createDoctor('María López', 'maria.lopez@sanbenito.test', $password, [$cardio->id], 'MN-10003');
 
         $admin = User::query()->create([
             'name' => 'Admin San Benito',
@@ -64,7 +64,10 @@ class DemoSeeder extends Seeder
         $super->assignRole('super_admin');
     }
 
-    private function createDoctor(string $name, string $email, string $password, int $specialtyId, string $license): void
+    /**
+     * @param  list<int>  $specialtyIds
+     */
+    private function createDoctor(string $name, string $email, string $password, array $specialtyIds, string $license): void
     {
         $user = User::query()->create([
             'name' => $name,
@@ -72,12 +75,13 @@ class DemoSeeder extends Seeder
             'password' => $password,
         ]);
 
-        Doctor::query()->create([
+        $doctor = Doctor::query()->create([
             'user_id' => $user->id,
-            'specialty_id' => $specialtyId,
             'license_number' => $license,
             'slot_duration_minutes' => 20,
         ]);
+
+        $doctor->specialties()->attach($specialtyIds);
 
         $user->assignRole('doctor');
     }

@@ -21,6 +21,7 @@ class AgendaAssignController extends Controller
             $doctor,
             (int) $request->validated('patient_id'),
             $request->validated('starts_at'),
+            (int) $request->validated('specialty_id'),
         );
 
         return back()->with('toast', [

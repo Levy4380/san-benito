@@ -9,6 +9,20 @@ use Illuminate\Database\Eloquent\Collection;
 class DoctorSearchService
 {
     /**
+     * Query string `specialty_id`: vacío o "all" = Todas (lista completa).
+     *
+     * @return array{id: ?int, value: string}
+     */
+    public function parseSpecialtyFilter(mixed $input): array
+    {
+        if (! is_string($input) || $input === '' || $input === 'all') {
+            return ['id' => null, 'value' => 'all'];
+        }
+
+        return ['id' => (int) $input, 'value' => $input];
+    }
+
+    /**
      * @return Collection<int, Doctor>
      */
     public function search(?int $specialtyId, ?string $name, bool $filtered): Collection
@@ -17,10 +31,10 @@ class DoctorSearchService
             return new Collection;
         }
 
-        $query = Doctor::query()->with(['user', 'specialty']);
+        $query = Doctor::query()->with(['user', 'specialties']);
 
         if ($specialtyId !== null) {
-            $query->where('specialty_id', $specialtyId);
+            $query->forSpecialty($specialtyId);
         }
 
         $name = trim((string) $name);
@@ -36,7 +50,7 @@ class DoctorSearchService
 
     public function profile(Doctor $doctor): Doctor
     {
-        return $doctor->load(['user', 'specialty']);
+        return $doctor->load(['user', 'specialties']);
     }
 
     /**

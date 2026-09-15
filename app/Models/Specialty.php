@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\SpecialtyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Specialty extends Model
@@ -19,8 +20,13 @@ class Specialty extends Model
         'name',
     ];
 
-    public function doctors(): HasMany
+    public function doctors(): BelongsToMany
     {
-        return $this->hasMany(Doctor::class);
+        return $this->belongsToMany(Doctor::class, 'doctor_specialty')->withTimestamps();
+    }
+
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 }

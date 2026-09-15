@@ -32,7 +32,7 @@ class AgendaService
 
         $appointments = Appointment::query()
             ->forDoctor($doctor)
-            ->with('patient.user')
+            ->with(['doctor.user', 'doctor.specialties', 'patient.user', 'specialty'])
             ->whereBetween('starts_at', [$monthStart, $monthEnd])
             ->orderBy('starts_at')
             ->get();
@@ -56,7 +56,7 @@ class AgendaService
             : null;
 
         return [
-            'doctor' => $doctor->load(['user', 'specialty']),
+            'doctor' => $doctor->load(['user', 'specialties']),
             'selectedDate' => $dayKey,
             'windows' => $dayWindows,
             'slots' => $daySlots,

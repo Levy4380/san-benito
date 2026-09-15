@@ -7,7 +7,7 @@ import PageScreen from '@/Components/Common/PageScreen';
 import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
-import BookingCard, { BookingCardGrid, BookingList } from '@/Components/Surfaces/BookingCard';
+import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Field from '@/Components/Form/Field';
@@ -20,11 +20,12 @@ import Time24 from '@/Components/Form/Time24';
 import Empty from '@/Components/Surfaces/Empty';
 import Hint from '@/Components/Surfaces/Hint';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
-import type { AppointmentRecord, AvailabilityWindowRecord, PatientRecord, Slot } from '@/types';
+import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, PatientRecord, Slot } from '@/types';
 
 type PanelStep = 'day' | 'load' | 'assign';
 
 type Props = {
+    doctor: DoctorRecord;
     selectedDate: string;
     windows: AvailabilityWindowRecord[];
     slots: Slot[];
@@ -34,10 +35,11 @@ type Props = {
     preselectedPatient: PatientRecord | null;
 };
 
-export default function Agenda({ selectedDate, windows, slots, appointments, tones, patients, preselectedPatient }: Props) {
+export default function Agenda({ doctor, selectedDate, windows, slots, appointments, tones, patients, preselectedPatient }: Props) {
     const [month, setMonth] = useState(selectedDate.slice(0, 7) + '-01');
     const [step, setStep] = useState<PanelStep>(preselectedPatient ? 'assign' : 'day');
     const [patientId, setPatientId] = useState(preselectedPatient?.id?.toString() ?? '');
+    const [specialtyId, setSpecialtyId] = useState(doctor.specialties.length === 1 ? String(doctor.specialties[0].id) : '');
     const [start, setStart] = useState('09:00');
     const { ask, dialog } = useConfirm();
     const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
@@ -48,12 +50,12 @@ export default function Agenda({ selectedDate, windows, slots, appointments, ton
     };
 
     const assign = (startsAt: string) => {
-        if (!patientId) {
+        if (!patientId || !specialtyId) {
             return;
         }
         router.post(
             '/agenda/appointments',
-            { starts_at: startsAt, patient_id: Number(patientId) },
+            { starts_at: startsAt, patient_id: Number(patientId), specialty_id: Number(specialtyId) },
             { onSuccess: () => setStep('day') },
         );
     };
@@ -135,20 +137,21 @@ export default function Agenda({ selectedDate, windows, slots, appointments, ton
                                     ) : (
                                         appointments.map((appointment) => (
                                             <BookingCard key={appointment.id}>
-                                                <BookingCardGrid>
-                                                    <strong>{wallTime(appointment.starts_at)}</strong>
-                                                    <PatientProfileBtn
-                                                        patientId={appointment.patient_id}
-                                                        name={appointment.patient?.user.name}
-                                                        size="xs"
-                                                        label="Ver paciente"
-                                                    />
-                                                    <span className="min-w-0 truncate text-sm">{appointment.patient?.user.name}</span>
-                                                    <Btn type="button" variant="danger" size="xs" onClick={() => cancel(appointment.id)}>
-                                                        <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />
-                                                        Cancelar turno
-                                                    </Btn>
-                                                </BookingCardGrid>
+                                                <BookingCardRow>
+                                                    <BookingCardFields appointment={appointment} />
+                                                    <BookingCardActions>
+                                                        <PatientProfileBtn
+                                                            patientId={appointment.patient_id}
+                                                            name={appointment.patient?.user.name}
+                                                            size="xs"
+                                                            label="Ver paciente"
+                                                        />
+                                                        <Btn type="button" variant="danger" size="xs" onClick={() => cancel(appointment.id)}>
+                                                            <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />
+                                                            Cancelar turno
+                                                        </Btn>
+                                                    </BookingCardActions>
+                                                </BookingCardRow>
                                             </BookingCard>
                                         ))
                                     )}
@@ -237,6 +240,20 @@ export default function Agenda({ selectedDate, windows, slots, appointments, ton
                                         ) : null}
                                     </div>
                                 </Field>
+                                <Field label="Especialidad" htmlFor="specialty_id" className="shrink-0">
+                                    <NativeSelect
+                                        id="specialty_id"
+                                        value={specialtyId}
+                                        onChange={(event) => setSpecialtyId(event.target.value)}
+                                    >
+                                        <option value="">Elegí una especialidad</option>
+                                        {doctor.specialties.map((specialty) => (
+                                            <option key={specialty.id} value={specialty.id}>
+                                                {specialty.name}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                </Field>
                                 <PanelScroll className="pt-0">
                                     {slots.length === 0 ? (
                                         <Empty>No hay huecos libres este día.</Empty>
@@ -250,7 +267,7 @@ export default function Agenda({ selectedDate, windows, slots, appointments, ton
                                                     type="button"
                                                     size="sm"
                                                     className="shrink-0"
-                                                    disabled={!patientId}
+                                                    disabled={!patientId || !specialtyId}
                                                     onClick={() => assign(slot.starts_at)}
                                                 >
                                                     <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

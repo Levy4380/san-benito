@@ -18,6 +18,7 @@ class BookAppointmentRequest extends FormRequest
     {
         return [
             'starts_at' => ['required', 'date_format:Y-m-d H:i:s'],
+            'specialty_id' => ['required', 'integer', 'exists:specialties,id'],
         ];
     }
 
@@ -28,6 +29,7 @@ class BookAppointmentRequest extends FormRequest
     {
         return [
             'starts_at' => 'horario',
+            'specialty_id' => 'especialidad',
         ];
     }
 }

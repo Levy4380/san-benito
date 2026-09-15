@@ -18,9 +18,20 @@ class DoctorFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'specialty_id' => Specialty::factory(),
             'license_number' => fake()->unique()->numerify('MN-#####'),
             'slot_duration_minutes' => 20,
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Doctor $doctor): void {
+            if ($doctor->specialties()->exists()) {
+                return;
+            }
+
+            $specialty = Specialty::query()->first() ?? Specialty::factory()->create();
+            $doctor->specialties()->attach($specialty->id);
+        });
     }
 }

@@ -22,7 +22,7 @@ class HomeController extends Controller
     ): Response|RedirectResponse {
         $user = $request->user();
 
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if (! $user->can('portal.home')) {
             return redirect()->to(RoleRedirector::intendedPath($user));
         }
 

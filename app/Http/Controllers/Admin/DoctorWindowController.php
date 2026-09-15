@@ -16,7 +16,7 @@ class DoctorWindowController extends Controller
         Doctor $doctor,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor);
+        $windows->assertOwnedBy($request->user(), $doctor, 'create');
         $windows->createShortWindow($doctor, $request->validated('starts_at'));
 
         return back()->with('toast', [
@@ -30,7 +30,7 @@ class DoctorWindowController extends Controller
         Doctor $doctor,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor);
+        $windows->assertOwnedBy($request->user(), $doctor, 'program');
         $data = $request->validated();
 
         $windows->program(

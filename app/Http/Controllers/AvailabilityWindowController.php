@@ -17,7 +17,7 @@ class AvailabilityWindowController extends Controller
         AvailabilityWindowService $windows,
     ): RedirectResponse {
         $doctor = $doctors->forUser($request->user());
-        $windows->assertOwnedBy($request->user(), $doctor);
+        $windows->assertOwnedBy($request->user(), $doctor, 'create');
         $windows->createShortWindow($doctor, $request->validated('starts_at'));
 
         return back()->with('toast', [

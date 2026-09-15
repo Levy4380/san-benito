@@ -8,7 +8,17 @@ class LinkPatientRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole(['doctor', 'admin', 'super_admin']) ?? false;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($this->routeIs('admin.*')) {
+            return $user->can('patients.link');
+        }
+
+        return $user->can('own.patients.link');
     }
 
     /**

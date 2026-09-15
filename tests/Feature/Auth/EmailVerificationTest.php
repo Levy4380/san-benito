@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,9 +14,17 @@ class EmailVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seedCatalog();
+    }
+
     public function test_email_verification_screen_can_be_rendered()
     {
         $user = User::factory()->unverified()->create();
+        $user->assignRole('patient');
+        Patient::factory()->create(['user_id' => $user->id]);
 
         $response = $this->actingAs($user)->get('/verify-email');
 
@@ -25,6 +34,8 @@ class EmailVerificationTest extends TestCase
     public function test_email_can_be_verified()
     {
         $user = User::factory()->unverified()->create();
+        $user->assignRole('patient');
+        Patient::factory()->create(['user_id' => $user->id]);
 
         Event::fake();
 
@@ -44,6 +55,8 @@ class EmailVerificationTest extends TestCase
     public function test_email_is_not_verified_with_invalid_hash()
     {
         $user = User::factory()->unverified()->create();
+        $user->assignRole('patient');
+        Patient::factory()->create(['user_id' => $user->id]);
 
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',

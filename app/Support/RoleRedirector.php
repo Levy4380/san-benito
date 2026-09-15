@@ -8,10 +8,10 @@ class RoleRedirector
 {
     public static function intendedPath(User $user): string
     {
-        if ($user->hasRole(['admin', 'super_admin'])) {
-            return '/admin/appointments';
+        if ($user->can('portal.home')) {
+            return '/home';
         }
 
-        return '/home';
+        return '/admin/appointments';
     }
 }

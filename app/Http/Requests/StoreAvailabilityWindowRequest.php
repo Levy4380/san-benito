@@ -2,14 +2,23 @@
 
 namespace App\Http\Requests;
 
-use App\Models\AvailabilityWindow;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAvailabilityWindowRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', AvailabilityWindow::class) ?? false;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($this->routeIs('admin.*')) {
+            return $user->can('availability.create');
+        }
+
+        return $user->can('own.availability.create');
     }
 
     /**

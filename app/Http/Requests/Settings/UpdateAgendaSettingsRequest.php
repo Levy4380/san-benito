@@ -8,7 +8,7 @@ class UpdateAgendaSettingsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('doctor') ?? false;
+        return $this->user()?->can('own.agenda.settings.update') ?? false;
     }
 
     /**

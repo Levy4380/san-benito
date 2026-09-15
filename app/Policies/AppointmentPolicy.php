@@ -9,18 +9,15 @@ class AppointmentPolicy
 {
     public function cancel(User $user, Appointment $appointment): bool
     {
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->can('appointments.cancel')) {
             return true;
         }
 
-        if ($user->hasRole('patient') && $user->patient?->id === $appointment->patient_id) {
-            return true;
+        if (! $user->can('own.appointments.cancel')) {
+            return false;
         }
 
-        if ($user->hasRole('doctor') && $user->doctor?->id === $appointment->doctor_id) {
-            return true;
-        }
-
-        return false;
+        return $user->patient?->id === $appointment->patient_id
+            || $user->doctor?->id === $appointment->doctor_id;
     }
 }

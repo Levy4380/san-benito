@@ -109,13 +109,13 @@ class AvailabilityWindowService
         $window->delete();
     }
 
-    public function assertOwnedBy(User $user, Doctor $doctor): void
+    public function assertOwnedBy(User $user, Doctor $doctor, string $ability = 'create'): void
     {
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->can('availability.'.$ability)) {
             return;
         }
 
-        if ($user->hasRole('doctor') && $user->doctor?->is($doctor)) {
+        if ($user->can('own.availability.'.$ability) && $user->doctor?->is($doctor)) {
             return;
         }
 

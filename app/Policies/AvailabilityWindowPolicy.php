@@ -9,15 +9,15 @@ class AvailabilityWindowPolicy
 {
     public function create(User $user): bool
     {
-        return $user->hasRole(['doctor', 'admin', 'super_admin']);
+        return $user->can('own.availability.create') || $user->can('availability.create');
     }
 
     public function delete(User $user, AvailabilityWindow $window): bool
     {
-        if ($user->hasRole(['admin', 'super_admin'])) {
+        if ($user->can('availability.delete')) {
             return true;
         }
 
-        return $user->hasRole('doctor') && $user->doctor?->id === $window->doctor_id;
+        return $user->can('own.availability.delete') && $user->doctor?->id === $window->doctor_id;
     }
 }

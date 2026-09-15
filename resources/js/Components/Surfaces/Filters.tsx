@@ -12,7 +12,7 @@ export default function Filters({ variant = 'default', className, children, ...p
             {...props}
             data-band=""
             className={cn(
-                'mb-0 grid w-full items-end gap-[var(--space-sm)]',
+                'mb-0 grid w-full shrink-0 items-end gap-[var(--space-sm)]',
                 variant === 'default' && 'sm:grid-cols-[1fr_1fr_auto]',
                 variant === 'one' && 'sm:grid-cols-[1fr_auto]',
                 className,

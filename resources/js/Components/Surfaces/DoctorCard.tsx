@@ -57,7 +57,7 @@ export function DoctorGrid({ children, className }: { children: ReactNode; class
     return (
         <div
             className={cn(
-                'grid w-full content-start gap-[var(--space-sm)] [grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr))]',
+                'grid min-h-0 w-full flex-1 content-start gap-[var(--space-sm)] overflow-y-auto [grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr))]',
                 className,
             )}
         >

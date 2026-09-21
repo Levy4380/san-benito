@@ -102,7 +102,7 @@ No cambiar el stack.
 | Base del proyecto | Starter kit oficial **React** de Laravel 12 (Inertia + React + TypeScript + Tailwind; auth con Fortify). Versiones las del starter kit. |
 | Roles/permisos | `spatie/laravel-permission` |
 | Base de datos | MySQL 8.0 (tests contra base `testing`) |
-| Package manager JS | `yarn` — prohibido `npm` |
+| Package manager JS | yarn **Classic 1.x** (`yarn.lock` v1) — prohibido `npm`, el campo `"packageManager"` en `package.json`, Corepack (`enable` / `use` / `prepare yarn@4` / `yarn@stable`) y Yarn Berry/4 |
 | Calidad | PHPUnit, Laravel Pint, ESLint + Prettier |
 | Entorno local | Laravel Sail (Docker). Nada corre fuera del contenedor. |
 

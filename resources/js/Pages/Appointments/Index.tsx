@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { History, NotebookPen, X } from 'lucide-react';
 import { useState } from 'react';
+import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -26,6 +27,7 @@ export default function MyAppointments({ appointments, today }: Props) {
     const tones = Object.fromEntries(days.map((day) => [day, 'has' as const]));
     const [month, setMonth] = useState((days[0] ?? today).slice(0, 7) + '-01');
     const [selected, setSelected] = useState<string | null>(days[0] ?? null);
+    const [mobileDayOpen, setMobileDayOpen] = useState(false);
     const visible = mode === 'cal' && selected ? appointments.filter((appointment) => wallDate(appointment.starts_at) === selected) : appointments;
 
     const cancel = async (id: number) => {
@@ -40,6 +42,28 @@ export default function MyAppointments({ appointments, today }: Props) {
         }
     };
 
+    const selectDay = (date: string) => {
+        setSelected(date);
+        setMobileDayOpen(true);
+    };
+
+    const calendar = (
+        <CalendarMonth
+            month={month}
+            selected={selected}
+            tones={tones}
+            minDate={today}
+            onSelect={selectDay}
+            onMonthChange={setMonth}
+            legend={[
+                { tone: 'empty', label: 'Sin turnos' },
+                { tone: 'has', label: 'Con turnos' },
+            ]}
+        />
+    );
+
+    const dayList = <AppointmentList appointments={visible} onCancel={cancel} />;
+
     return (
         <>
             <Head title="Mis turnos" />
@@ -50,7 +74,15 @@ export default function MyAppointments({ appointments, today }: Props) {
                         description="Tus reservas futuras."
                         actions={
                             <>
-                                <ViewSwitch value={mode} onChange={setMode} />
+                                <ViewSwitch
+                                    value={mode}
+                                    onChange={(next) => {
+                                        setMode(next);
+                                        if (next === 'cal') {
+                                            setMobileDayOpen(false);
+                                        }
+                                    }}
+                                />
                                 <Btn variant="outline" asChild>
                                     <Link href="/my-appointments/history">
                                         <History className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
@@ -70,23 +102,29 @@ export default function MyAppointments({ appointments, today }: Props) {
             >
                 <StageCard id="my-body">
                     {mode === 'cal' ? (
-                        <StageCard layout="split">
-                            <CalendarMonth
-                                month={month}
-                                selected={selected}
-                                tones={tones}
-                                minDate={today}
-                                onSelect={setSelected}
-                                onMonthChange={setMonth}
-                                legend={[
-                                    { tone: 'empty', label: 'Sin turnos' },
-                                    { tone: 'has', label: 'Con turnos' },
-                                ]}
+                        <>
+                            <MobileDaySwap
+                                dayOpen={mobileDayOpen}
+                                onBackToCalendar={() => setMobileDayOpen(false)}
+                                calendar={calendar}
+                                panel={<Panel className="h-full min-h-0">{dayList}</Panel>}
                             />
-                            <Panel sheet>
-                                <AppointmentList appointments={visible} onCancel={cancel} />
-                            </Panel>
-                        </StageCard>
+                            <StageCard layout="split" className="max-md:!hidden">
+                                <CalendarMonth
+                                    month={month}
+                                    selected={selected}
+                                    tones={tones}
+                                    minDate={today}
+                                    onSelect={setSelected}
+                                    onMonthChange={setMonth}
+                                    legend={[
+                                        { tone: 'empty', label: 'Sin turnos' },
+                                        { tone: 'has', label: 'Con turnos' },
+                                    ]}
+                                />
+                                <Panel sheet>{dayList}</Panel>
+                            </StageCard>
+                        </>
                     ) : (
                         <AppointmentList appointments={visible} onCancel={cancel} />
                     )}

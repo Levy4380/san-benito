@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import Sidebar from '@/Components/Layout/Sidebar';
 import Topbar from '@/Components/Layout/Topbar';
 import ToastHost from '@/Components/Feedback/ToastHost';
+import { chromeMainPadClass } from '@/lib/mobile-chrome';
 import { isHomePage } from '@/lib/product-layout';
 import { cn } from '@/lib/utils';
 import type { SharedData } from '@/types';
@@ -29,6 +30,23 @@ export default function AuthenticatedLayout({ children }: Props) {
             document.documentElement.classList.remove('route-loading');
         };
     }, []);
+
+    useEffect(() => {
+        if (!navOpen && !userOpen) {
+            return;
+        }
+
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                setNavOpen(false);
+                setUserOpen(false);
+            }
+        };
+
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [navOpen, userOpen]);
 
     if (!auth.user) {
         return (
@@ -73,8 +91,7 @@ export default function AuthenticatedLayout({ children }: Props) {
                     className={cn(
                         'm-[var(--app-frame)] flex min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-x-hidden overflow-y-auto rounded-[var(--app-radius)] bg-paper p-[var(--space-md)]',
                         'min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:p-[var(--space-lg)_var(--space-xl)]',
-                        'max-[1199px]:mt-[var(--space-2xs)] max-[1199px]:p-[var(--space-sm)_var(--space-xs)]',
-                        'max-sm:p-[var(--space-2xs)_0.35rem]',
+                        chromeMainPadClass,
                         isHome && 'min-[1200px]:overflow-visible',
                     )}
                 >

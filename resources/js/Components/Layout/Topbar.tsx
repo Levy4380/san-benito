@@ -22,13 +22,13 @@ export default function Topbar({ navOpen, userOpen, onToggleNav, onToggleUser }:
         <header
             className={cn(
                 'relative z-[60] hidden shrink-0',
-                'max-[1199px]:order-[-1] max-[1199px]:m-[var(--app-frame)_var(--app-frame)_0] max-[1199px]:flex max-[1199px]:h-[var(--mobile-header-h)] max-[1199px]:min-h-[var(--mobile-header-h)] max-[1199px]:items-center max-[1199px]:justify-between max-[1199px]:gap-[0.35rem] max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:px-[0.4rem]',
+                'max-[1199px]:order-[-1] max-[1199px]:m-[var(--app-frame)_var(--app-frame)_0] max-[1199px]:flex max-[1199px]:h-[var(--mobile-header-h)] max-[1199px]:min-h-[var(--mobile-header-h)] max-[1199px]:items-center max-[1199px]:justify-between max-[1199px]:gap-[0.35rem] max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:px-[var(--space-2xs)]',
             )}
         >
             <button
                 type="button"
                 className={cn(
-                    'z-[2] grid size-[2.25rem] shrink-0 place-items-center rounded-md border-0 bg-transparent p-0 text-ink hover:bg-[oklch(22%_0.02_255/0.06)]',
+                    'z-[2] grid size-[var(--control-h-sm)] shrink-0 place-items-center rounded-md border-0 bg-transparent p-0 text-ink hover:bg-[oklch(22%_0.02_255/0.06)]',
                     focusVisibleClass,
                     navOpen && 'bg-[oklch(22%_0.02_255/0.08)]',
                 )}
@@ -53,13 +53,13 @@ export default function Topbar({ navOpen, userOpen, onToggleNav, onToggleUser }:
                     />
                 </span>
             </button>
-            <span className="pointer-events-none min-w-0 flex-1 overflow-hidden text-center font-display text-[0.95rem] font-bold tracking-[-0.02em] text-ellipsis whitespace-nowrap text-ink">
+            <span className="pointer-events-none min-w-0 flex-1 overflow-hidden text-center font-display text-[0.95rem] font-bold tracking-[-0.02em] text-ellipsis whitespace-nowrap text-ink max-md:text-[0.9rem]">
                 San Benito
             </span>
             <button
                 type="button"
                 className={cn(
-                    'z-[2] grid size-[2.25rem] shrink-0 place-items-center rounded-md border-0 bg-transparent p-0 text-ink hover:bg-[oklch(22%_0.02_255/0.06)]',
+                    'z-[2] grid size-[var(--control-h-sm)] shrink-0 place-items-center rounded-md border-0 bg-transparent p-0 text-ink hover:bg-[oklch(22%_0.02_255/0.06)]',
                     focusVisibleClass,
                     userOpen && 'bg-[oklch(22%_0.02_255/0.08)]',
                 )}
@@ -69,7 +69,7 @@ export default function Topbar({ navOpen, userOpen, onToggleNav, onToggleUser }:
                 onClick={onToggleUser}
             >
                 <span
-                    className="grid size-[1.2rem] place-items-center rounded-full bg-accent text-[0.58rem] font-semibold tracking-[0.02em] text-accent-ink"
+                    className="grid size-[1.35rem] place-items-center rounded-full bg-accent text-[0.62rem] font-semibold tracking-[0.02em] text-accent-ink"
                     aria-hidden="true"
                 >
                     {initials(user.name)}

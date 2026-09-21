@@ -15,7 +15,7 @@ export default function AuthClinicoLayout({ children, title, description }: Prop
             <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[radial-gradient(ellipse_80%_50%_at_20%_0%,oklch(96%_0.03_255),transparent),var(--color-paper)]">
                 <main
                     data-app-main=""
-                    className="flex min-h-full w-full shrink-0 flex-col p-[var(--space-sm)] min-[1200px]:p-[var(--space-lg)_var(--space-xl)] max-md:p-[var(--space-sm)_var(--space-xs)]"
+                    className="flex min-h-full w-full shrink-0 flex-col p-[var(--space-sm)] min-[1200px]:p-[var(--space-lg)_var(--space-xl)] max-md:p-[var(--space-sm)]"
                 >
                     <div className="mx-auto my-auto grid w-[min(100%,26rem)] min-w-0 gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-lg)] max-md:gap-[var(--space-xs)] max-md:p-[var(--space-md)] [&_form]:grid [&_form]:gap-[var(--space-sm)]">
                         <Link

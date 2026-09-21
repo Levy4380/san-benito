@@ -1,10 +1,7 @@
 import { ResultList } from '@/Components/Surfaces/Results';
+import { phoneSurfaceRadiusClass, SHEET_COLLAPSED_PCT, SHEET_EXPANDED_PCT, SHEET_SNAP_PCT } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 import { CSSProperties, PointerEvent, ReactNode, useRef, useState } from 'react';
-
-const COLLAPSED_PCT = 13;
-const EXPANDED_PCT = 72;
-const SNAP_PCT = 40;
 
 type Props = {
     children: ReactNode;
@@ -19,16 +16,16 @@ export function PanelScroll({ children, className }: { children: ReactNode; clas
 
 export default function Panel({ children, className, title, sheet = false }: Props) {
     const [collapsed, setCollapsed] = useState(true);
-    const [pct, setPct] = useState(COLLAPSED_PCT);
+    const [pct, setPct] = useState(SHEET_COLLAPSED_PCT);
     const [dragging, setDragging] = useState(false);
     const startY = useRef(0);
-    const startPct = useRef(COLLAPSED_PCT);
+    const startPct = useRef(SHEET_COLLAPSED_PCT);
     const moved = useRef(false);
 
     const snap = (value: number) => {
-        const nextCollapsed = value < SNAP_PCT;
+        const nextCollapsed = value < SHEET_SNAP_PCT;
         setCollapsed(nextCollapsed);
-        setPct(nextCollapsed ? COLLAPSED_PCT : EXPANDED_PCT);
+        setPct(nextCollapsed ? SHEET_COLLAPSED_PCT : SHEET_EXPANDED_PCT);
     };
 
     const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
@@ -53,7 +50,7 @@ export default function Panel({ children, className, title, sheet = false }: Pro
         if (Math.abs(delta) > 2) {
             moved.current = true;
         }
-        setPct(Math.min(88, Math.max(COLLAPSED_PCT, startPct.current + delta)));
+        setPct(Math.min(88, Math.max(SHEET_COLLAPSED_PCT, startPct.current + delta)));
     };
 
     const onPointerUp = () => {
@@ -64,7 +61,7 @@ export default function Panel({ children, className, title, sheet = false }: Pro
         if (!moved.current) {
             const next = !collapsed;
             setCollapsed(next);
-            setPct(next ? COLLAPSED_PCT : EXPANDED_PCT);
+            setPct(next ? SHEET_COLLAPSED_PCT : SHEET_EXPANDED_PCT);
             return;
         }
         snap(pct);
@@ -73,7 +70,8 @@ export default function Panel({ children, className, title, sheet = false }: Pro
     return (
         <div
             className={cn(
-                'flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-rule bg-paper p-[var(--space-sm)] md:p-[var(--space-md)] max-md:rounded-[calc(var(--radius-card)+2px)]',
+                'flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-rule bg-paper p-[var(--space-sm)] md:p-[var(--space-md)]',
+                phoneSurfaceRadiusClass,
                 sheet &&
                     'max-md:absolute max-md:right-[0.45rem] max-md:bottom-[0.45rem] max-md:left-[0.45rem] max-md:z-[8] max-md:h-[var(--sheet-h,13%)] max-md:max-h-[88%] max-md:min-h-0 max-md:touch-pan-y max-md:gap-0 max-md:p-[0.2rem_1.05rem_1.05rem] max-md:shadow-[0_-8px_24px_oklch(22%_0.02_255/0.16)]',
                 sheet && dragging && 'max-md:transition-none',

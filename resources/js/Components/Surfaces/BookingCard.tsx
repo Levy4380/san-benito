@@ -3,12 +3,16 @@ import { Slot } from '@radix-ui/react-slot';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { focusVisibleClass } from '@/lib/clinico-control';
 import { wallDate, wallTime } from '@/lib/datetime';
+import { phoneListGapClass, phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { canSeeAppointmentDoctor, canSeeAppointmentPatient } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, SharedData } from '@/types';
 
-const bookingCardClass =
-    'flex min-w-0 flex-col gap-[0.15rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.4rem] font-inherit text-ink no-underline transition-[border-color] duration-short ease-out [&_h3]:text-sm [&_h3]:[overflow-wrap:anywhere] [&_strong]:font-display [&_strong]:text-sm [&_strong]:font-semibold [&_button]:shrink-0';
+const bookingCardClass = cn(
+    'flex min-w-0 flex-col gap-[0.15rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.4rem] font-inherit text-ink no-underline transition-[border-color] duration-short ease-out [&_h3]:text-sm [&_h3]:[overflow-wrap:anywhere] [&_strong]:font-display [&_strong]:text-sm [&_strong]:font-semibold [&_button]:shrink-0',
+    phoneSurfaceRadiusClass,
+    'max-md:gap-[0.25rem] max-md:px-[0.9rem] max-md:py-[0.65rem]',
+);
 
 type Common = {
     children: ReactNode;
@@ -57,18 +61,18 @@ export default function BookingCard({ as = 'div', asChild = false, className, ch
 
 export function BookingList({ children, className }: { children: ReactNode; className?: string }) {
     return (
-        <div className={cn('grid min-h-0 w-full flex-1 content-start gap-[0.5rem] overflow-y-auto mt-2', className)}>
+        <div className={cn('mt-2 grid min-h-0 w-full flex-1 content-start gap-[0.5rem] overflow-y-auto', phoneListGapClass, className)}>
             {children}
         </div>
     );
 }
 
 export function BookingCardRow({ children, className }: { children: ReactNode; className?: string }) {
-    return <div className={cn('flex min-w-0 items-start justify-between gap-[0.4rem]', className)}>{children}</div>;
+    return <div className={cn('flex min-w-0 items-start justify-between gap-[0.4rem] max-md:gap-[0.55rem]', className)}>{children}</div>;
 }
 
 export function BookingCardActions({ children, className }: { children: ReactNode; className?: string }) {
-    return <div className={cn('flex shrink-0 flex-col items-stretch gap-[0.2rem]', className)}>{children}</div>;
+    return <div className={cn('flex shrink-0 flex-col items-stretch gap-[0.2rem] max-md:gap-[0.35rem]', className)}>{children}</div>;
 }
 
 export function BookingCardFields({ appointment, className }: { appointment: AppointmentRecord; className?: string }) {

@@ -7,7 +7,7 @@ Sistema de gestión de turnos para un sanatorio.
 - Laravel 12 + Inertia + React + TypeScript + Vite + Tailwind
 - Spatie Permission (roles: patient, doctor, admin, super_admin)
 - Sail (Docker): `laravel.test`, `mysql`, `queue`, `mailpit`
-- yarn (no npm)
+- yarn **Classic 1.22.x** (lockfile `# yarn lockfile v1`) — no npm; **prohibido** el campo `"packageManager"` en `package.json` (Yarn 1.22 aborta si existe). El error Corepack (`defines "packageManager"` + `Yarn is 1.22.22`) se arregla **borrando** el campo, no con `corepack enable` / Yarn 4.
 
 ## Fuente de verdad
 

@@ -127,8 +127,8 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    'flex items-center gap-[0.35rem] overflow-hidden rounded-md px-[0.65rem] py-[0.55rem] text-left text-ink-2 whitespace-nowrap no-underline hover:bg-paper hover:text-ink',
-                                    'max-[1199px]:px-[0.75rem] max-[1199px]:py-[0.7rem] max-[1199px]:hover:bg-paper-2',
+                                    'flex min-h-[var(--control-h-sm)] items-center gap-[0.35rem] overflow-hidden rounded-md px-[0.65rem] py-[0.55rem] text-left text-ink-2 whitespace-nowrap no-underline hover:bg-paper hover:text-ink',
+                                    'max-[1199px]:min-h-[var(--control-h)] max-[1199px]:px-[0.85rem] max-[1199px]:py-[0.75rem] max-[1199px]:text-[length:var(--text-md)] max-[1199px]:hover:bg-paper-2',
                                     focusVisibleClass,
                                     active && 'bg-accent text-accent-ink hover:bg-accent hover:text-accent-ink max-[1199px]:hover:bg-accent',
                                 )}
@@ -158,7 +158,7 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
                     mobilePanel === 'user' ? 'max-[1199px]:flex' : 'max-[1199px]:hidden',
                 )}
             >
-                <div className="mt-auto border-t border-rule pt-[var(--space-md)] text-sm text-ink-2">
+                <div className="mt-auto border-t border-rule pt-[var(--space-md)] text-sm text-ink-2 max-[1199px]:pt-[var(--space-sm)] max-[1199px]:text-[length:var(--text-md)]">
                     <SessionFoot name={user.name} roleLabel={roleLabel} />
                 </div>
             </div>
@@ -171,11 +171,12 @@ function SessionFoot({ name, roleLabel }: { name: string; roleLabel: string }) {
         <>
             <strong className="mb-[0.15rem] block overflow-hidden font-semibold text-ellipsis whitespace-nowrap text-ink">{name}</strong>
             <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{roleLabel}</span>
-            <nav className="mt-3 grid gap-[0.15rem]" aria-label="Cuenta">
+            <nav className="mt-3 grid gap-[0.15rem] max-[1199px]:gap-[0.35rem]" aria-label="Cuenta">
                 <Link
                     href="/settings/profile"
                     className={cn(
-                        'inline-flex items-center gap-[0.35rem] overflow-hidden rounded-md text-ink-2 whitespace-nowrap no-underline hover:text-ink',
+                        'inline-flex min-h-[var(--control-h-sm)] items-center gap-[0.35rem] overflow-hidden rounded-md text-ink-2 whitespace-nowrap no-underline hover:text-ink',
+                        'max-[1199px]:min-h-[var(--control-h)] max-[1199px]:px-[0.35rem]',
                         focusVisibleClass,
                     )}
                 >
@@ -183,7 +184,7 @@ function SessionFoot({ name, roleLabel }: { name: string; roleLabel: string }) {
                     Mi perfil
                 </Link>
             </nav>
-            <Btn type="button" variant="outline" size="sm" block className="mt-3" onClick={() => router.post('/logout')}>
+            <Btn type="button" variant="outline" size="sm" block className="mt-3 max-[1199px]:h-[var(--control-h)] max-[1199px]:min-h-[var(--control-h)] max-[1199px]:text-sm" onClick={() => router.post('/logout')}>
                 <LogOut className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                 Cerrar sesión
             </Btn>

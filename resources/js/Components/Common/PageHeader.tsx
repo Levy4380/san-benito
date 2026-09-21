@@ -21,8 +21,8 @@ export default function PageHeader({ title, description, subtitle, actions, back
         <header
             className={cn(
                 'mb-[var(--space-md)] box-border flex h-[var(--page-header-h)] max-h-[var(--page-header-h)] min-h-[var(--page-header-h)] flex-nowrap items-center justify-between gap-x-[var(--space-md)] gap-y-[var(--space-sm)] overflow-hidden',
-                'max-[1199px]:mb-[var(--space-xs)] max-[1199px]:h-auto max-[1199px]:max-h-none max-[1199px]:min-h-0 max-[1199px]:flex-wrap max-[1199px]:items-start max-[1199px]:gap-x-[var(--space-sm)] max-[1199px]:gap-y-[0.55rem] max-[1199px]:overflow-visible',
-                'max-md:gap-y-[0.65rem] max-sm:mb-[0.55rem]',
+                'max-[1199px]:mb-[var(--space-sm)] max-[1199px]:h-auto max-[1199px]:max-h-none max-[1199px]:min-h-0 max-[1199px]:flex-wrap max-[1199px]:items-start max-[1199px]:gap-x-[var(--space-sm)] max-[1199px]:gap-y-[0.55rem] max-[1199px]:overflow-visible',
+                'max-md:mb-[0.45rem] max-md:gap-y-[0.4rem]',
             )}
         >
             <div
@@ -94,7 +94,16 @@ export default function PageHeader({ title, description, subtitle, actions, back
                 )}
             </div>
             {actions ? (
-                <div className="flex shrink-0 flex-nowrap items-end gap-[0.5rem] max-[1199px]:ml-auto max-[1199px]:max-w-full max-[1199px]:flex-wrap max-md:ml-0 max-md:w-full max-md:justify-start">
+                <div
+                    className={cn(
+                        'flex shrink-0 flex-nowrap items-end gap-[0.5rem]',
+                        'max-[1199px]:ml-auto max-[1199px]:max-w-full max-[1199px]:flex-wrap',
+                        /* Phone: stack full-width; header CTAs drop to --control-h-sm (design.md Control size) */
+                        'max-md:ml-0 max-md:w-full max-md:flex-col max-md:items-stretch max-md:justify-start max-md:gap-[0.45rem]',
+                        'max-md:[&_a]:h-[var(--control-h-sm)] max-md:[&_a]:min-h-[var(--control-h-sm)] max-md:[&_button:not([role=radio])]:h-[var(--control-h-sm)] max-md:[&_button:not([role=radio])]:min-h-[var(--control-h-sm)]',
+                        'max-md:[&_[role=radiogroup]]:h-[var(--control-h-sm)] max-md:[&_[role=radiogroup]]:min-h-[var(--control-h-sm)]',
+                    )}
+                >
                     {actions}
                 </div>
             ) : null}

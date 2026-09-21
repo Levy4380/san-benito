@@ -1,8 +1,11 @@
+import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 import type { FormHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
-const surfaceClass =
-    'flex min-h-0 flex-col rounded-lg border border-rule bg-paper p-[var(--space-md)] max-md:rounded-[calc(var(--radius-card)+2px)]';
+const surfaceClass = cn(
+    'flex min-h-0 flex-col rounded-lg border border-rule bg-paper p-[var(--space-md)] max-md:p-[var(--space-sm)]',
+    phoneSurfaceRadiusClass,
+);
 
 type DivProps = {
     as?: 'div';

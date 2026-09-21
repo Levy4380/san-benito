@@ -38,10 +38,10 @@ export function ConfirmDialog({ title, message, children, onDismiss }: ConfirmDi
     }, [onDismiss]);
 
     return (
-        <div className="fixed inset-0 z-[200] grid place-items-center p-4" role="presentation">
+        <div className="fixed inset-0 z-[200] grid place-items-center p-4 max-md:p-[var(--space-sm)]" role="presentation">
             <div className="absolute inset-0 bg-[oklch(22%_0.02_255/0.42)]" onClick={onDismiss} />
             <div
-                className="relative z-[1] grid w-[min(22rem,100%)] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg"
+                className="relative z-[1] grid w-[min(22rem,100%)] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg max-md:w-[min(22rem,calc(100vw-var(--space-sm)*2))] max-md:gap-[var(--space-xs)] max-md:p-[var(--space-sm)] max-md:rounded-[calc(var(--radius-card)+2px)]"
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="confirm-modal-title"

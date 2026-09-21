@@ -20,14 +20,14 @@ export default function ViewSwitch({ value, onChange, className }: Props) {
     const labelId = useId();
 
     return (
-        <div className={cn('inline-flex flex-col items-stretch gap-[0.35rem]', className)}>
-            <span id={labelId} className="text-sm leading-[1.3] font-medium text-ink">
+        <div className={cn('inline-flex flex-col items-stretch gap-[0.35rem] max-md:w-full', className)}>
+            <span id={labelId} className="text-sm leading-[1.3] font-medium text-ink max-md:text-xs">
                 Cambiar vista:
             </span>
             <div
                 role="radiogroup"
                 aria-labelledby={labelId}
-                className="inline-flex h-[var(--control-h)] min-h-[var(--control-h)] items-stretch rounded-md border border-rule bg-paper p-[0.15rem]"
+                className="inline-flex h-[var(--control-h)] min-h-[var(--control-h)] items-stretch rounded-md border border-rule bg-paper p-[0.15rem] max-md:h-[var(--control-h-sm)] max-md:min-h-[var(--control-h-sm)] max-md:w-full"
             >
                 {options.map(({ value: option, label, Icon }) => {
                     const on = value === option;

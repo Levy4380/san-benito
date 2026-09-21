@@ -1,10 +1,12 @@
 import { Slot } from '@radix-ui/react-slot';
 import { focusVisibleClass } from '@/lib/clinico-control';
+import { phoneInteractivePadClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
 const doctorCardBase = cn(
-    'flex flex-col items-stretch gap-[0.65rem] rounded-lg border border-rule bg-paper px-[var(--space-sm)] py-[0.7rem] text-left font-inherit text-ink no-underline transition-[border-color,background-color] duration-short ease-out max-md:px-[0.9rem] max-md:py-[0.85rem] [&_strong]:font-display [&_strong]:text-[length:var(--text-md)] [&_strong]:font-semibold [&_span:not([class*="inline-flex"])]:text-sm [&_span:not([class*="inline-flex"])]:text-ink-2',
+    'flex flex-col items-stretch gap-[0.65rem] rounded-lg border border-rule bg-paper px-[var(--space-sm)] py-[0.7rem] text-left font-inherit text-ink no-underline transition-[border-color,background-color] duration-short ease-out [&_strong]:font-display [&_strong]:text-[length:var(--text-md)] [&_strong]:font-semibold [&_span:not([class*="inline-flex"])]:text-sm [&_span:not([class*="inline-flex"])]:text-ink-2',
+    phoneInteractivePadClass,
 );
 
 const doctorCardInteractive = cn('cursor-pointer hover:border-accent', focusVisibleClass);

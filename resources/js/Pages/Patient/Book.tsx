@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { NotebookPen } from 'lucide-react';
 import { useState } from 'react';
+import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -32,6 +33,7 @@ type Props = {
 export default function Book({ specialties, doctors, nearest_doctor_id, doctor, slots, daysWithSlots, filters }: Props) {
     const step = !filters.specialty_id ? 'specialty' : !filters.doctor_id ? 'doctor' : 'horario';
     const [mode, setMode] = useState<'list' | 'cal'>('list');
+    const [mobileDayOpen, setMobileDayOpen] = useState(Boolean(filters.date));
     const [month, setMonth] = useState((filters.date ?? daysWithSlots[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const tones = Object.fromEntries((daysWithSlots ?? []).map((day) => [day, 'has' as const]));
     const backHref =
@@ -129,26 +131,73 @@ export default function Book({ specialties, doctors, nearest_doctor_id, doctor, 
                                 }}
                             />
                             {mode === 'cal' ? (
-                                <StageCard layout="split" nested>
-                                    <CalendarMonth
-                                        month={month}
-                                        selected={filters.date}
-                                        tones={tones}
-                                        onSelect={(date) => go({ specialty_id: filters.specialty_id ?? '', doctor_id: doctor.id, date })}
-                                        onMonthChange={setMonth}
-                                        legend={[
-                                            { tone: 'empty', label: 'Sin turnos' },
-                                            { tone: 'has', label: 'Con turnos' },
-                                        ]}
+                                <>
+                                    <MobileDaySwap
+                                        dayOpen={mobileDayOpen}
+                                        onBackToCalendar={() => {
+                                            setMobileDayOpen(false);
+                                            go({
+                                                specialty_id: filters.specialty_id ?? '',
+                                                doctor_id: doctor.id,
+                                            });
+                                        }}
+                                        calendar={
+                                            <CalendarMonth
+                                                month={month}
+                                                selected={filters.date}
+                                                tones={tones}
+                                                onSelect={(date) => {
+                                                    setMobileDayOpen(true);
+                                                    go({
+                                                        specialty_id: filters.specialty_id ?? '',
+                                                        doctor_id: doctor.id,
+                                                        date,
+                                                    });
+                                                }}
+                                                onMonthChange={setMonth}
+                                                legend={[
+                                                    { tone: 'empty', label: 'Sin turnos' },
+                                                    { tone: 'has', label: 'Con turnos' },
+                                                ]}
+                                            />
+                                        }
+                                        panel={
+                                            <Panel className="h-full min-h-0">
+                                                <SlotList
+                                                    slots={filters.date ? slots : []}
+                                                    doctorId={doctor.id}
+                                                    specialtyId={filters.specialty_id}
+                                                />
+                                            </Panel>
+                                        }
                                     />
-                                    <Panel sheet>
-                                        <SlotList
-                                            slots={filters.date ? slots : []}
-                                            doctorId={doctor.id}
-                                            specialtyId={filters.specialty_id}
+                                    <StageCard layout="split" nested className="max-md:!hidden">
+                                        <CalendarMonth
+                                            month={month}
+                                            selected={filters.date}
+                                            tones={tones}
+                                            onSelect={(date) =>
+                                                go({
+                                                    specialty_id: filters.specialty_id ?? '',
+                                                    doctor_id: doctor.id,
+                                                    date,
+                                                })
+                                            }
+                                            onMonthChange={setMonth}
+                                            legend={[
+                                                { tone: 'empty', label: 'Sin turnos' },
+                                                { tone: 'has', label: 'Con turnos' },
+                                            ]}
                                         />
-                                    </Panel>
-                                </StageCard>
+                                        <Panel sheet>
+                                            <SlotList
+                                                slots={filters.date ? slots : []}
+                                                doctorId={doctor.id}
+                                                specialtyId={filters.specialty_id}
+                                            />
+                                        </Panel>
+                                    </StageCard>
+                                </>
                             ) : (
                                 <SlotList slots={slots.slice(0, 40)} doctorId={doctor.id} specialtyId={filters.specialty_id} />
                             )}

@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import { toastHostClass } from '@/lib/mobile-chrome';
 import type { SharedData, ToastVariant } from '@/types';
 
 type Toast = { id: number; message: string; variant: ToastVariant };
@@ -74,7 +75,7 @@ export default function ToastHost() {
 
     return (
         <div
-            className="pointer-events-none fixed top-[calc(3.25rem+env(safe-area-inset-top,0px))] right-[0.75rem] z-[120] flex w-[min(22rem,calc(100vw-1.5rem))] flex-col items-end gap-[0.45rem] max-sm:top-[calc(3.1rem+env(safe-area-inset-top,0px))] max-sm:right-[0.45rem] max-sm:w-[min(20rem,calc(100vw-0.9rem))]"
+            className={toastHostClass}
             aria-live="polite"
         >
             {toasts.map((toast) => (

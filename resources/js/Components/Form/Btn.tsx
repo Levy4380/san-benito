@@ -18,7 +18,7 @@ const btnVariants = cva(
             size: {
                 md: 'h-[var(--control-h)] min-h-[var(--control-h)] text-sm',
                 sm: 'h-[var(--control-h-sm)] min-h-[var(--control-h-sm)] px-[0.65rem] text-xs shadow-none max-md:px-[0.55rem] max-md:text-[0.7rem]',
-                xs: 'h-[1.55rem] min-h-[1.55rem] px-[0.45rem] text-[0.65rem] gap-[0.2rem] shadow-none',
+                xs: 'h-[1.55rem] min-h-[1.55rem] px-[0.45rem] text-[0.65rem] gap-[0.2rem] shadow-none max-md:h-[1.75rem] max-md:min-h-[1.75rem] max-md:px-[0.5rem] max-md:text-[0.7rem]',
                 icon: 'size-[var(--control-h-sm)] min-h-[var(--control-h-sm)] p-0 text-[1.35rem] font-semibold leading-none shadow-none',
             },
             block: {

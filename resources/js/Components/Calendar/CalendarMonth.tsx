@@ -4,6 +4,8 @@ import { Btn } from '@/Components/Form/Btn';
 import CalendarDay from '@/Components/Calendar/CalendarDay';
 import CalendarLegendSwatch from '@/Components/Calendar/CalendarLegendSwatch';
 import { addMonths, isWeekendKey, lastDateOfMonth, monthGrid, monthTitle } from '@/lib/datetime';
+import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
+import { cn } from '@/lib/utils';
 
 const WEEKDAYS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 
@@ -90,7 +92,14 @@ export default function CalendarMonth({
     };
 
     return (
-        <div className="@container flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-rule bg-paper p-[var(--space-2xs)] [container-type:size] md:p-[var(--space-sm)] max-md:rounded-[calc(var(--radius-card)+2px)]">
+        <div
+            className={cn(
+                '@container flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-rule bg-paper p-[var(--space-2xs)] [container-type:size] md:p-[var(--space-sm)]',
+                /* Phone: near-square, capped so short viewports (e.g. 340×525) keep toolbar + CTA visible */
+                'max-md:mx-auto max-md:aspect-square max-md:h-auto max-md:w-full max-md:max-h-[min(100%,38dvh)] max-md:max-w-[min(100%,38dvh)]',
+                phoneSurfaceRadiusClass,
+            )}
+        >
             <div className="mb-[var(--space-2xs)] flex shrink-0 items-center justify-between gap-[0.35rem]">
                 <Btn
                     type="button"
@@ -160,7 +169,10 @@ export default function CalendarMonth({
                 })}
             </div>
             {legend && legend.length > 0 ? (
-                <div className="mt-[0.35rem] flex shrink-0 flex-wrap items-center gap-x-[0.55rem] gap-y-[0.2rem] text-[0.65rem] leading-[1.2] text-ink-2">
+                <div
+                    data-cal-legend=""
+                    className="mt-[0.35rem] flex shrink-0 flex-wrap items-center gap-x-[0.55rem] gap-y-[0.2rem] text-[0.65rem] leading-[1.2] text-ink-2 max-md:hidden"
+                >
                     {legend.map((item) => (
                         <span key={item.tone} className="inline-flex max-w-none shrink-0 items-center gap-1">
                             <CalendarLegendSwatch tone={item.tone} /> {item.label}

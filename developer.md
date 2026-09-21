@@ -6,7 +6,7 @@ Guía de entorno local. La fuente de verdad de **producto** es [new-design.md](n
 
 Sistema de turnos (Laravel 12 + Inertia + React + TypeScript + Vite + Tailwind). Roles Spatie: `patient`, `doctor`, `admin`, `super_admin`.
 
-Todo corre en **Laravel Sail** (Docker). **yarn**, no npm. `vendor/` y `.env` no están en git.
+Todo corre en **Laravel Sail** (Docker). **yarn Classic 1.22.x** (lockfile v1), no npm. **Sin** campo `"packageManager"` en `package.json`. `vendor/` y `.env` no están en git.
 
 ## Prerrequisitos
 
@@ -65,7 +65,21 @@ Si `migrate` falla por conexión, MySQL todavía no está healthy: esperá unos 
 ./vendor/bin/sail yarn dev
 ```
 
-`yarn dev` tiene que seguir corriendo (HMR). No uses `npm` ni `package-lock.json`; el lockfile es `yarn.lock`.
+`yarn dev` tiene que seguir corriendo (HMR). No uses `npm` ni `package-lock.json`; el lockfile es `yarn.lock` (formato Classic `# yarn lockfile v1`).
+
+Sail fuerza Yarn 1.22.x al arrancar el contenedor (`docker/sail-entrypoint.sh`) porque la imagen Sail nueva deja Yarn 4 vía Corepack. Eso sobrevive `sail down` / `sail up`. No hace falta `corepack enable` en el host.
+
+## Laravel Cloud (build)
+
+No hay `cloud.yml` en el repo. En el dashboard de Laravel Cloud pegá **exactamente** estos tres comandos (también en `build.sh` en la raíz). **Sin Corepack.**
+
+```bash
+npm install -g yarn
+yarn install --frozen-lockfile
+yarn run build
+```
+
+Si el dashboard todavía tiene `corepack enable` / `corepack prepare --activate` / `yarn@4.x`, reemplazalo por lo de arriba. Cloud vuelve a Yarn 1.22.22; con `"packageManager"` en `package.json` el build aborta. El commit desplegado tiene que ser el que **no** tiene ese campo.
 
 ## URL local
 
@@ -181,6 +195,20 @@ Qué hacer: `APP_URL=http://sanbenito.local`, reiniciar `./vendor/bin/sail yarn 
 ### `yarn`: package doesn't seem to be present in your lockfile
 
 Dentro de Sail, `yarn install`. No `npm install`.
+
+### Error Corepack: `This project's package.json defines "packageManager"` + `Yarn is 1.22.22` + `Corepack must currently be enabled`
+
+**Síntoma:** Yarn Classic 1.22.22 lee `package.json`, ve el campo `"packageManager"`, y aborta pidiendo Corepack.
+
+**Causa real:** alguien (starter Laravel, Agent, o `corepack use`) escribió `"packageManager"` (p. ej. `yarn@4.4.1+sha224…` o `yarn@4.9.2`). Corepack **no** está corriendo; el arreglo no es habilitarlo.
+
+**Qué hacer:**
+1. Borrar `"packageManager"` de `package.json`. No reemplazarlo por `yarn@1.22.22` — Yarn 1.22.22 aborta si el campo **existe**.
+2. Confirmar que `yarn.lock` empieza con `# yarn lockfile v1` (no `__metadata` Berry). Si alguien lo pasó a Yarn 4, revertir el lockfile; no “migrar a Berry”.
+3. En Sail: `COREPACK_ENABLE_AUTO_PIN=0` + entrypoint que deja `yarn` en 1.22.x. Verificar: `./vendor/bin/sail yarn --version` → `1.22.x`. Tras `sail down` && `sail up -d`, igual.
+4. En Laravel Cloud: los tres comandos de la sección *Laravel Cloud (build)* — **nunca** `corepack enable` / `prepare yarn@stable`.
+
+**Qué NO hacer:** `corepack enable`, `corepack prepare yarn@4` / `yarn@stable`, `yarn set version`, restaurar el `packageManager` del starter, ni instalar Yarn Berry “bien” (`.yarnrc.yml`, `nodeLinker`, lockfile `__metadata`).
 
 ### Puerto ocupado
 

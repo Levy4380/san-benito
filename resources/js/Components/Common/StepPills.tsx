@@ -11,7 +11,7 @@ export default function StepPills({ steps, current }: Props) {
     const currentIndex = steps.findIndex((step) => step.key === current);
 
     return (
-        <div className="flex h-full min-h-0 w-full items-stretch gap-[0.5rem] text-xs">
+        <div className="flex h-full min-h-0 w-full items-stretch gap-[0.5rem] text-xs max-md:gap-[0.35rem]">
             {steps.map((step, index) => {
                 const done = index < currentIndex;
                 const on = index === currentIndex;

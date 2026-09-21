@@ -95,7 +95,7 @@ Shared height for inputs, selects, and adjacent primary buttons:
 - `--shadow-md`: `0 6px 18px`
 - `--shadow-lg`: `0 10px 28px` — toasts, confirm dialog
 
-Outline / small / in-row buttons: **no shadow**. Floating “Continuar” on Programar: `0 4px 16px rgba(0,0,0,0.12)`.
+Outline / small / in-row buttons: **no shadow**. Programar / Mi agenda sticky footers (Continuar, day CTAs): **no shadow** — hairline top only.
 
 ### Motion
 
@@ -194,7 +194,7 @@ If destructive: OK becomes `.btn-danger` and **initial focus is Cancel**. Escape
 - **Header actions** (`.header-actions`): one primary (optional) + outline siblings; nowrap on desktop, wrap full-width under the title on ≤1199px.
 - **Filters**: fields + one primary “Buscar” aligned to the control baseline (`align-items: end`).
 - **Lists / slots**: action buttons `flex-shrink: 0` on the right; `btn-sm`.
-- **Wizard footer**: primary “Continuar >” (`book-next-btn`) bottom-right of the recuadro; disabled until the step has a selection.
+- **Wizard footer**: primary “Continuar >” (`book-next-btn`) bottom-right of the recuadro; disabled until the step has a selection. On **Programar** phone, sticky Continuar (`WizardStickyCta`). On phone cal flows (Agenda / Book cal / Mis turnos cal / Slots): `MobileDaySwap` (cal XOR day), not cal+sheet together.
 - **In-row vs page**: never put a full `--control-h` primary inside a slot row.
 
 ---
@@ -227,13 +227,16 @@ Nav + foot; foot hairline + name + outline small “Cerrar sesión”.
 ### Mobile chrome (<1200)
 
 Topbar height `--mobile-header-h` (3rem / 2.75rem): hamburger + centered “San Benito” + avatar (accent disc). Paper, no border, no shadow. The bar stays in place when the menu opens.
-Open = Sidebar slides down from the top and fills the shell (100%, paper, 320ms `--ease-out`). Hamburger morphs to X.
+Hit targets on the topbar use `--control-h-sm`. Open = Sidebar slides down from the top and fills the shell (100%, paper, 320ms `--ease-out`). Hamburger morphs to X. Escape closes the drawer; navigate closes it too.
+Main padding under the topbar: `--space-sm` on all sides (<1200); on phone (≤767) horizontal stays `--space-sm`, vertical `--space-xs` — titles must not sit flush to the paper edge. Shared class fragment: `chromeMainPadClass` in `resources/js/lib/mobile-chrome.ts`.
 
 ### Page header
 
-Fixed footprint `--page-header-h` 5.75rem (auto on phone): title band + subtitle **or** step pills (same 2.35rem sub-band). Quiet titles. No bottom rule.
+Fixed footprint `--page-header-h` 5.75rem (auto on phone): title band + subtitle **or** step pills (same 2.35rem sub-band). Quiet titles. No bottom rule. Titles ≈1.35–1.4rem under 1200.
 
 Step pills: three equal columns; 2px-radius bar. Idle paper-3; done accent-soft + accent label; on = accent bar + ink weight 600.
+
+Header actions: match `--control-h` next to ViewSwitch on desktop; on phone (≤767) they stack full-width and drop to `--control-h-sm` (ViewSwitch track matches).
 
 ---
 
@@ -251,9 +254,11 @@ Step pills: three equal columns; 2px-radius bar. Idle paper-3; done accent-soft 
 Month title centered, capitalize; ‹ › outline icon buttons.
 7×6 grid; day cells radius 6px, mono, no inner border.
 Legend: 0.55rem swatches, 2px radius.
-Desktop: cal | panel (2fr / 3fr). Phone: cal centered; day panel is a **bottom sheet** (handle caret, collapsed ≈13% height, drag, shadow upward). Nested agendas inside results drop the inner border (one outer recuadro only).
+Desktop: cal | panel (2fr / 3fr). Phone (≤767): calendar **or** day panel — never both. Choosing a day opens the day view and hides the calendar; **Calendario** (BackLink) returns to the month. Shared primitive: `MobileDaySwap`. CalendarMonth on phone uses a near-square aspect capped at `38dvh` so short viewports (e.g. 340×525) keep toolbar + Continuar on screen. On `md+`, Book / Mis turnos / Slots still use bottom sheet on the split; Mi agenda uses split without sheet.
 
 Programar paint mode: `cursor: crosshair` on enabled days; selected-day swatch uses accent fill.
+
+Phone list/card density: shared `phoneInteractivePadClass` / `phoneSurfaceRadiusClass` (`calc(var(--radius-card) + 2px)` — not a third radius token).
 
 ---
 
@@ -261,7 +266,7 @@ Programar paint mode: `cursor: crosshair` on enabled days; selected-day swatch u
 
 The demo is **not** silent-success. Product UI follows this, not flash/Inertia-only.
 
-- **Toast**: top-right, below any demo chip, radius-card, `--text-sm` weight 500, 3400ms. `info` = ink + accent-ink; `ok` = accent; `warn` = danger + white. Slide from the right. No action buttons.
+- **Toast**: top-right; on desktop near the top (`0.75rem`); under `<1200` clears the mobile topbar via `calc(var(--app-frame) + var(--mobile-header-h) + … + safe-area)`. Radius-card, `--text-sm` weight 500, 3400ms. `info` = ink + accent-ink; `ok` = accent; `warn` = danger + white. Slide from the right. No action buttons.
 - **Confirm modal**: page-level, not `window.confirm`. Paper dialog, radius-card, hairline, `--shadow-lg`. Backdrop `oklch(22% 0.02 255 / 0.42)`. Title display `--text-md`; message ink-2. See button logic above.
 - **Route loader**: 3px top bar, accent → `oklch(62% 0.16 230)` gradient; main dims to 0.55 and ignores pointer while loading.
 

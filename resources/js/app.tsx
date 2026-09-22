@@ -7,6 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { route as routeFn } from 'ziggy-js';
 import AuthenticatedLayout from './Layouts/AuthenticatedLayout';
 import { isProductPage } from './lib/product-layout';
+import { installSessionGuard } from './lib/session-guard';
 
 declare global {
     const route: typeof routeFn;
@@ -20,6 +21,7 @@ function productLayout(page: ReactNode) {
 
 router.on('start', () => document.documentElement.classList.add('route-loading'));
 router.on('finish', () => document.documentElement.classList.remove('route-loading'));
+installSessionGuard();
 
 createInertiaApp({
     title: (title) => (title ? `${title} · ${appName}` : appName),

@@ -23,8 +23,12 @@ class HomeController extends Controller
     ): Response|RedirectResponse {
         $user = $request->user();
 
+        if ($user === null) {
+            return redirect()->route('login');
+        }
+
         if (! Permission::PortalHome->allows($user)) {
-            return redirect()->to(RoleRedirector::intendedPath($user));
+            return redirect()->to(RoleRedirector::landing($user));
         }
 
         if ($user->hasRole('doctor')) {

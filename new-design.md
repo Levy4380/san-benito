@@ -89,6 +89,7 @@ Decisiones menores (vetables por el dueño):
 - **d37 — Administradores vs Pacientes (super_admin)**: la nav super_admin distingue **Doctores** (`GET/POST /admin/doctors`: catálogo de profesionales), **Pacientes** (`GET /admin/patients`: solo entidad Patient; `POST /admin/patients` usa `PatientService::register` **sin** `Auth::login`) y **Administradores** (`GET/POST /admin/admins`: solo staff `admin`|`super_admin`, alta de esos roles, sin entidad Doctor/Patient). `admin` (sin super) 403 en Pacientes y Administradores. Perfil admin `GET /admin/patients/{patient}`: `dl` de `#page-patient-profile` sin “Asignar turno”; id inexistente → 404. No reusar chrome de portales (`/my-patients/{id}`).
 - **d38 — Especialidad de la reserva**: cada fila `appointments` guarda `specialty_id` NOT NULL (FK a `specialties`, `restrictOnDelete`). Es el motivo de **ese** turno, elegido al reservar o asignar; debe existir **hoy** en `doctor_specialty` de ese doctor. No se infiere la “primera”. Las franjas y los huecos calculados siguen siendo solo del doctor (sin `specialty_id` en `availability_windows` ni en el cálculo). Unique sigue `(doctor_id, starts_at)`: un hueco admite una sola reserva. **Reemplaza** «Huecos y reservas no copian especialidad».
 - **d39 — Oferta al paciente: un hueco por día civil**: el paciente (GET `/book` con o sin `date`; GET `/doctors/{doctor}/slots` con `date`) solo ve y solo puede reservar el **primer** hueco futuro sin solape de cada día civil (zona institucional d17), tomado de los que `calculateSlots` ya calcula. Dos franjas el mismo día (09:00–11:00 y 14:00–16:00) = **una** oferta (09:00 si está libre); cuando 09–11 se llena, la oferta del día pasa a ser 14:00. GET `/slots` **sin** `date` sigue el panel de hasta 5 **días** (d19), no una lista de horarios. El médico (GET `/agenda`, assign) sigue viendo y asignando **cualquier** hueco; puede dejar agujeros. POST paciente (`AppointmentService::book`, no `assign`): transacción con `lockForUpdate` de **todas** las `availability_windows` del doctor que solapan ese día civil; se recalcula el primer hueco libre de **ese** día. Si el `starts_at` pedido es ese primero → INSERT (`specialty_id` del request, d38) + `firstOrCreate` `doctor_patient`. Carrera (pidieron el que veían y ya no es el primero) → INSERT en el primer hueco libre **actual del mismo día** (más tarde en la misma franja o inicio de la siguiente); unique `(doctor_id, starts_at)` reintenta el siguiente del día en la misma transacción. Skip (pedido **después** del primero libre, p.ej. 14:00 o 09:40 con 09:00 libre) o día sin más hueco → 422 «El turno ya no está disponible»; **no** salta al día siguiente ni a otro doctor. `assign` no overflow y no aplica “primero del día”. Método nuevo `AvailabilityService::nextOfferableSlotPerDay` (inglés, D9); **no** mutar `calculateSlots` para recortar la agenda. Sin jobs/cola para la carrera (D8).
+- **d40 — Obras sociales:** catálogo `health_insurances` (`super_admin`, permiso `health_insurances.manage`, al lado de `specialties.manage`; no se lo dan `admin`, `doctor` ni `patient`). Paciente 0..1 vía `patient_health_insurance` (`unique(patient_id)` y `unique(patient_id, health_insurance_id)`); vacío en el alta o el registro guarda sin fila. Doctor N:N opcional vía `doctor_health_insurance` (cero filas válido; `health_insurance_ids` no copia el `min:1` de especialidades). Particular no es fila del catálogo: en el paciente es cero filas en `patient_health_insurance`; en el wizard es `GET /book?coverage=particular` (especialidades y doctores como antes, sin mirar la pivote del doctor). Wizard Cobertura → Especialidad → Doctor → Horario. Sin `coverage`, el paso es Cobertura. Paciente sin obra: solo Particular. Paciente con obra: Particular y Obra social (`coverage=health_insurance`, la única obra de ese paciente; sin fila, vuelve a Cobertura y no lista doctores). Con obra, las especialidades son las que tienen al menos un doctor de esa pivote, y los doctores son la búsqueda de la especialidad más `whereHas` de `doctor_health_insurance` más el hueco a 60 días. Directorio (`GET /doctors`), slots, `book()` y `assign` no filtran por obra. `appointments` no gana columna. Borrar una obra hace cascade de las pivotes y no toca appointments, doctores ni pacientes. Reemplaza el string `patients.health_insurance` (la migración solo dropea la columna, sin backfill). El JSON del paciente sigue exponiendo `health_insurance` como el `name` o `null`. El super_admin puede cambiar la obra de un paciente ya creado desde `GET /admin/patients/{patient}` (`PATCH /admin/patients/{patient}/health-insurance`, un id o vacío = sin fila). El paciente no puede cambiar la obra que eligió. Ajusta el primer paso de d24.
 
 ---
 
@@ -156,8 +157,9 @@ Seeder v1: Clínica Médica, Pediatría, Cardiología, Dermatología, Traumatolo
 | `user_id` | FK `users.id` | **unique**, cascade on delete |
 | `dni` | string | unique |
 | `birth_date` | date | not null |
-| `health_insurance` | string | nullable |
 | timestamps | | |
+
+La obra del paciente no es una columna: pivote `patient_health_insurance` 0..1 (d40). `health_insurance` en el JSON es el `name` de esa obra, o `null`.
 
 ### `availability_windows`
 
@@ -206,6 +208,42 @@ Pivote N:N doctor ↔ especialidad (D4). Sin modelo Eloquent propio.
 
 Constraint: `unique(doctor_id, specialty_id)`. El alta de doctor exige **mínimo una** fila. El catálogo puede dejarlo en cero (d34). Las reservas copian **una** especialidad de este catálogo en `appointments.specialty_id` (d38); los huecos **no**.
 
+### `health_insurances`
+
+Catálogo de obras sociales (d40). Particular **no** es una fila.
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| `id` | bigint PK | |
+| `name` | string | unique, not null |
+| timestamps | | |
+
+### `patient_health_insurance`
+
+Pivote paciente ↔ obra, **0..1** (d40). Sin modelo Eloquent propio.
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| `id` | bigint PK | |
+| `patient_id` | FK `patients.id` | not null, cascade on delete, **unique** |
+| `health_insurance_id` | FK `health_insurances.id` | not null, cascade on delete |
+| timestamps | | |
+
+Constraint: `unique(patient_id)` y `unique(patient_id, health_insurance_id)`. Cero filas = Particular.
+
+### `doctor_health_insurance`
+
+Pivote N:N doctor ↔ obra (d40). Cero filas es válido. Sin modelo Eloquent propio.
+
+| Columna | Tipo | Reglas |
+|---|---|---|
+| `id` | bigint PK | |
+| `doctor_id` | FK `doctors.id` | not null, cascade on delete |
+| `health_insurance_id` | FK `health_insurances.id` | not null, cascade on delete |
+| timestamps | | |
+
+Constraint: `unique(doctor_id, health_insurance_id)`.
+
 ### `doctor_patient`
 
 | Columna | Tipo | Reglas |
@@ -224,15 +262,16 @@ Starter kit + `phone` (string, nullable). Datos de dominio **no** van en users (
 ### Modelos y relaciones
 
 - `User`: `hasOne(Doctor)`, `hasOne(Patient)`, `HasRoles`.
-- `Doctor`: `belongsTo(User)`, `belongsToMany(Specialty)` vía `doctor_specialty`, `hasMany(AvailabilityWindow)`, `hasMany(Appointment)`, `belongsToMany(Patient)` vía `doctor_patient`. Scopes `forSpecialty($specialtyId)` y `withSpecialties()` (whereHas sobre la pivote).
-- `Patient`: `belongsTo(User)`, `hasMany(Appointment)`, `belongsToMany(Doctor)` vía `doctor_patient`.
+- `Doctor`: `belongsTo(User)`, `belongsToMany(Specialty)` vía `doctor_specialty`, `belongsToMany(HealthInsurance)` vía `doctor_health_insurance`, `hasMany(AvailabilityWindow)`, `hasMany(Appointment)`, `belongsToMany(Patient)` vía `doctor_patient`. Scopes `forSpecialty($specialtyId)` y `withSpecialties()` (whereHas sobre la pivote).
+- `Patient`: `belongsTo(User)`, `hasMany(Appointment)`, `belongsToMany(Doctor)` vía `doctor_patient`, `belongsToMany(HealthInsurance)` vía `patient_health_insurance` (0..1). Accessor `health_insurance`: `name` o `null`. La relación no se serializa.
 - `Specialty`: `belongsToMany(Doctor)` vía `doctor_specialty`, `hasMany(Appointment)`.
+- `HealthInsurance`: `belongsToMany(Doctor)` vía `doctor_health_insurance`, `belongsToMany(Patient)` vía `patient_health_insurance`.
 - `AvailabilityWindow`: `belongsTo(Doctor)`. Scopes: `forDoctor`, `overlapping($start, $end)`, `onDate($date)`.
 - `Appointment`: `belongsTo(Doctor)`, `belongsTo(Patient)`, `belongsTo(Specialty)`. Scopes: `forDoctor`, `forPatient`, `upcoming()` ( `starts_at` futuro ). **No** hay scope `available()` sobre esta tabla.
 
 Huecos libres: **no** son un modelo Eloquent. Un service los deriva (franjas del doctor + duración − reservas que solapan).
 
-Sin modelo Eloquent propio para las pivotes (`doctor_patient`, `doctor_specialty`) en v1. Factories de dominio. `AppointmentFactory` solo estados de reserva (ya no `available()`).
+Sin modelo Eloquent propio para las pivotes (`doctor_patient`, `doctor_specialty`, `patient_health_insurance`, `doctor_health_insurance`) en v1. Factories de dominio. `AppointmentFactory` solo estados de reserva (ya no `available()`).
 
 ### Campos demo sin schema
 
@@ -243,7 +282,7 @@ La demo **muestra** datos que **no** están en el schema. **No migrar** hasta de
 | Nombre / apellido por separado (doctor) | `#page-doctor-profile` | `users.name` (un string) | Parsear `name`, o columnas `first_name`/`last_name` | **Abierta** |
 | Documento del doctor | `#page-doctor-profile` | no existe | ¿DNI en `doctors` o en `users`? | **Abierta** |
 | Matrícula | `#page-doctor-profile` | `doctors.license_number` | Usar `license_number` | Cerrado (ya existe) |
-| Obras sociales del doctor (lista) | `#page-doctor-profile` | no existe | ¿texto, pivote, o ocultar? | **Abierta** |
+| Obras sociales del doctor (lista) | `#page-doctor-profile` | pivote `doctor_health_insurance` | No se listan en el perfil. Las asocia `super_admin` (d40) | Cerrado (d40) |
 | Nombre / apellido por separado (paciente) | `#page-patient-profile` | `users.name` | Igual que doctor | **Abierta** |
 | Número de socio | `#page-patient-profile`; card de vincular | no existe | `patients.member_number` nullable | **Abierta** |
 
@@ -282,6 +321,7 @@ Matriz v1 (acciones × rol). Los nombres de permiso están en la tabla siguiente
 | Alta de doctores y admins | No | No | Sí (doctores) | Sí |
 | Gestión de usuarios y roles | No | No | No | Sí (Administradores + Pacientes; alta, no editor RBAC; d37) |
 | Gestionar especialidades | No | No | No | Sí |
+| Gestionar obras sociales | No | No | No | Sí |
 
 Nombres: `{recurso}.{acción}` (staff, cualquier fila) vs `own.{recurso}.{acción}` (portal, sujeto implícito). Listas admin: `{recurso}.catalog.view`. CRUD de un catálogo solo super_admin: `{recurso}.manage`. No usar prefijo `staff.`.
 
@@ -314,6 +354,7 @@ Catálogo permiso → rutas actuales → roles v1 (`App\Enums\Permission`):
 | `patients.catalog.view` | `GET /admin/patients`, `GET /admin/patients/{patient}` | super_admin |
 | `patients.create` | `GET /admin/patients/create`, `POST /admin/patients` | super_admin |
 | `specialties.manage` | `GET /admin/settings`, `GET\|POST\|PATCH\|DELETE` especialidades (incluye `/create` y `/edit`), `GET /doctors/{doctor}/specialties`, `PATCH /admin/doctors/{doctor}/specialties` | super_admin |
+| `health_insurances.manage` | `GET\|POST\|PATCH\|DELETE /admin/settings/health-insurances` (incluye `/create` y `/edit`), `GET /doctors/{doctor}/health-insurances`, `PATCH /admin/doctors/{doctor}/health-insurances`, `PATCH /admin/patients/{patient}/health-insurance` | super_admin |
 
 Dos familias de URL (no unificar con `{doctor}` en el portal):
 
@@ -374,7 +415,7 @@ La UI de la demo sigue mostrando listas de horarios; **por detrás ya no hay fil
 | `#page-doctors` | Doctores | Filtros **dentro** del recuadro. Especialidad arranca en “Todas”; se listan todos con ≥1 especialidad (d18). Cards: nombre, especialidades, **Más información** (perfil) y **Ver turnos**. La card **no** navega al click. | Sí |
 | `#page-doctor-profile` | Perfil del profesional | `dl` de §4. CTA **Ver turnos**. Quien tiene `specialties.manage`: CTA **Asociar especialidad** → `GET /doctors/{id}/specialties`. Atrás → doctores. Nav pinta **Doctores**. | No (hijo) |
 | `#page-slots` | Turnos disponibles | Cal + panel. Subtítulo “{doctor} · {especialidad}. Elegí un día marcado.” (singular de la especialidad elegida, d38). Si llega `?specialty_id=` válido para ese doctor, se prellena; si viene de “Todas” / perfil, hay que elegir entre `doctor.specialties` antes de Reservar. Sin día: hasta 5 **días** con al menos un hueco (d19); no es una lista de horarios ni hay ViewSwitch. Con día: **un** hueco ofertado (el primero libre de ese día civil, d39) + **Reservar** (INSERT). Día “con turnos” si queda algún hueco calculado. | No (hijo) |
-| `#page-book` | Reservar turno | Una GET `/book`. Steps Especialidad → Doctor → Horario derivados de `specialty_id` / `doctor_id` / `date` (toggle Lista / Calendario **local**, d28; no manda `mode`). El paso 1 omite especialidades sin doctores. **Atrás** (pasos 2 y 3) vuelve al anterior. Paso Doctor: solo con hueco libre; marca **Turno más cercano**. Paso Horario: sin `date` = feed de hasta 12 días, **1** `SlotRow` por día (d19/d39); con `date` = panel de ese día, **1** hueco. Al volver a Lista, GET `/book` con `specialty_id` + `doctor_id` **sin** `date`. Lista y cal no divergen. **Reservar** llama a `book` (d39) y va a `#page-my` + toast “Reservaste el turno.” extendido con la hora de pared **persistida** (d17). Chrome: siguen `SlotRow` + Reservar; hay menos filas. | Sí |
+| `#page-book` | Reservar turno | Una GET `/book`. Steps Cobertura → Especialidad → Doctor → Horario derivados de `coverage` / `specialty_id` / `doctor_id` / `date` (d40). Particular = `coverage=particular`. Obra social = `coverage=health_insurance` (toggle Lista / Calendario **local**, d28; no manda `mode`). El paso Especialidad omite especialidades sin doctores (con obra: solo las de doctores de esa pivote). **Atrás** vuelve al paso anterior y conserva `coverage`. Paso Doctor: solo con hueco libre; marca **Turno más cercano**. Paso Horario: sin `date` = feed de hasta 12 días, **1** `SlotRow` por día (d19/d39); con `date` = panel de ese día, **1** hueco. Al volver a Lista, GET `/book` con `coverage` + `specialty_id` + `doctor_id` **sin** `date`. Lista y cal no divergen. **Reservar** llama a `book` (d39) y va a `#page-my` + toast “Reservaste el turno.” extendido con la hora de pared **persistida** (d17). Chrome: siguen `SlotRow` + Reservar; hay menos filas. | Sí |
 | `#page-my` | Mis turnos | Lista de **reservas futuras** + **Cancelar** (DELETE). Toggle Calendario (días anteriores a hoy deshabilitados). Header **Historial de turnos** (outline) y **Reservar turno**. | Sí |
 | `#page-my-history` | Historial de turnos | Lista de reservas cuyo `starts_at` ya pasó. Sin Cancelar. Atrás → Mis turnos. Nav pinta **Mis turnos**. | No (hijo) |
 
@@ -419,8 +460,9 @@ Post-login / post-registro: `portal.home` → `#page-home`; si no → `/admin/ap
 | GET | `/doctors` | `DoctorSearchController@index` | `Doctors/Index` | `#page-doctors` |
 | GET | `/doctors/{doctor}` | `DoctorProfileController@show` | `Doctors/Show` | `#page-doctor-profile` |
 | GET | `/doctors/{doctor}/specialties` | `DoctorProfileController@specialties` | `Doctors/Specialties` | asociar especialidades (`specialties.manage`; d27) |
+| GET | `/doctors/{doctor}/health-insurances` | `DoctorProfileController@healthInsurances` | `Doctors/HealthInsurances` | asociar obras (`health_insurances.manage`; d40) |
 | GET | `/doctors/{doctor}/slots` | `DoctorSlotsController@index` | `Doctors/Slots` | `#page-slots` (huecos calculados) |
-| GET | `/book` | `BookingWizardController@index` | `Patient/Book` | `#page-book` (paso desde `specialty_id` / `doctor_id` / `date`; no `/book/specialty`) |
+| GET | `/book` | `BookingWizardController@index` | `Patient/Book` | `#page-book` (paso desde `coverage` / `specialty_id` / `doctor_id` / `date`; no `/book/specialty`; d40) |
 | POST | `/doctors/{doctor}/appointments` | `AppointmentBookingController@store` (`starts_at`, `specialty_id`) | redirect | INSERT reserva |
 | GET | `/my-appointments` | `MyAppointmentsController@index` | `Appointments/Index` | `#page-my` |
 | GET | `/my-appointments/history` | `MyAppointmentsController@history` | `Appointments/History` | `#page-my-history` |
@@ -458,13 +500,15 @@ Cancel de doctor: `DELETE /appointments/{appointment}` (policy).
 | POST | `/admin/doctors/{doctor}/windows/program` | `Admin\DoctorWindowController@program` | redirect (N×M) |
 | POST | `/admin/doctors/{doctor}/patients` | `Admin\DoctorPatientController@store` | redirect |
 | PATCH | `/admin/doctors/{doctor}/specialties` | `Admin\DoctorSpecialtyController@update` | redirect (`specialties.manage`; d27) |
+| PATCH | `/admin/doctors/{doctor}/health-insurances` | `Admin\DoctorHealthInsuranceController@update` | redirect (`health_insurances.manage`; d40) |
 | GET | `/admin/admins` | `Admin\AdminController@index` | `Admin/Admins` (`admins.manage`) |
 | GET | `/admin/admins/create` | `Admin\AdminController@create` | `Admin/AdminCreate` |
 | POST | `/admin/admins` | `Admin\AdminController@store` | redirect a la lista |
 | GET | `/admin/patients` | `Admin\PatientController@index` | `Admin/Patients` (`patients.catalog.view`) |
 | GET | `/admin/patients/create` | `Admin\PatientController@create` | `Admin/PatientCreate` (`patients.create`) |
 | POST | `/admin/patients` | `Admin\PatientController@store` | redirect (`PatientService::register`, sin login) |
-| GET | `/admin/patients/{patient}` | `Admin\PatientController@show` | `Admin/UserPatient` (solo `super_admin`; 404 si no existe) |
+| GET | `/admin/patients/{patient}` | `Admin\PatientController@show` | `Admin/UserPatient` (solo `super_admin`; 404 si no existe; select de obra, d40) |
+| PATCH | `/admin/patients/{patient}/health-insurance` | `Admin\PatientController@updateHealthInsurance` | redirect al perfil (`health_insurances.manage`; un id o vacío; d40) |
 | GET | `/admin/settings` | `Admin\SettingsController@index` | `Admin/Settings` (solo `super_admin`; hub d34) |
 | GET | `/admin/settings/specialties` | `Admin\SpecialtyController@index` | `Admin/Specialties` (solo `super_admin`; d34) |
 | GET | `/admin/settings/specialties/create` | `Admin\SpecialtyController@create` | `Admin/SpecialtyCreate` (solo `super_admin`; d35) |
@@ -472,6 +516,12 @@ Cancel de doctor: `DELETE /appointments/{appointment}` (policy).
 | POST | `/admin/settings/specialties` | `Admin\SpecialtyController@store` | redirect a la lista |
 | PATCH | `/admin/settings/specialties/{specialty}` | `Admin\SpecialtyController@update` | redirect |
 | DELETE | `/admin/settings/specialties/{specialty}` | `Admin\SpecialtyController@destroy` | redirect |
+| GET | `/admin/settings/health-insurances` | `Admin\HealthInsuranceController@index` | `Admin/HealthInsurances` (solo `super_admin`; d40) |
+| GET | `/admin/settings/health-insurances/create` | `Admin\HealthInsuranceController@create` | `Admin/HealthInsuranceCreate` (solo `super_admin`; d40) |
+| GET | `/admin/settings/health-insurances/{healthInsurance}/edit` | `Admin\HealthInsuranceController@edit` | `Admin/HealthInsuranceEdit` (solo `super_admin`; d40) |
+| POST | `/admin/settings/health-insurances` | `Admin\HealthInsuranceController@store` | redirect a la lista |
+| PATCH | `/admin/settings/health-insurances/{healthInsurance}` | `Admin\HealthInsuranceController@update` | redirect |
+| DELETE | `/admin/settings/health-insurances/{healthInsurance}` | `Admin\HealthInsuranceController@destroy` | redirect |
 
 No hay picker de temas. `dashboard` y `welcome` **no** son homes de producto.
 

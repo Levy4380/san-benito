@@ -1,28 +1,28 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CalendarPlus, Plus, Trash2, UserPlus, X } from 'lucide-react';
-import { ReactNode, useState } from 'react';
+import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import BackLink from '@/Components/Common/BackLink';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import StageCard from '@/Components/Common/StageCard';
-import { Btn } from '@/Components/Form/Btn';
-import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
-import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
+import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
+import Time24 from '@/Components/Form/Time24';
+import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
+import Empty from '@/Components/Surfaces/Empty';
+import Hint from '@/Components/Surfaces/Hint';
 import ListRow from '@/Components/Surfaces/ListRow';
-import NativeSelect from '@/Components/Form/NativeSelect';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import Surface from '@/Components/Surfaces/Surface';
-import Time24 from '@/Components/Form/Time24';
-import Empty from '@/Components/Surfaces/Empty';
-import Hint from '@/Components/Surfaces/Hint';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, PatientRecord, Slot } from '@/types';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { CalendarPlus, Plus, Trash2, UserPlus, X } from 'lucide-react';
+import { ReactNode, useState } from 'react';
 
 type PanelStep = 'day' | 'load' | 'assign';
 
@@ -129,7 +129,7 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
         panel === 'day' ? (
             <div
                 className={cn(
-                    'mt-auto grid shrink-0 grid-cols-2 gap-[0.55rem] border-t border-rule bg-paper pt-[var(--space-sm)]',
+                    'border-rule bg-paper mt-auto grid shrink-0 grid-cols-2 gap-[0.55rem] border-t pt-[var(--space-sm)]',
                     sticky && 'sticky bottom-0 z-[6] -mx-[var(--space-sm)] px-[var(--space-sm)] pb-[0.65rem]',
                 )}
             >
@@ -212,7 +212,13 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
                                 <span>
                                     Franja {wallTime(window.starts_at)} — {wallTime(window.ends_at)}
                                 </span>
-                                <Btn type="button" variant="outline" size="sm" className="shrink-0 self-start" onClick={() => removeWindow(window.id)}>
+                                <Btn
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0 self-start"
+                                    onClick={() => removeWindow(window.id)}
+                                >
                                     <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Borrar franja
                                 </Btn>
@@ -233,19 +239,17 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
                     ) : null}
                     <Field label="Paciente vinculado" htmlFor="patient_id" className="shrink-0">
                         <div className="flex min-w-0 items-center gap-[0.5rem]">
-                            <NativeSelect
+                            <Combobox
                                 id="patient_id"
                                 className="min-w-0 flex-1"
                                 value={patientId}
-                                onChange={(event) => setPatientId(event.target.value)}
-                            >
-                                <option value="">Elegí un paciente</option>
-                                {patients.map((patient) => (
-                                    <option key={patient.id} value={patient.id}>
-                                        {patient.user.name}
-                                    </option>
-                                ))}
-                            </NativeSelect>
+                                placeholder="Elegí un paciente"
+                                onChange={setPatientId}
+                                options={[
+                                    { value: '', label: 'Elegí un paciente' },
+                                    ...patients.map((patient) => ({ value: String(patient.id), label: patient.user.name })),
+                                ]}
+                            />
                             {patientId ? (
                                 <PatientProfileBtn
                                     patientId={Number(patientId)}
@@ -255,14 +259,16 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
                         </div>
                     </Field>
                     <Field label="Especialidad" htmlFor="specialty_id" className="shrink-0">
-                        <NativeSelect id="specialty_id" value={specialtyId} onChange={(event) => setSpecialtyId(event.target.value)}>
-                            <option value="">Elegí una especialidad</option>
-                            {doctor.specialties.map((specialty) => (
-                                <option key={specialty.id} value={specialty.id}>
-                                    {specialty.name}
-                                </option>
-                            ))}
-                        </NativeSelect>
+                        <Combobox
+                            id="specialty_id"
+                            value={specialtyId}
+                            placeholder="Elegí una especialidad"
+                            onChange={setSpecialtyId}
+                            options={[
+                                { value: '', label: 'Elegí una especialidad' },
+                                ...doctor.specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                            ]}
+                        />
                     </Field>
                     <PanelScroll className="pt-0">
                         {slots.length === 0 ? (

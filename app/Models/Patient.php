@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\SerializesInstitutionalDates;
 use Database\Factories\PatientFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +23,20 @@ class Patient extends Model
         'user_id',
         'dni',
         'birth_date',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $appends = [
         'health_insurance',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'healthInsurances',
     ];
 
     /**
@@ -48,5 +62,18 @@ class Patient extends Model
     public function doctors(): BelongsToMany
     {
         return $this->belongsToMany(Doctor::class, 'doctor_patient')->withTimestamps();
+    }
+
+    public function healthInsurances(): BelongsToMany
+    {
+        return $this->belongsToMany(HealthInsurance::class, 'patient_health_insurance')->withTimestamps();
+    }
+
+    /**
+     * @return Attribute<?string, never>
+     */
+    protected function healthInsurance(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->healthInsurances->first()?->name);
     }
 }

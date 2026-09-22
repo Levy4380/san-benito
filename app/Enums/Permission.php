@@ -33,6 +33,7 @@ enum Permission: string
     case PatientsCreate = 'patients.create';
     case AdminsManage = 'admins.manage';
     case SpecialtiesManage = 'specialties.manage';
+    case HealthInsurancesManage = 'health_insurances.manage';
 
     public function allows(?User $user): bool
     {
@@ -100,6 +101,7 @@ enum Permission: string
                 self::PatientsCatalogView,
                 self::PatientsCreate,
                 self::SpecialtiesManage,
+                self::HealthInsurancesManage,
             ],
             default => [],
         };

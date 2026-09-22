@@ -57,7 +57,7 @@ export default function ToastHost() {
         });
         const offInvalid = router.on('invalid', (event) => {
             const status = event.detail.response?.status;
-            if (!status || status === 404) {
+            if (!status || status === 403 || status === 404) {
                 return;
             }
             push(`El servidor rechazó el pedido (${status}).`, 'warn');

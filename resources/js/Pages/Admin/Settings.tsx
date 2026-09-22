@@ -4,7 +4,7 @@ import StageCard from '@/Components/Common/StageCard';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Results, { ResultList } from '@/Components/Surfaces/Results';
 import { Head, Link } from '@inertiajs/react';
-import { ChevronRight, Stethoscope } from 'lucide-react';
+import { ChevronRight, IdCard, Stethoscope } from 'lucide-react';
 
 export default function AdminSettings() {
     return (
@@ -23,6 +23,15 @@ export default function AdminSettings() {
                                     <span className="flex min-w-0 items-center gap-[0.65rem]">
                                         <Stethoscope className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                         <strong>Especialidades</strong>
+                                    </span>
+                                    <ChevronRight className="size-[1.05rem] shrink-0 text-ink-2" aria-hidden strokeWidth={2} />
+                                </Link>
+                            </ListRow>
+                            <ListRow asChild>
+                                <Link href="/admin/settings/health-insurances">
+                                    <span className="flex min-w-0 items-center gap-[0.65rem]">
+                                        <IdCard className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                        <strong>Obras sociales</strong>
                                     </span>
                                     <ChevronRight className="size-[1.05rem] shrink-0 text-ink-2" aria-hidden strokeWidth={2} />
                                 </Link>

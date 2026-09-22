@@ -43,15 +43,15 @@ class PermissionAuthorizationTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/doctors/create')->assertOk();
         $this->actingAs($super)->get('/admin/doctors/create')->assertOk();
-        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/admins/create')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/patients/create')->assertRedirect('/');
         $this->actingAs($super)->get('/admin/admins/create')->assertOk();
         $this->actingAs($super)->get('/admin/patients/create')->assertOk();
         $this->actingAs($super)->get('/admin/settings/specialties/create')->assertOk();
-        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertForbidden();
-        $this->actingAs($patient->user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
-        $this->actingAs($admin)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertRedirect('/');
+        $this->actingAs($patient->user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
+        $this->actingAs($admin)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
         $this->actingAs($super)->get('/doctors/'.$doctor->id.'/specialties')->assertOk();
-        $this->actingAs($doctor->user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+        $this->actingAs($doctor->user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
     }
 }

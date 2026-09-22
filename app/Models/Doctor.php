@@ -47,6 +47,13 @@ class Doctor extends Model
             ->orderBy('specialties.name');
     }
 
+    public function healthInsurances(): BelongsToMany
+    {
+        return $this->belongsToMany(HealthInsurance::class, 'doctor_health_insurance')
+            ->withTimestamps()
+            ->orderBy('health_insurances.name');
+    }
+
     public function availabilityWindows(): HasMany
     {
         return $this->hasMany(AvailabilityWindow::class);

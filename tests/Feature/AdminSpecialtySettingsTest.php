@@ -28,17 +28,17 @@ class AdminSpecialtySettingsTest extends TestCase
         $specialty = Specialty::query()->firstOrFail();
 
         foreach ([$patient->user, $doctor->user, $admin] as $user) {
-            $this->actingAs($user)->get('/admin/settings')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
-            $this->actingAs($user)->post('/admin/settings/specialties', ['name' => 'Oftalmología'])->assertForbidden();
-            $this->actingAs($user)->patch('/admin/settings/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertForbidden();
-            $this->actingAs($user)->delete('/admin/settings/specialties/'.$specialty->id)->assertForbidden();
-            $this->actingAs($user)->get('/doctors/'.$doctor->id.'/specialties')->assertForbidden();
+            $this->actingAs($user)->get('/admin/settings')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertRedirect('/');
+            $this->actingAs($user)->post('/admin/settings/specialties', ['name' => 'Oftalmología'])->assertRedirect('/');
+            $this->actingAs($user)->patch('/admin/settings/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertRedirect('/');
+            $this->actingAs($user)->delete('/admin/settings/specialties/'.$specialty->id)->assertRedirect('/');
+            $this->actingAs($user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
             $this->actingAs($user)->patch('/admin/doctors/'.$doctor->id.'/specialties', [
                 'specialty_ids' => [$specialty->id],
-            ])->assertForbidden();
+            ])->assertRedirect('/');
         }
 
         $this->assertDatabaseHas('specialties', [
@@ -216,7 +216,7 @@ class AdminSpecialtySettingsTest extends TestCase
 
         $this->actingAs($this->makeAdmin())
             ->get('/doctors/'.$doctor->id.'/specialties')
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($super)
             ->get('/doctors/'.$doctor->id)

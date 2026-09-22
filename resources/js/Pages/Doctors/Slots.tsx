@@ -1,20 +1,20 @@
-import { Head, router } from '@inertiajs/react';
-import { NotebookPen } from 'lucide-react';
-import { useState } from 'react';
+import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
-import NativeSelect from '@/Components/Form/NativeSelect';
-import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import Empty from '@/Components/Surfaces/Empty';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import { wallTime } from '@/lib/datetime';
 import type { DoctorRecord, Slot } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { NotebookPen } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
     doctor: DoctorRecord;
@@ -64,14 +64,16 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
 
     const specialtyField = (id: string) => (
         <Field label="Especialidad" htmlFor={id} className="shrink-0">
-            <NativeSelect id={id} value={selectedSpecialtyId ?? ''} onChange={(event) => chooseSpecialty(event.target.value)}>
-                <option value="">Elegí una especialidad</option>
-                {doctor.specialties.map((specialty) => (
-                    <option key={specialty.id} value={specialty.id}>
-                        {specialty.name}
-                    </option>
-                ))}
-            </NativeSelect>
+            <Combobox
+                id={id}
+                value={selectedSpecialtyId != null ? String(selectedSpecialtyId) : ''}
+                placeholder="Elegí una especialidad"
+                onChange={chooseSpecialty}
+                options={[
+                    { value: '', label: 'Elegí una especialidad' },
+                    ...doctor.specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                ]}
+            />
         </Field>
     );
 
@@ -95,13 +97,7 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
                         <strong>
                             {wallTime(slot.starts_at)} — {wallTime(slot.ends_at)}
                         </strong>
-                        <Btn
-                            type="button"
-                            size="sm"
-                            className="shrink-0"
-                            disabled={!selectedSpecialtyId}
-                            onClick={() => book(slot.starts_at)}
-                        >
+                        <Btn type="button" size="sm" className="shrink-0" disabled={!selectedSpecialtyId} onClick={() => book(slot.starts_at)}>
                             <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                             Reservar
                         </Btn>

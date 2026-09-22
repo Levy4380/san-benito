@@ -9,6 +9,7 @@ const PRODUCT_PAGES = new Set([
     'Doctors/Index',
     'Doctors/Show',
     'Doctors/Specialties',
+    'Doctors/HealthInsurances',
     'Doctors/Slots',
     'Appointments/Index',
     'Appointments/History',
@@ -27,6 +28,9 @@ const PRODUCT_PAGES = new Set([
     'Admin/Specialties',
     'Admin/SpecialtyCreate',
     'Admin/SpecialtyEdit',
+    'Admin/HealthInsurances',
+    'Admin/HealthInsuranceCreate',
+    'Admin/HealthInsuranceEdit',
 ]);
 
 const HOME_PAGES = new Set(['Patient/Home', 'Doctor/Home']);

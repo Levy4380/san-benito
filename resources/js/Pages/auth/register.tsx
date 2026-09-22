@@ -3,11 +3,17 @@ import { UserPlus } from 'lucide-react';
 import { FormEventHandler } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
+import NativeSelect from '@/Components/Form/NativeSelect';
 import Hint from '@/Components/Surfaces/Hint';
 import TextInput from '@/Components/Form/TextInput';
 import AuthLayout from '@/Layouts/auth-layout';
+import type { HealthInsurance } from '@/types';
 
-export default function Register() {
+type Props = {
+    healthInsurances: HealthInsurance[];
+};
+
+export default function Register({ healthInsurances }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
@@ -16,7 +22,7 @@ export default function Register() {
         dni: '',
         birth_date: '',
         phone: '',
-        health_insurance: '',
+        health_insurance_id: '',
     });
 
     const submit: FormEventHandler = (event) => {
@@ -49,12 +55,19 @@ export default function Register() {
                 <Field label="Teléfono (opcional)" htmlFor="phone" error={errors.phone} flush>
                     <TextInput id="phone" value={data.phone} onChange={(event) => setData('phone', event.target.value)} />
                 </Field>
-                <Field label="Obra social (opcional)" htmlFor="health_insurance" error={errors.health_insurance} flush>
-                    <TextInput
-                        id="health_insurance"
-                        value={data.health_insurance}
-                        onChange={(event) => setData('health_insurance', event.target.value)}
-                    />
+                <Field label="Obra social (opcional)" htmlFor="health_insurance_id" error={errors.health_insurance_id} flush>
+                    <NativeSelect
+                        id="health_insurance_id"
+                        value={data.health_insurance_id}
+                        onChange={(event) => setData('health_insurance_id', event.target.value)}
+                    >
+                        <option value="">Sin obra social</option>
+                        {healthInsurances.map((healthInsurance) => (
+                            <option key={healthInsurance.id} value={healthInsurance.id}>
+                                {healthInsurance.name}
+                            </option>
+                        ))}
+                    </NativeSelect>
                 </Field>
                 <Field label="Contraseña" htmlFor="password" error={errors.password} flush>
                     <TextInput id="password" type="password" value={data.password} required onChange={(event) => setData('password', event.target.value)} />

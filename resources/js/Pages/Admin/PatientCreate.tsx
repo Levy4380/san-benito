@@ -3,12 +3,18 @@ import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
+import NativeSelect from '@/Components/Form/NativeSelect';
 import TextInput from '@/Components/Form/TextInput';
 import Results from '@/Components/Surfaces/Results';
+import type { HealthInsurance } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
 
-export default function AdminPatientCreate() {
+type Props = {
+    healthInsurances: HealthInsurance[];
+};
+
+export default function AdminPatientCreate({ healthInsurances }: Props) {
     const form = useForm({
         name: '',
         email: '',
@@ -16,7 +22,7 @@ export default function AdminPatientCreate() {
         dni: '',
         birth_date: '',
         phone: '',
-        health_insurance: '',
+        health_insurance_id: '',
     });
 
     return (
@@ -91,12 +97,19 @@ export default function AdminPatientCreate() {
                                     onChange={(event) => form.setData('phone', event.target.value)}
                                 />
                             </Field>
-                            <Field label="Obra social (opcional)" htmlFor="health_insurance">
-                                <TextInput
-                                    id="health_insurance"
-                                    value={form.data.health_insurance}
-                                    onChange={(event) => form.setData('health_insurance', event.target.value)}
-                                />
+                            <Field label="Obra social (opcional)" htmlFor="health_insurance_id" error={form.errors.health_insurance_id}>
+                                <NativeSelect
+                                    id="health_insurance_id"
+                                    value={form.data.health_insurance_id}
+                                    onChange={(event) => form.setData('health_insurance_id', event.target.value)}
+                                >
+                                    <option value="">Sin obra social</option>
+                                    {healthInsurances.map((healthInsurance) => (
+                                        <option key={healthInsurance.id} value={healthInsurance.id}>
+                                            {healthInsurance.name}
+                                        </option>
+                                    ))}
+                                </NativeSelect>
                             </Field>
                             <Btn type="submit" disabled={form.processing}>
                                 <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

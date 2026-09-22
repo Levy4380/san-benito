@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\LocalDemoAccounts;
 use App\Support\RoleRedirector;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -20,22 +20,17 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
-            'demoAccounts' => app()->environment('local') ? [
-                ['role' => 'Super admin', 'name' => 'Super admin', 'email' => 'superadmin@test.test'],
-                ['role' => 'Admin', 'name' => 'Secretaria', 'email' => 'admin@test.test'],
-                ['role' => 'Doctor', 'name' => 'Doctor', 'email' => 'doctor@test.test'],
-                ['role' => 'Paciente', 'name' => 'Paciente', 'email' => 'paciente@test.test'],
-            ] : [],
+            'demoAccounts' => app()->environment('local') ? LocalDemoAccounts::loginPicker() : [],
         ]);
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): SymfonyResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        return redirect()->intended(RoleRedirector::intendedPath($request->user()));
+        return Inertia::location(redirect()->intended(RoleRedirector::home()));
     }
 
     public function destroy(Request $request): SymfonyResponse

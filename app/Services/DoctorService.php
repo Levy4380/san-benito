@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 class DoctorService
 {
     /**
-     * @param  array{name: string, email: string, password: string, license_number: string, specialty_ids: list<int>, phone?: string|null, slot_duration_minutes?: int}  $data
+     * @param  array{name: string, email: string, password: string, license_number: string, specialty_ids: list<int>, health_insurance_ids?: list<int>, phone?: string|null, slot_duration_minutes?: int}  $data
      */
     public function create(array $data): User
     {
@@ -29,6 +29,7 @@ class DoctorService
             ]);
 
             $doctor->specialties()->sync($data['specialty_ids']);
+            $doctor->healthInsurances()->sync($data['health_insurance_ids'] ?? []);
 
             $user->assignRole('doctor');
 
@@ -44,6 +45,16 @@ class DoctorService
         $doctor->specialties()->sync($specialtyIds);
 
         return $doctor->refresh()->load(['user', 'specialties']);
+    }
+
+    /**
+     * @param  list<int>  $healthInsuranceIds
+     */
+    public function syncHealthInsurances(Doctor $doctor, array $healthInsuranceIds): Doctor
+    {
+        $doctor->healthInsurances()->sync($healthInsuranceIds);
+
+        return $doctor->refresh()->load(['user', 'specialties', 'healthInsurances']);
     }
 
     public function forUser(User $user): Doctor

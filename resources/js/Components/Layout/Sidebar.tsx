@@ -67,7 +67,6 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
     }
 
     const role = primaryRole(user.roles);
-    const hasHome = hasPermission(user.permissions, Permission.PortalHome);
     const nav = navFor(user.permissions);
     const roleLabel = roleLabelFor(role);
 
@@ -84,7 +83,7 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
             )}
         >
             <Link
-                href={hasHome ? '/home' : '/admin/appointments'}
+                href="/"
                 id="brand-home"
                 aria-label="Ir al inicio"
                 className={cn(

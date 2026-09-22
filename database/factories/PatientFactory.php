@@ -19,7 +19,6 @@ class PatientFactory extends Factory
             'user_id' => User::factory(),
             'dni' => fake()->unique()->numerify('########'),
             'birth_date' => fake()->date('Y-m-d', '-18 years'),
-            'health_insurance' => fake()->optional()->company(),
         ];
     }
 }

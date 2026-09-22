@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminPatientRequest;
+use App\Http\Requests\Admin\UpdatePatientHealthInsuranceRequest;
 use App\Models\Patient;
 use App\Services\DoctorPatientService;
+use App\Services\HealthInsuranceService;
 use App\Services\PatientService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,9 +33,11 @@ class PatientController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(HealthInsuranceService $healthInsurances): Response
     {
-        return Inertia::render('Admin/PatientCreate');
+        return Inertia::render('Admin/PatientCreate', [
+            'healthInsurances' => $healthInsurances->options(),
+        ]);
     }
 
     public function store(StoreAdminPatientRequest $request, PatientService $patients): RedirectResponse
@@ -48,10 +52,29 @@ class PatientController extends Controller
             ]);
     }
 
-    public function show(Patient $patient, DoctorPatientService $links): Response
+    public function show(Patient $patient, DoctorPatientService $links, HealthInsuranceService $healthInsurances): Response
     {
+        $profile = $links->profile($patient);
+
         return Inertia::render('Admin/UserPatient', [
-            'patient' => $links->profile($patient),
+            'patient' => $profile,
+            'healthInsuranceId' => $profile->healthInsurances->first()?->id,
+            'healthInsurances' => $healthInsurances->options(),
         ]);
+    }
+
+    public function updateHealthInsurance(
+        UpdatePatientHealthInsuranceRequest $request,
+        Patient $patient,
+        PatientService $patients,
+    ): RedirectResponse {
+        $patients->syncHealthInsurance($patient, $request->validated('health_insurance_id'));
+
+        return redirect()
+            ->route('admin.patients.show', $patient)
+            ->with('toast', [
+                'message' => 'Actualizaste la obra social.',
+                'variant' => 'ok',
+            ]);
     }
 }

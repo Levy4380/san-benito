@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Doctor;
 use App\Services\DoctorSearchService;
+use App\Services\HealthInsuranceService;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +22,14 @@ class DoctorProfileController extends Controller
         return Inertia::render('Doctors/Specialties', [
             'doctor' => $search->profile($doctor),
             'specialties' => $search->specialties(),
+        ]);
+    }
+
+    public function healthInsurances(Doctor $doctor, HealthInsuranceService $healthInsurances): Response
+    {
+        return Inertia::render('Doctors/HealthInsurances', [
+            'doctor' => $doctor->load(['user', 'specialties', 'healthInsurances']),
+            'healthInsurances' => $healthInsurances->options(),
         ]);
     }
 }

@@ -1,17 +1,17 @@
-import { Head, router } from '@inertiajs/react';
-import { Search, X } from 'lucide-react';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
+import Field from '@/Components/Form/Field';
+import TextInput from '@/Components/Form/TextInput';
 import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import Empty from '@/Components/Surfaces/Empty';
-import Field from '@/Components/Form/Field';
 import Filters from '@/Components/Surfaces/Filters';
-import NativeSelect from '@/Components/Form/NativeSelect';
 import Results from '@/Components/Surfaces/Results';
-import TextInput from '@/Components/Form/TextInput';
 import type { AppointmentRecord, DoctorRecord, PatientRecord } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { Search, X } from 'lucide-react';
 
 type Paginator = {
     data: AppointmentRecord[];
@@ -40,24 +40,26 @@ export default function AdminAppointments({ appointments, filters, doctors, pati
                             }}
                         >
                             <Field label="Doctor" htmlFor="doctor_id" flush className="min-w-0">
-                                <NativeSelect id="doctor_id" name="doctor_id" defaultValue={filters.doctor_id ?? ''}>
-                                    <option value="">Todos</option>
-                                    {doctors.map((doctor) => (
-                                        <option key={doctor.id} value={doctor.id}>
-                                            {doctor.user.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                <Combobox
+                                    id="doctor_id"
+                                    name="doctor_id"
+                                    defaultValue={filters.doctor_id != null ? String(filters.doctor_id) : ''}
+                                    options={[
+                                        { value: '', label: 'Todos' },
+                                        ...doctors.map((doctor) => ({ value: String(doctor.id), label: doctor.user.name })),
+                                    ]}
+                                />
                             </Field>
                             <Field label="Paciente" htmlFor="patient_id" flush className="min-w-0">
-                                <NativeSelect id="patient_id" name="patient_id" defaultValue={filters.patient_id ?? ''}>
-                                    <option value="">Todos</option>
-                                    {patients.map((patient) => (
-                                        <option key={patient.id} value={patient.id}>
-                                            {patient.user.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                <Combobox
+                                    id="patient_id"
+                                    name="patient_id"
+                                    defaultValue={filters.patient_id != null ? String(filters.patient_id) : ''}
+                                    options={[
+                                        { value: '', label: 'Todos' },
+                                        ...patients.map((patient) => ({ value: String(patient.id), label: patient.user.name })),
+                                    ]}
+                                />
                             </Field>
                             <Field label="Fecha" htmlFor="date" flush className="min-w-0">
                                 <TextInput id="date" name="date" type="date" defaultValue={filters.date ?? ''} />

@@ -26,6 +26,8 @@ class StoreDoctorRequest extends FormRequest
             'license_number' => ['required', 'string', 'max:64', 'unique:doctors,license_number'],
             'specialty_ids' => ['required', 'array', 'min:1'],
             'specialty_ids.*' => ['integer', 'distinct', 'exists:specialties,id'],
+            'health_insurance_ids' => ['sometimes', 'array'],
+            'health_insurance_ids.*' => ['integer', 'distinct', 'exists:health_insurances,id'],
             'phone' => ['nullable', 'string', 'max:32'],
             'slot_duration_minutes' => ['nullable', 'integer', 'min:5', 'max:120'],
         ];
@@ -43,6 +45,19 @@ class StoreDoctorRequest extends FormRequest
             'specialty_ids.*.integer' => 'La especialidad seleccionada no existe.',
             'specialty_ids.*.distinct' => 'No repetí una especialidad.',
             'specialty_ids.*.exists' => 'La especialidad seleccionada no existe.',
+            'health_insurance_ids.array' => 'Las obras sociales no son válidas.',
+            'health_insurance_ids.*.integer' => 'La obra social seleccionada no existe.',
+            'health_insurance_ids.*.distinct' => 'No repetí una obra social.',
+            'health_insurance_ids.*.exists' => 'La obra social seleccionada no existe.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->exists('health_insurance_ids') && is_array($this->input('health_insurance_ids'))) {
+            $this->merge([
+                'health_insurance_ids' => array_values(array_map(intval(...), $this->input('health_insurance_ids'))),
+            ]);
+        }
     }
 }

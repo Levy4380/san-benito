@@ -20,7 +20,7 @@ class DoctorPatientService
 
     public function profile(Patient $patient): Patient
     {
-        return $patient->load('user');
+        return $patient->load(['user', 'healthInsurances']);
     }
 
     public function isLinked(Doctor $doctor, Patient $patient): bool
@@ -33,7 +33,7 @@ class DoctorPatientService
      */
     public function patientsFor(Doctor $doctor): Collection
     {
-        return $doctor->patients()->with('user')->orderBy('id')->get();
+        return $doctor->patients()->with(['user', 'healthInsurances'])->orderBy('id')->get();
     }
 
     /**
@@ -48,7 +48,7 @@ class DoctorPatientService
         }
 
         return Patient::query()
-            ->with('user')
+            ->with(['user', 'healthInsurances'])
             ->where(function ($query) use ($term) {
                 $query->where('dni', 'like', '%'.$term.'%')
                     ->orWhereHas('user', function ($users) use ($term) {

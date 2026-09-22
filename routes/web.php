@@ -4,9 +4,11 @@ use App\Enums\Permission;
 use App\Http\Controllers\Admin\AdminController as AdminAdminController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\DoctorController as AdminDoctorController;
+use App\Http\Controllers\Admin\DoctorHealthInsuranceController as AdminDoctorHealthInsuranceController;
 use App\Http\Controllers\Admin\DoctorPatientController as AdminDoctorPatientController;
 use App\Http\Controllers\Admin\DoctorSpecialtyController as AdminDoctorSpecialtyController;
 use App\Http\Controllers\Admin\DoctorWindowController as AdminDoctorWindowController;
+use App\Http\Controllers\Admin\HealthInsuranceController as AdminHealthInsuranceController;
 use App\Http\Controllers\Admin\PatientController as AdminPatientController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\SpecialtyController as AdminSpecialtyController;
@@ -27,12 +29,10 @@ use App\Http\Controllers\MyPatientsController;
 use App\Http\Controllers\Settings\DoctorAgendaSettingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-})->name('welcome');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/home', [HomeController::class, 'index']);
 
 Route::middleware('auth')->group(function () {
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::delete('/appointments/{appointment}', [AppointmentCancellationController::class, 'destroy'])
         ->middleware(Permission::middleware(Permission::OwnAppointmentsCancel, Permission::AppointmentsCancel))
         ->name('appointments.destroy');
@@ -57,6 +57,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware(Permission::middleware(Permission::SpecialtiesManage))->group(function () {
         Route::get('/doctors/{doctor}/specialties', [DoctorProfileController::class, 'specialties'])
             ->name('doctors.specialties');
+    });
+
+    Route::middleware(Permission::middleware(Permission::HealthInsurancesManage))->group(function () {
+        Route::get('/doctors/{doctor}/health-insurances', [DoctorProfileController::class, 'healthInsurances'])
+            ->name('doctors.health-insurances');
     });
 
     Route::middleware(Permission::middleware(Permission::OwnAgendaView))->group(function () {
@@ -147,6 +152,19 @@ Route::middleware('auth')->group(function () {
             Route::patch('/settings/specialties/{specialty}', [AdminSpecialtyController::class, 'update'])->name('settings.specialties.update');
             Route::delete('/settings/specialties/{specialty}', [AdminSpecialtyController::class, 'destroy'])->name('settings.specialties.destroy');
             Route::patch('/doctors/{doctor}/specialties', [AdminDoctorSpecialtyController::class, 'update'])->name('doctors.specialties.update');
+        });
+
+        Route::middleware(Permission::middleware(Permission::HealthInsurancesManage))->group(function () {
+            Route::get('/settings/health-insurances', [AdminHealthInsuranceController::class, 'index'])->name('settings.health-insurances.index');
+            Route::get('/settings/health-insurances/create', [AdminHealthInsuranceController::class, 'create'])->name('settings.health-insurances.create');
+            Route::get('/settings/health-insurances/{healthInsurance}/edit', [AdminHealthInsuranceController::class, 'edit'])->name('settings.health-insurances.edit');
+            Route::post('/settings/health-insurances', [AdminHealthInsuranceController::class, 'store'])->name('settings.health-insurances.store');
+            Route::patch('/settings/health-insurances/{healthInsurance}', [AdminHealthInsuranceController::class, 'update'])->name('settings.health-insurances.update');
+            Route::delete('/settings/health-insurances/{healthInsurance}', [AdminHealthInsuranceController::class, 'destroy'])->name('settings.health-insurances.destroy');
+            Route::patch('/doctors/{doctor}/health-insurances', [AdminDoctorHealthInsuranceController::class, 'update'])->name('doctors.health-insurances.update');
+            Route::patch('/patients/{patient}/health-insurance', [AdminPatientController::class, 'updateHealthInsurance'])
+                ->whereNumber('patient')
+                ->name('patients.health-insurance.update');
         });
     });
 });

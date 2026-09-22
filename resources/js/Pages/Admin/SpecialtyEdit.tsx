@@ -2,9 +2,8 @@ import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
-import CheckLabel from '@/Components/Form/CheckLabel';
+import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
-import SearchableChecks from '@/Components/Form/SearchableChecks';
 import TextInput from '@/Components/Form/TextInput';
 import Results from '@/Components/Surfaces/Results';
 import { Head, useForm } from '@inertiajs/react';
@@ -26,11 +25,6 @@ export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
         name: specialty.name,
         doctor_ids: doctors.filter((doctor) => doctor.assigned).map((doctor) => doctor.id),
     });
-
-    const toggleDoctor = (id: number, checked: boolean) => {
-        const current = form.data.doctor_ids;
-        form.setData('doctor_ids', checked ? [...current, id] : current.filter((item) => item !== id));
-    };
 
     return (
         <>
@@ -62,23 +56,21 @@ export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
                                     required
                                 />
                             </Field>
-                            <Field label="Doctores" error={form.errors.doctor_ids}>
-                                <SearchableChecks
-                                    items={doctors}
-                                    searchId="doctor_search"
+                            <Field label="Doctores" htmlFor="doctor_ids" error={form.errors.doctor_ids}>
+                                <Combobox
+                                    id="doctor_ids"
+                                    multiple
+                                    value={form.data.doctor_ids.map(String)}
+                                    placeholder="Elegí doctores"
                                     searchLabel="Buscar doctor"
                                     empty="Todavía no hay doctores."
                                     emptyFiltered="No hay doctores con ese nombre."
-                                >
-                                    {(doctor) => (
-                                        <CheckLabel
-                                            checked={form.data.doctor_ids.includes(doctor.id)}
-                                            onChange={(checked) => toggleDoctor(doctor.id, checked)}
-                                        >
-                                            {doctor.name}
-                                        </CheckLabel>
-                                    )}
-                                </SearchableChecks>
+                                    onChange={(values) => form.setData('doctor_ids', values.map(Number))}
+                                    options={doctors.map((doctor) => ({
+                                        value: String(doctor.id),
+                                        label: doctor.name,
+                                    }))}
+                                />
                             </Field>
                             <Btn type="submit" disabled={form.processing}>
                                 <Save className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

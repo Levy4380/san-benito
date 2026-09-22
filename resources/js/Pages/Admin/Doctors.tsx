@@ -2,8 +2,8 @@ import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
-import NativeSelect from '@/Components/Form/NativeSelect';
 import TextInput from '@/Components/Form/TextInput';
 import DoctorCard, { DoctorCardActions, DoctorGrid } from '@/Components/Surfaces/DoctorCard';
 import Empty from '@/Components/Surfaces/Empty';
@@ -53,18 +53,15 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                     <Results>
                         <Filters onSubmit={submitFilters}>
                             <Field label="Especialidad" htmlFor="filter_specialty_id" flush className="min-w-0">
-                                <NativeSelect
+                                <Combobox
                                     id="filter_specialty_id"
                                     name="specialty_id"
                                     defaultValue={filters.specialty_id || 'all'}
-                                >
-                                    <option value="all">Todas</option>
-                                    {specialties.map((specialty) => (
-                                        <option key={specialty.id} value={specialty.id}>
-                                            {specialty.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                    options={[
+                                        { value: 'all', label: 'Todas' },
+                                        ...specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                                    ]}
+                                />
                             </Field>
                             <Field label="Nombre" htmlFor="q" flush className="min-w-0">
                                 <TextInput id="q" name="q" defaultValue={filters.q} />
@@ -75,9 +72,7 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                             </Btn>
                         </Filters>
                         {doctors.length === 0 ? (
-                            <Empty>
-                                {hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
-                            </Empty>
+                            <Empty>{hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}</Empty>
                         ) : (
                             <DoctorGrid>
                                 {doctors.map((doctor) => (

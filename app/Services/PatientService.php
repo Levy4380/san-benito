@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 class PatientService
 {
     /**
-     * @param  array{name: string, email: string, password: string, dni: string, birth_date: string, phone?: string|null, health_insurance?: string|null}  $data
+     * @param  array{name: string, email: string, password: string, dni: string, birth_date: string, phone?: string|null, health_insurance_id?: int|null}  $data
      */
     public function register(array $data): User
     {
@@ -23,17 +23,31 @@ class PatientService
                 'password' => Hash::make($data['password']),
             ]);
 
-            Patient::query()->create([
+            $patient = Patient::query()->create([
                 'user_id' => $user->id,
                 'dni' => $data['dni'],
                 'birth_date' => $data['birth_date'],
-                'health_insurance' => $data['health_insurance'] ?? null,
             ]);
+
+            $healthInsuranceId = $data['health_insurance_id'] ?? null;
+
+            if ($healthInsuranceId !== null) {
+                $patient->healthInsurances()->sync([(int) $healthInsuranceId]);
+            }
 
             $user->assignRole('patient');
 
             return $user;
         });
+    }
+
+    public function syncHealthInsurance(Patient $patient, ?int $healthInsuranceId): Patient
+    {
+        $patient->healthInsurances()->sync(
+            $healthInsuranceId === null ? [] : [$healthInsuranceId],
+        );
+
+        return $patient->refresh()->load(['user', 'healthInsurances']);
     }
 
     public function forUser(User $user): Patient
@@ -53,7 +67,7 @@ class PatientService
     public function list(?string $name = null, ?string $email = null)
     {
         $query = Patient::query()
-            ->with('user')
+            ->with(['user', 'healthInsurances'])
             ->orderBy('id');
 
         $name = trim((string) $name);

@@ -1,19 +1,19 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { CalendarClock, Info, Search } from 'lucide-react';
-import { FormEventHandler } from 'react';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
+import Field from '@/Components/Form/Field';
+import TextInput from '@/Components/Form/TextInput';
 import DoctorCard, { DoctorCardActions, DoctorGrid } from '@/Components/Surfaces/DoctorCard';
 import Empty from '@/Components/Surfaces/Empty';
-import Field from '@/Components/Form/Field';
 import Filters from '@/Components/Surfaces/Filters';
-import NativeSelect from '@/Components/Form/NativeSelect';
 import Results from '@/Components/Surfaces/Results';
-import TextInput from '@/Components/Form/TextInput';
 import { specialtyNames } from '@/lib/specialties';
 import type { DoctorRecord, Specialty } from '@/types';
+import { Head, Link, router } from '@inertiajs/react';
+import { CalendarClock, Info, Search } from 'lucide-react';
+import { FormEventHandler } from 'react';
 
 type Props = {
     doctors: DoctorRecord[];
@@ -38,14 +38,15 @@ export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
                     <Results>
                         <Filters onSubmit={submit}>
                             <Field label="Especialidad" htmlFor="specialty_id" flush className="min-w-0">
-                                <NativeSelect id="specialty_id" name="specialty_id" defaultValue={filters.specialty_id || 'all'}>
-                                    <option value="all">Todas</option>
-                                    {specialties.map((specialty) => (
-                                        <option key={specialty.id} value={specialty.id}>
-                                            {specialty.name}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                <Combobox
+                                    id="specialty_id"
+                                    name="specialty_id"
+                                    defaultValue={filters.specialty_id || 'all'}
+                                    options={[
+                                        { value: 'all', label: 'Todas' },
+                                        ...specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                                    ]}
+                                />
                             </Field>
                             <Field label="Nombre" htmlFor="q" flush className="min-w-0">
                                 <TextInput id="q" name="q" defaultValue={filters.q} />
@@ -56,9 +57,7 @@ export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
                             </Btn>
                         </Filters>
                         {doctors.length === 0 ? (
-                            <Empty>
-                                {hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
-                            </Empty>
+                            <Empty>{hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}</Empty>
                         ) : (
                             <DoctorGrid>
                                 {doctors.map((doctor) => (

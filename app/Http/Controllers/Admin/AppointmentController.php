@@ -15,6 +15,7 @@ class AppointmentController extends Controller
         $filters = [
             'doctor_id' => $request->integer('doctor_id') ?: null,
             'patient_id' => $request->integer('patient_id') ?: null,
+            'specialty_id' => $request->integer('specialty_id') ?: null,
             'date' => $request->filled('date') ? $request->string('date')->toString() : null,
         ];
 

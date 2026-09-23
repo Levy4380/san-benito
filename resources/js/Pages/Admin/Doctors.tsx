@@ -6,11 +6,11 @@ import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import Catalog from '@/Components/Surfaces/Catalog';
+import type { FilterValues } from '@/Components/Surfaces/Filters';
 import { specialtyNames } from '@/lib/specialties';
 import type { DoctorRecord, Specialty } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
-import { FormEventHandler } from 'react';
 
 type Props = {
     doctors: DoctorRecord[];
@@ -21,10 +21,8 @@ type Props = {
 export default function AdminDoctors({ doctors, specialties, filters }: Props) {
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
 
-    const submitFilters: FormEventHandler<HTMLFormElement> = (event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        router.get('/admin/doctors', Object.fromEntries(data), { preserveState: true });
+    const apply = (data: FilterValues) => {
+        router.get('/admin/doctors', data, { preserveState: true });
     };
 
     return (
@@ -48,7 +46,8 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
             >
                 <StageCard>
                     <Catalog
-                        onSearch={submitFilters}
+                        applied={{ specialty_id: filters.specialty_id || 'all' }}
+                        onApply={apply}
                         empty={hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
                         items={doctors.map((doctor) => ({
                             key: doctor.id,
@@ -56,22 +55,25 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                             lines: [specialtyNames(doctor.specialties), doctor.license_number],
                             actions: [{ kind: 'info', href: `/doctors/${doctor.id}`, name: doctor.user.name }],
                         }))}
-                    >
-                        <Field label="Especialidad" htmlFor="filter_specialty_id" flush className="min-w-0">
-                            <Combobox
-                                id="filter_specialty_id"
-                                name="specialty_id"
-                                defaultValue={filters.specialty_id || 'all'}
-                                options={[
-                                    { value: 'all', label: 'Todas' },
-                                    ...specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Nombre" htmlFor="q" flush className="min-w-0">
-                            <TextInput id="q" name="q" defaultValue={filters.q} />
-                        </Field>
-                    </Catalog>
+                        primary={
+                            <Field label="Nombre" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} />
+                            </Field>
+                        }
+                        advanced={
+                            <Field label="Especialidad" htmlFor="filter_specialty_id" flush className="min-w-0">
+                                <Combobox
+                                    id="filter_specialty_id"
+                                    name="specialty_id"
+                                    defaultValue={filters.specialty_id || 'all'}
+                                    options={[
+                                        { value: 'all', label: 'Todas' },
+                                        ...specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                                    ]}
+                                />
+                            </Field>
+                        }
+                    />
                 </StageCard>
             </PageScreen>
         </>

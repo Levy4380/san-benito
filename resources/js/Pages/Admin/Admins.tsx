@@ -5,10 +5,10 @@ import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import Catalog from '@/Components/Surfaces/Catalog';
+import type { FilterValues } from '@/Components/Surfaces/Filters';
 import type { RoleName } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
-import { FormEventHandler } from 'react';
 
 type StaffRole = { name: string } | string;
 
@@ -45,10 +45,8 @@ function staffRoleLabel(roles: StaffRole[] | undefined): string {
 export default function AdminAdmins({ users, filters }: Props) {
     const hasFilters = filters.q.trim() !== '';
 
-    const submitFilters: FormEventHandler<HTMLFormElement> = (event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        router.get('/admin/admins', Object.fromEntries(data), { preserveState: true });
+    const apply = (data: FilterValues) => {
+        router.get('/admin/admins', data, { preserveState: true });
     };
 
     return (
@@ -72,19 +70,19 @@ export default function AdminAdmins({ users, filters }: Props) {
             >
                 <StageCard>
                     <Catalog
-                        filterVariant="one"
-                        onSearch={submitFilters}
+                        onApply={apply}
                         empty={hasFilters ? 'No hay administradores con esos filtros.' : 'Todavía no hay administradores.'}
                         items={users.map((user) => ({
                             key: user.id,
                             title: user.name,
                             lines: [user.email, staffRoleLabel(user.roles)],
                         }))}
-                    >
-                        <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
-                            <TextInput id="q" name="q" defaultValue={filters.q} />
-                        </Field>
-                    </Catalog>
+                        primary={
+                            <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} />
+                            </Field>
+                        }
+                    />
                 </StageCard>
             </PageScreen>
         </>

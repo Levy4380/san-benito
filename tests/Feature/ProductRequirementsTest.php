@@ -555,6 +555,18 @@ class ProductRequirementsTest extends TestCase
             ->get('/admin/appointments?date='.$start->copy()->addYear()->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/appointments?specialty_id='.$appointment->specialty_id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
+
+        $other = Specialty::factory()->create(['name' => 'Oftalmología']);
+
+        $this->actingAs($admin)
+            ->get('/admin/appointments?specialty_id='.$other->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
     }
 
     public function test_13_admin_routes_forbidden_for_patient_and_doctor_users_forbidden_for_admin(): void

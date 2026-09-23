@@ -25,7 +25,7 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
             <Head title={patient.user.name} />
             <PageScreen header={<PageHeader title={patient.user.name} backHref="/admin/patients" backLabel="Pacientes" />}>
                 <StageCard>
-                    <Surface className="gap-[var(--space-md)]">
+                    <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <dl className="m-0 grid w-full gap-[var(--space-sm)]">
                             <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Nombre</dt>

@@ -55,9 +55,9 @@ export default function DoctorShow({ doctor }: Props) {
                 }
             >
                 <StageCard>
-                    <Surface className="gap-[var(--space-md)]">
+                    <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <DoctorProfileFields doctor={doctor} />
-                        <Btn asChild>
+                        <Btn className="shrink-0" asChild>
                             <Link href={`/doctors/${doctor.id}/slots`}>
                                 <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Ver turnos

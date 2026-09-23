@@ -306,7 +306,7 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
                 header={
                     <PageHeader
                         title="Mi agenda"
-                        description="Franjas, huecos y reservas del día. Elegí un día para ver el detalle"
+                        description="Franjas, huecos y reservas del día. Elegí un día para ver el detalle."
                         actions={
                             <Btn asChild>
                                 <Link href="/agenda/program">

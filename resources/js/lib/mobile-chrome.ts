@@ -24,7 +24,11 @@ export const phoneListGapClass = 'max-md:gap-[0.75rem]';
  */
 export const phoneAgendaSheetClearanceClass = 'max-md:pb-[calc(13%+0.85rem)]';
 
-/** Main column padding under the mobile topbar (<1200). Keep horizontal gutter so titles are not flush. */
+/**
+ * Main column under the mobile topbar (<1200).
+ * Body padding is the frame, so main has no side or bottom margin — only the top gap that separates it from the topbar.
+ * Inner padding keeps titles off the paper edge.
+ */
 export const chromeMainPadClass =
     'max-[1199px]:mt-[var(--space-2xs)] max-[1199px]:p-[var(--space-sm)] max-md:px-[var(--space-sm)] max-md:py-[var(--space-xs)]';
 

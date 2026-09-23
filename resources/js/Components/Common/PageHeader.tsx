@@ -60,7 +60,7 @@ export default function PageHeader({ title, description, subtitle, actions, back
                     className={cn(
                         'col-start-1 row-start-1 m-0 flex h-[var(--page-header-title-h)] max-h-[var(--page-header-title-h)] min-h-[var(--page-header-title-h)] shrink-0 items-center overflow-hidden text-[length:var(--text-xl)] leading-[1.25]',
                         'max-[1199px]:h-auto max-[1199px]:max-h-none max-[1199px]:min-h-0 max-[1199px]:text-[1.35rem] max-[1199px]:leading-[1.2]',
-                        'max-md:text-[1rem] max-md:leading-[1.2] max-md:tracking-[-0.025em] max-md:whitespace-normal',
+                        'max-md:text-[1.4rem] max-md:leading-[1.2] max-md:tracking-[-0.025em] max-md:whitespace-normal',
                         showBack && 'invisible',
                     )}
                 >

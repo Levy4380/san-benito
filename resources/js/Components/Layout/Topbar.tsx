@@ -22,7 +22,7 @@ export default function Topbar({ navOpen, userOpen, onToggleNav, onToggleUser }:
         <header
             className={cn(
                 'relative z-[60] hidden shrink-0',
-                'max-[1199px]:order-[-1] max-[1199px]:m-[var(--app-frame)_var(--app-frame)_0] max-[1199px]:flex max-[1199px]:h-[var(--mobile-header-h)] max-[1199px]:min-h-[var(--mobile-header-h)] max-[1199px]:items-center max-[1199px]:justify-between max-[1199px]:gap-[0.35rem] max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:px-[var(--space-2xs)]',
+                'max-[1199px]:order-[-1] max-[1199px]:flex max-[1199px]:h-[var(--mobile-header-h)] max-[1199px]:min-h-[var(--mobile-header-h)] max-[1199px]:items-center max-[1199px]:justify-between max-[1199px]:gap-[0.35rem] max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:px-[var(--space-2xs)]',
             )}
         >
             <button

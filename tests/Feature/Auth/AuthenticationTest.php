@@ -4,6 +4,9 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Patient;
 use App\Models\User;
+use App\Support\LocalDemoAccounts;
+use Database\Seeders\DemoSeeder;
+use Database\Seeders\HealthInsuranceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
@@ -41,7 +44,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/home');
+        $response->assertRedirect('/');
 
         $this->actingAs($user)
             ->get('/home')
@@ -56,7 +59,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $doctor->user->email,
             'password' => 'password',
-        ])->assertRedirect('/home');
+        ])->assertRedirect('/');
 
         $this->actingAs($doctor->user)
             ->get('/home')
@@ -72,14 +75,14 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $admin->email,
             'password' => 'password',
-        ])->assertRedirect('/admin/appointments');
+        ])->assertRedirect('/');
 
         $this->post('/logout');
 
         $this->post('/login', [
             'email' => $super->email,
             'password' => 'password',
-        ])->assertRedirect('/admin/appointments');
+        ])->assertRedirect('/');
 
         $this->actingAs($admin)->get('/home')->assertRedirect('/admin/appointments');
         $this->actingAs($super)->get('/home')->assertRedirect('/admin/appointments');
@@ -97,6 +100,22 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_authenticated_users_are_redirected_from_login_to_role_home(): void
+    {
+        $patient = $this->makePatient();
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($patient->user)->get('/login')->assertRedirect('/');
+        $this->actingAs($patient->user)
+            ->get('/')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Patient/Home'));
+
+        $this->actingAs($admin)->get('/login')->assertRedirect('/');
+        $this->actingAs($admin)->get('/')->assertRedirect('/admin/appointments');
+        $this->actingAs($patient->user)->get('/admin/appointments')->assertRedirect('/');
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
@@ -105,5 +124,27 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/login');
+    }
+
+    public function test_login_demo_accounts_can_authenticate_after_demo_seed(): void
+    {
+        $this->seed(HealthInsuranceSeeder::class);
+        $this->seed(DemoSeeder::class);
+
+        foreach (LocalDemoAccounts::loginPicker() as $account) {
+            $this->assertDatabaseHas('users', [
+                'email' => $account['email'],
+                'name' => $account['name'],
+            ]);
+
+            $this->post('/login', [
+                'email' => $account['email'],
+                'password' => 'password',
+            ])->assertRedirect();
+
+            $this->assertAuthenticated();
+            $this->post('/logout');
+            $this->assertGuest();
+        }
     }
 }

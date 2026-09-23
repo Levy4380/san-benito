@@ -73,18 +73,23 @@ class AdminCatalogFiltersTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Admins')
                 ->has('users', 3)
-                ->where('filters.name', '')
-                ->where('filters.email', ''));
+                ->where('filters.q', ''));
 
         $this->actingAs($super)
-            ->get('/admin/admins?name=Ana')
+            ->get('/admin/admins?q=Ana')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('users', 1)->where('users.0.name', 'Ana Admin'));
+            ->assertInertia(fn ($page) => $page
+                ->has('users', 1)
+                ->where('users.0.name', 'Ana Admin')
+                ->where('filters.q', 'Ana'));
 
         $this->actingAs($super)
-            ->get('/admin/admins?email=luis@')
+            ->get('/admin/admins?q=luis@')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('users', 1)->where('users.0.email', 'luis@example.com'));
+            ->assertInertia(fn ($page) => $page
+                ->has('users', 1)
+                ->where('users.0.email', 'luis@example.com')
+                ->where('filters.q', 'luis@'));
     }
 
     public function test_super_admin_patients_list_all_without_filters_and_filter_by_name_and_email(): void
@@ -92,7 +97,7 @@ class AdminCatalogFiltersTest extends TestCase
         $super = $this->makeSuperAdmin(['name' => 'Sofía Super', 'email' => 'sofia@example.com']);
         $this->makeAdmin(['name' => 'Ana Admin', 'email' => 'ana@example.com']);
         $this->makeDoctor(['name' => 'Ana Pérez', 'email' => 'ana.doc@example.com']);
-        $this->makePatient(['name' => 'Luis Paciente', 'email' => 'luis@example.com']);
+        $this->makePatient(['name' => 'Luis Paciente', 'email' => 'luis@example.com'], ['dni' => '44556677']);
         $this->makePatient(['name' => 'Ana Paciente', 'email' => 'ana.pac@example.com']);
 
         $this->actingAs($super)
@@ -103,17 +108,31 @@ class AdminCatalogFiltersTest extends TestCase
                 ->has('patients', 2)
                 ->where('patients.0.user.name', 'Luis Paciente')
                 ->where('patients.1.user.name', 'Ana Paciente')
-                ->where('filters.name', '')
-                ->where('filters.email', ''));
+                ->where('filters.q', ''));
 
         $this->actingAs($super)
-            ->get('/admin/patients?name=Ana')
+            ->get('/admin/patients?q=Ana')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('patients', 1)->where('patients.0.user.name', 'Ana Paciente'));
+            ->assertInertia(fn ($page) => $page
+                ->has('patients', 1)
+                ->where('patients.0.user.name', 'Ana Paciente')
+                ->where('filters.q', 'Ana'));
 
         $this->actingAs($super)
-            ->get('/admin/patients?email=luis@')
+            ->get('/admin/patients?q=luis@')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('patients', 1)->where('patients.0.user.email', 'luis@example.com'));
+            ->assertInertia(fn ($page) => $page
+                ->has('patients', 1)
+                ->where('patients.0.user.name', 'Luis Paciente')
+                ->where('patients.0.user.email', 'luis@example.com')
+                ->where('filters.q', 'luis@'));
+
+        $this->actingAs($super)
+            ->get('/admin/patients?q=44556')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('patients', 1)
+                ->where('patients.0.user.name', 'Luis Paciente')
+                ->where('filters.q', '44556'));
     }
 }

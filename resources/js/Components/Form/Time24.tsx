@@ -11,7 +11,7 @@ type Props = {
 const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
 const minutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
 
-const timeSelectClass = 'w-auto min-w-[4.25rem] font-mono tabular-nums';
+const timeSelectClass = 'w-auto min-w-[5rem] font-mono tabular-nums';
 
 export default function Time24({ value, onChange, id, blank = false }: Props) {
     const autoId = useId();

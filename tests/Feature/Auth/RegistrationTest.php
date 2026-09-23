@@ -33,7 +33,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/home');
+        $response->assertRedirect('/');
         $this->assertTrue(User::query()->where('email', 'test@example.com')->first()?->hasRole('patient'));
     }
 }

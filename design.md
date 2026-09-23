@@ -214,7 +214,7 @@ If destructive: OK becomes `.btn-danger` and **initial focus is Cancel**. Escape
 ### Frame
 
 `html`/`body` = paper-2. Padding `--app-frame` 0.45rem. Inner shell radius `--app-radius`.
-Authed main = paper, same radius, margin = frame. Viewport locked; **only `.main` scrolls**.
+Authed main = paper, same radius. Desktop (≥1200): margin = frame. Mobile (<1200): the body padding is the frame, so main adds no side or bottom margin — only the top gap (`--space-2xs`) that separates it from the topbar. Viewport locked; **only `.main` scrolls**.
 
 Breakpoints: desktop chrome **1200px**; agenda two-column **768px**; filter grids **640px**.
 
@@ -226,7 +226,7 @@ Nav + foot; foot hairline + name + outline small “Cerrar sesión”.
 
 ### Mobile chrome (<1200)
 
-Topbar height `--mobile-header-h` (3rem / 2.75rem): hamburger + centered “San Benito” + avatar (accent disc). Paper, no border, no shadow. The bar stays in place when the menu opens.
+Topbar height `--mobile-header-h` (3rem / 2.75rem): hamburger + centered “San Benito” + avatar (accent disc). Paper, no border, no shadow, no extra margin (the body padding is the frame). The bar stays in place when the menu opens.
 Hit targets on the topbar use `--control-h-sm`. Open = Sidebar slides down from the top and fills the shell (100%, paper, 320ms `--ease-out`). Hamburger morphs to X. Escape closes the drawer; navigate closes it too.
 Main padding under the topbar: `--space-sm` on all sides (<1200); on phone (≤767) horizontal stays `--space-sm`, vertical `--space-xs` — titles must not sit flush to the paper edge. Shared class fragment: `chromeMainPadClass` in `resources/js/lib/mobile-chrome.ts`.
 

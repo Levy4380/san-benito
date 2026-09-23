@@ -4,14 +4,11 @@ import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
-import DoctorCard, { DoctorGrid } from '@/Components/Surfaces/DoctorCard';
-import Empty from '@/Components/Surfaces/Empty';
-import Filters from '@/Components/Surfaces/Filters';
-import Results from '@/Components/Surfaces/Results';
+import Catalog from '@/Components/Surfaces/Catalog';
+import type { FilterValues } from '@/Components/Surfaces/Filters';
 import type { RoleName } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, UserPlus } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { UserPlus } from 'lucide-react';
 
 type StaffRole = { name: string } | string;
 
@@ -24,7 +21,7 @@ type StaffUser = {
 
 type Props = {
     users: StaffUser[];
-    filters: { name: string; email: string };
+    filters: { q: string };
 };
 
 function roleNames(roles: StaffRole[] | undefined): RoleName[] {
@@ -46,12 +43,10 @@ function staffRoleLabel(roles: StaffRole[] | undefined): string {
 }
 
 export default function AdminAdmins({ users, filters }: Props) {
-    const hasFilters = filters.name.trim() !== '' || filters.email.trim() !== '';
+    const hasFilters = filters.q.trim() !== '';
 
-    const submitFilters: FormEventHandler<HTMLFormElement> = (event) => {
-        event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        router.get('/admin/admins', Object.fromEntries(data), { preserveState: true });
+    const apply = (data: FilterValues) => {
+        router.get('/admin/admins', data, { preserveState: true });
     };
 
     return (
@@ -74,35 +69,20 @@ export default function AdminAdmins({ users, filters }: Props) {
                 }
             >
                 <StageCard>
-                    <Results>
-                        <Filters onSubmit={submitFilters}>
-                            <Field label="Nombre" htmlFor="filter_name" flush className="min-w-0">
-                                <TextInput id="filter_name" name="name" defaultValue={filters.name} />
+                    <Catalog
+                        onApply={apply}
+                        empty={hasFilters ? 'No hay administradores con esos filtros.' : 'Todavía no hay administradores.'}
+                        items={users.map((user) => ({
+                            key: user.id,
+                            title: user.name,
+                            lines: [user.email, staffRoleLabel(user.roles)],
+                        }))}
+                        primary={
+                            <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} />
                             </Field>
-                            <Field label="Correo" htmlFor="filter_email" flush className="min-w-0">
-                                <TextInput id="filter_email" name="email" defaultValue={filters.email} />
-                            </Field>
-                            <Btn type="submit" className="self-end">
-                                <Search className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Buscar
-                            </Btn>
-                        </Filters>
-                        {users.length === 0 ? (
-                            <Empty>
-                                {hasFilters ? 'No hay administradores con esos filtros.' : 'Todavía no hay administradores.'}
-                            </Empty>
-                        ) : (
-                            <DoctorGrid>
-                                {users.map((user) => (
-                                    <DoctorCard key={user.id} as="div">
-                                        <strong>{user.name}</strong>
-                                        <span>{user.email}</span>
-                                        <span>{staffRoleLabel(user.roles)}</span>
-                                    </DoctorCard>
-                                ))}
-                            </DoctorGrid>
-                        )}
-                    </Results>
+                        }
+                    />
                 </StageCard>
             </PageScreen>
         </>

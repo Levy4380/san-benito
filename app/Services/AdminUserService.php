@@ -40,23 +40,20 @@ class AdminUserService
     /**
      * @return Collection<int, User>
      */
-    public function listStaff(?string $name = null, ?string $email = null)
+    public function listStaff(?string $term = null)
     {
         $query = User::query()
             ->role(['admin', 'super_admin'])
             ->with('roles')
             ->orderBy('id');
 
-        $name = trim((string) $name);
+        $term = trim((string) $term);
 
-        if ($name !== '') {
-            $query->where('name', 'like', '%'.$name.'%');
-        }
-
-        $email = trim((string) $email);
-
-        if ($email !== '') {
-            $query->where('email', 'like', '%'.$email.'%');
+        if ($term !== '') {
+            $query->where(function ($users) use ($term) {
+                $users->where('name', 'like', '%'.$term.'%')
+                    ->orWhere('email', 'like', '%'.$term.'%');
+            });
         }
 
         return $query->get();

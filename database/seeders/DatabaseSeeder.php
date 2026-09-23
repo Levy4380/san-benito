@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             SpecialtySeeder::class,
+            HealthInsuranceSeeder::class,
         ]);
 
         if (app()->environment('local')) {

@@ -36,10 +36,9 @@ class ProductRequirementsTest extends TestCase
             'dni' => '40111222',
             'birth_date' => '1995-04-10',
             'phone' => '1144445555',
-            'health_insurance' => 'OSDE',
         ]);
 
-        $response->assertRedirect('/home');
+        $response->assertRedirect('/');
         $this->assertAuthenticated();
 
         $user = User::query()->where('email', 'nora@example.com')->first();
@@ -355,7 +354,7 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id)
+            ->get('/book?coverage=particular&specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Patient/Book')
@@ -364,7 +363,7 @@ class ProductRequirementsTest extends TestCase
                 ->where('slots.1.starts_at', $nextDay->format('Y-m-d H:i:s')));
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id.'&date='.$start->toDateString())
+            ->get('/book?coverage=particular&specialty_id='.$this->specialtyIdOf($doctor).'&doctor_id='.$doctor->id.'&date='.$start->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('slots', 1)
@@ -453,7 +452,7 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($other->user)
             ->delete('/appointments/'.$appointment->id)
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->assertDatabaseHas('appointments', ['id' => $appointment->id]);
     }
@@ -479,7 +478,7 @@ class ProductRequirementsTest extends TestCase
             ->post('/admin/doctors/'.$doctorB->id.'/windows', [
                 'starts_at' => $start->copy()->addHours(4)->format('Y-m-d H:i:s'),
             ])
-            ->assertForbidden();
+            ->assertRedirect('/');
     }
 
     public function test_10_windows_reject_invalid_ranges_and_overlaps(): void
@@ -556,6 +555,18 @@ class ProductRequirementsTest extends TestCase
             ->get('/admin/appointments?date='.$start->copy()->addYear()->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/appointments?specialty_id='.$appointment->specialty_id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
+
+        $other = Specialty::factory()->create(['name' => 'Oftalmología']);
+
+        $this->actingAs($admin)
+            ->get('/admin/appointments?specialty_id='.$other->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
     }
 
     public function test_13_admin_routes_forbidden_for_patient_and_doctor_users_forbidden_for_admin(): void
@@ -566,27 +577,27 @@ class ProductRequirementsTest extends TestCase
         $specialty = Specialty::query()->firstOrFail();
 
         foreach ([$patient->user, $doctor->user] as $user) {
-            $this->actingAs($user)->get('/admin/appointments')->assertForbidden();
-            $this->actingAs($user)->get('/admin/doctors')->assertForbidden();
-            $this->actingAs($user)->get('/admin/doctors/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/patients')->assertForbidden();
-            $this->actingAs($user)->get('/admin/patients/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/admins')->assertForbidden();
-            $this->actingAs($user)->get('/admin/admins/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
+            $this->actingAs($user)->get('/admin/appointments')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/doctors')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/doctors/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/patients')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/patients/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/admins')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/admins/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertRedirect('/');
         }
 
-        $this->actingAs($admin)->get('/admin/patients')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/admins')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/settings')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/settings/specialties')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/patients')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/patients/create')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/admins')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/admins/create')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/settings')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/settings/specialties')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertRedirect('/');
     }
 
     public function test_14_admin_creates_doctor_user_entity_and_role(): void
@@ -694,7 +705,7 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($doctorB->user)
             ->post('/admin/doctors/'.$doctorA->id.'/patients', ['patient_id' => $patient->id])
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($admin)
             ->post('/admin/doctors/'.$doctorB->id.'/patients', ['patient_id' => $patient->id])
@@ -707,7 +718,7 @@ class ProductRequirementsTest extends TestCase
     {
         $doctor = $this->makeDoctor();
         $own = $this->makePatient(['name' => 'Marta Propia'], ['dni' => '33999888']);
-        $other = $this->makePatient(['name' => 'Otro Paciente']);
+        $other = $this->makePatient(['name' => 'Otro Paciente', 'email' => 'otro.unico@example.com']);
         $doctor->patients()->syncWithoutDetaching([$own->id]);
 
         $this->actingAs($doctor->user)
@@ -718,12 +729,21 @@ class ProductRequirementsTest extends TestCase
         $this->actingAs($doctor->user)
             ->get('/my-patients?q=3399')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('candidates', 1));
+            ->assertInertia(fn ($page) => $page->has('candidates', 1)->has('patients', 1));
 
         $this->actingAs($doctor->user)
             ->get('/my-patients?q=Ot')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('candidates', 1));
+            ->assertInertia(fn ($page) => $page->has('candidates', 1)->has('patients', 1));
+
+        $this->actingAs($doctor->user)
+            ->get('/my-patients?q=otro.unico')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('candidates', 1)
+                ->where('candidates.0.user.email', 'otro.unico@example.com')
+                ->has('patients', 1)
+                ->where('patients.0.id', $own->id));
     }
 
     public function test_17_post_login_and_register_go_to_portal_homes(): void
@@ -733,23 +753,23 @@ class ProductRequirementsTest extends TestCase
         $admin = $this->makeAdmin(['email' => 'a@example.com']);
 
         $this->post('/login', ['email' => 'p@example.com', 'password' => 'password'])
-            ->assertRedirect('/home');
+            ->assertRedirect('/');
 
         $this->post('/logout');
 
         $this->post('/login', ['email' => 'd@example.com', 'password' => 'password'])
-            ->assertRedirect('/home');
+            ->assertRedirect('/');
 
         $this->post('/logout');
 
         $this->post('/login', ['email' => 'a@example.com', 'password' => 'password'])
-            ->assertRedirect('/admin/appointments');
+            ->assertRedirect('/');
 
         $this->post('/logout');
 
         $super = $this->makeSuperAdmin(['email' => 's@example.com']);
         $this->post('/login', ['email' => 's@example.com', 'password' => 'password'])
-            ->assertRedirect('/admin/appointments');
+            ->assertRedirect('/');
 
         $this->actingAs($admin)->get('/home')->assertRedirect('/admin/appointments');
         $this->actingAs($super)->get('/home')->assertRedirect('/admin/appointments');
@@ -771,7 +791,7 @@ class ProductRequirementsTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Doctor/Program'));
 
         foreach ([$patient->user, $admin, $super] as $user) {
-            $this->actingAs($user)->get('/agenda/program')->assertForbidden();
+            $this->actingAs($user)->get('/agenda/program')->assertRedirect('/');
         }
 
         $payload = [
@@ -782,11 +802,11 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($doctor->user)
             ->post('/admin/doctors/'.$doctor->id.'/windows/program', $payload)
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($patient->user)
             ->post('/admin/doctors/'.$doctor->id.'/windows/program', $payload)
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($admin)
             ->post('/admin/doctors/'.$doctor->id.'/windows/program', $payload)
@@ -818,9 +838,10 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($patient->user)
-            ->get('/book')
+            ->get('/book?coverage=particular')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->where('filters.coverage', 'particular')
                 ->where('nearest_doctor_id', null)
                 ->where('specialties', function ($specialties) use ($cardio, $empty): bool {
                     $ids = collect($specialties)->pluck('id')->all();
@@ -830,7 +851,7 @@ class ProductRequirementsTest extends TestCase
                 }));
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$cardio->id)
+            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('doctors', 1)
@@ -839,14 +860,14 @@ class ProductRequirementsTest extends TestCase
                 ->where('nearest_doctor_id', $doctor->id));
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$cardio->id.'&doctor_id='.$doctor->id)
+            ->get('/book?coverage=particular&specialty_id='.$cardio->id.'&doctor_id='.$doctor->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('filters.specialty_id', $cardio->id)
                 ->where('filters.doctor_id', $doctor->id));
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$cardio->id)
+            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('doctors', 1)
@@ -856,8 +877,10 @@ class ProductRequirementsTest extends TestCase
             ->get('/book')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->where('filters.coverage', null)
                 ->where('filters.specialty_id', null)
-                ->where('filters.doctor_id', null));
+                ->where('filters.doctor_id', null)
+                ->has('doctors', 0));
 
         $this->actingAs($patient->user)
             ->post('/doctors/'.$doctor->id.'/appointments', $this->reservationPayload($doctor, $start, $cardio->id))
@@ -902,7 +925,7 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$cardio->id)
+            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('doctors', 2)
@@ -918,7 +941,7 @@ class ProductRequirementsTest extends TestCase
             ->assertRedirect('/my-appointments');
 
         $this->actingAs($patient->user)
-            ->get('/book?specialty_id='.$cardio->id)
+            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('doctors', 1)
@@ -1084,7 +1107,7 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($doctor->user)
             ->get('/my-patients/'.$other->id)
-            ->assertForbidden();
+            ->assertRedirect('/');
     }
 
     public function test_22_admin_can_persist_windows_for_another_doctor(): void
@@ -1162,7 +1185,7 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($this->makeDoctor()->user)
             ->get('/my-appointments/history')
-            ->assertForbidden();
+            ->assertRedirect('/');
     }
 
     public function test_get_urls_choose_create_associate_and_agenda_panel_screens(): void
@@ -1180,8 +1203,8 @@ class ProductRequirementsTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Admin/Doctors'))
             ->assertDontSee('Matrícula');
 
-        $this->actingAs($admin)->get('/admin/admins/create')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/patients/create')->assertForbidden();
+        $this->actingAs($admin)->get('/admin/admins/create')->assertRedirect('/');
+        $this->actingAs($admin)->get('/admin/patients/create')->assertRedirect('/');
 
         $this->actingAs($super)
             ->get('/admin/admins/create')
@@ -1195,11 +1218,11 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($this->makePatient()->user)
             ->get('/doctors/'.$doctor->id.'/specialties')
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($admin)
             ->get('/doctors/'.$doctor->id.'/specialties')
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->actingAs($super)
             ->get('/doctors/'.$doctor->id.'/specialties')
@@ -1239,7 +1262,7 @@ class ProductRequirementsTest extends TestCase
                 ->where('preselectedPatient', null));
 
         $this->actingAs($this->makePatient()->user)
-            ->get('/book?specialty_id='.Specialty::query()->firstOrFail()->id)
+            ->get('/book?coverage=particular&specialty_id='.Specialty::query()->firstOrFail()->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Patient/Book'));
 

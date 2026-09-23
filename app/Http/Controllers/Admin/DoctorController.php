@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreDoctorRequest;
 use App\Services\DoctorSearchService;
 use App\Services\DoctorService;
+use App\Services\HealthInsuranceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,10 +29,11 @@ class DoctorController extends Controller
         ]);
     }
 
-    public function create(DoctorSearchService $search): Response
+    public function create(DoctorSearchService $search, HealthInsuranceService $healthInsurances): Response
     {
         return Inertia::render('Admin/DoctorCreate', [
             'specialties' => $search->specialties(),
+            'healthInsurances' => $healthInsurances->options(),
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\HealthInsurance;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesDomainUsers;
@@ -25,34 +26,48 @@ class AdminPatientsDirectoryTest extends TestCase
         $admin = $this->makeAdmin();
 
         foreach ([$patient->user, $doctor->user, $admin] as $user) {
-            $this->actingAs($user)->get('/admin/patients')->assertForbidden();
-            $this->actingAs($user)->get('/admin/patients/create')->assertForbidden();
-            $this->actingAs($user)->get('/admin/admins')->assertForbidden();
-            $this->actingAs($user)->get('/admin/admins/create')->assertForbidden();
+            $this->actingAs($user)->get('/admin/patients')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/patients/create')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/admins')->assertRedirect('/');
+            $this->actingAs($user)->get('/admin/admins/create')->assertRedirect('/');
             $this->actingAs($user)->post('/admin/patients', [
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
                 'password' => 'password',
                 'dni' => '40111222',
                 'birth_date' => '1995-04-10',
-            ])->assertForbidden();
+            ])->assertRedirect('/');
             $this->actingAs($user)->post('/admin/admins', [
                 'name' => 'Otro Admin',
                 'email' => 'otro.admin@example.com',
                 'password' => 'password',
                 'role' => 'admin',
-            ])->assertForbidden();
+            ])->assertRedirect('/');
         }
     }
 
     public function test_super_admin_creates_patient_without_logging_in_as_them(): void
     {
         $super = $this->makeSuperAdmin();
+        $osde = HealthInsurance::factory()->create(['name' => 'OSDE']);
 
         $this->actingAs($super)
             ->get('/admin/patients/create')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Admin/PatientCreate'));
+
+        $this->actingAs($super)
+            ->post('/admin/patients', [
+                'name' => 'Texto Libre',
+                'email' => 'texto.admin@example.com',
+                'password' => 'password',
+                'dni' => '40111000',
+                'birth_date' => '1995-04-10',
+                'health_insurance_id' => 'OSDE',
+            ])
+            ->assertSessionHasErrors('health_insurance_id');
+
+        $this->assertNull(User::query()->where('email', 'texto.admin@example.com')->first());
 
         $this->actingAs($super)
             ->post('/admin/patients', [
@@ -62,7 +77,7 @@ class AdminPatientsDirectoryTest extends TestCase
                 'dni' => '40111222',
                 'birth_date' => '1995-04-10',
                 'phone' => '1144445555',
-                'health_insurance' => 'OSDE',
+                'health_insurance_id' => $osde->id,
             ])
             ->assertRedirect('/admin/patients');
 
@@ -74,6 +89,11 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->assertNotNull($user->patient);
         $this->assertSame('40111222', $user->patient->dni);
         $this->assertSame('OSDE', $user->patient->health_insurance);
+        $this->assertDatabaseHas('patient_health_insurance', [
+            'patient_id' => $user->patient->id,
+            'health_insurance_id' => $osde->id,
+        ]);
+        $this->assertArrayNotHasKey('health_insurances', $user->patient->load('healthInsurances')->toArray());
     }
 
     public function test_admin_patient_create_rejects_duplicate_email_and_dni(): void

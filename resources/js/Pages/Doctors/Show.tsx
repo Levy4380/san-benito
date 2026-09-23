@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CalendarClock, Stethoscope } from 'lucide-react';
+import { CalendarClock, IdCard, Stethoscope } from 'lucide-react';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -16,7 +16,8 @@ type Props = {
 
 export default function DoctorShow({ doctor }: Props) {
     const { auth } = usePage<SharedData>().props;
-    const canAssociate = hasPermission(auth.user?.permissions, Permission.SpecialtiesManage);
+    const canAssociateSpecialties = hasPermission(auth.user?.permissions, Permission.SpecialtiesManage);
+    const canAssociateHealthInsurances = hasPermission(auth.user?.permissions, Permission.HealthInsurancesManage);
 
     return (
         <>
@@ -29,22 +30,34 @@ export default function DoctorShow({ doctor }: Props) {
                         backHref="/doctors"
                         backLabel="Doctores"
                         actions={
-                            canAssociate ? (
-                                <Btn asChild>
-                                    <Link href={`/doctors/${doctor.id}/specialties`}>
-                                        <Stethoscope className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Asociar especialidad
-                                    </Link>
-                                </Btn>
+                            canAssociateSpecialties || canAssociateHealthInsurances ? (
+                                <>
+                                    {canAssociateSpecialties ? (
+                                        <Btn asChild>
+                                            <Link href={`/doctors/${doctor.id}/specialties`}>
+                                                <Stethoscope className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                                Asociar especialidad
+                                            </Link>
+                                        </Btn>
+                                    ) : null}
+                                    {canAssociateHealthInsurances ? (
+                                        <Btn asChild>
+                                            <Link href={`/doctors/${doctor.id}/health-insurances`}>
+                                                <IdCard className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                                Asociar obra social
+                                            </Link>
+                                        </Btn>
+                                    ) : null}
+                                </>
                             ) : undefined
                         }
                     />
                 }
             >
                 <StageCard>
-                    <Surface>
+                    <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <DoctorProfileFields doctor={doctor} />
-                        <Btn className="mt-auto pt-[var(--space-md)]" asChild>
+                        <Btn className="shrink-0" asChild>
                             <Link href={`/doctors/${doctor.id}/slots`}>
                                 <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Ver turnos

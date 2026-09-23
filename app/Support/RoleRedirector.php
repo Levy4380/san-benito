@@ -7,10 +7,15 @@ use App\Models\User;
 
 class RoleRedirector
 {
-    public static function intendedPath(User $user): string
+    public static function home(): string
+    {
+        return '/';
+    }
+
+    public static function landing(User $user): string
     {
         if (Permission::PortalHome->allows($user)) {
-            return '/home';
+            return self::home();
         }
 
         return '/admin/appointments';

@@ -31,6 +31,12 @@ class RejectedRequestHandler
             'errors' => $e instanceof ValidationException ? $e->errors() : null,
         ]);
 
+        if ($status === 403 && $this->shouldRedirectHome($request)) {
+            return redirect()
+                ->to(RoleRedirector::home(), 303)
+                ->header('Cache-Control', 'no-store, private');
+        }
+
         if ($this->shouldToast($e, $status) && $response instanceof RedirectResponse) {
             $response->with('toast', [
                 'message' => $message,
@@ -62,7 +68,18 @@ class RejectedRequestHandler
             return true;
         }
 
-        return $status >= 400 && $status < 500 && $status !== 404;
+        return $status >= 400 && $status < 500 && $status !== 403 && $status !== 404;
+    }
+
+    private function shouldRedirectHome(Request $request): bool
+    {
+        $user = $request->user();
+
+        if ($user === null || $request->expectsJson()) {
+            return false;
+        }
+
+        return trim($request->path(), '/') !== trim(RoleRedirector::landing($user), '/');
     }
 
     private function status(Throwable $e, Response $response): int

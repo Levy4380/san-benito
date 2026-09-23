@@ -1,22 +1,23 @@
-import { Calendar, List } from 'lucide-react';
-import { useId } from 'react';
 import { focusVisibleClass } from '@/lib/clinico-control';
 import { cn } from '@/lib/utils';
+import type { LucideIcon } from 'lucide-react';
+import { useId } from 'react';
 
-export type ViewMode = 'list' | 'cal';
+export type ViewSwitchOption<T extends string> = {
+    value: T;
+    label: string;
+    icon: LucideIcon;
+};
 
-type Props = {
-    value: ViewMode;
-    onChange: (mode: ViewMode) => void;
+type Props<T extends string> = {
+    options: readonly ViewSwitchOption<T>[];
+    defaultValue: T;
+    value: T;
+    onChange: (value: T) => void;
     className?: string;
 };
 
-const options = [
-    { value: 'list' as const, label: 'Lista', Icon: List },
-    { value: 'cal' as const, label: 'Calendario', Icon: Calendar },
-];
-
-export default function ViewSwitch({ value, onChange, className }: Props) {
+export default function ViewSwitch<T extends string>({ options, defaultValue, value, onChange, className }: Props<T>) {
     const labelId = useId();
 
     return (
@@ -29,8 +30,8 @@ export default function ViewSwitch({ value, onChange, className }: Props) {
                 aria-labelledby={labelId}
                 className="inline-flex h-[var(--control-h)] min-h-[var(--control-h)] items-stretch rounded-md border border-rule bg-paper p-[0.15rem] max-md:h-[var(--control-h-sm)] max-md:min-h-[var(--control-h-sm)] max-md:w-full"
             >
-                {options.map(({ value: option, label, Icon }) => {
-                    const on = value === option;
+                {options.map(({ value: option, label, icon: Icon }) => {
+                    const on = (value ?? defaultValue) === option;
 
                     return (
                         <button

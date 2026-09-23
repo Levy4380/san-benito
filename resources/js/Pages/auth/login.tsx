@@ -1,13 +1,13 @@
+import { Btn } from '@/Components/Form/Btn';
+import CheckLabel from '@/Components/Form/CheckLabel';
+import Combobox from '@/Components/Form/Combobox';
+import Field from '@/Components/Form/Field';
+import TextInput from '@/Components/Form/TextInput';
+import Hint from '@/Components/Surfaces/Hint';
+import AuthLayout from '@/Layouts/auth-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { LogIn } from 'lucide-react';
 import { FormEventHandler } from 'react';
-import { Btn } from '@/Components/Form/Btn';
-import CheckLabel from '@/Components/Form/CheckLabel';
-import Field from '@/Components/Form/Field';
-import Hint from '@/Components/Surfaces/Hint';
-import NativeSelect from '@/Components/Form/NativeSelect';
-import TextInput from '@/Components/Form/TextInput';
-import AuthLayout from '@/Layouts/auth-layout';
 
 const DEMO_PASSWORD = 'password';
 
@@ -93,16 +93,21 @@ export default function Login({ status, canResetPassword, demoAccounts = [] }: P
             </form>
             {status ? <Hint>{status}</Hint> : null}
             {demoAccounts.length > 0 ? (
-                <div className="mt-[var(--space-2xs)] border-t border-rule pt-[var(--space-sm)]">
+                <div className="border-rule mt-[var(--space-2xs)] border-t pt-[var(--space-sm)]">
                     <Field label="Cuenta de prueba" htmlFor="demo-account" flush>
-                        <NativeSelect id="demo-account" value={selectedDemoEmail} onChange={(event) => applyDemoAccount(event.target.value)}>
-                            <option value="">Elegí una cuenta</option>
-                            {demoAccounts.map((account) => (
-                                <option key={account.email} value={account.email}>
-                                    {account.role} · {account.name}
-                                </option>
-                            ))}
-                        </NativeSelect>
+                        <Combobox
+                            id="demo-account"
+                            value={selectedDemoEmail}
+                            placeholder="Elegí una cuenta"
+                            onChange={applyDemoAccount}
+                            options={[
+                                { value: '', label: 'Elegí una cuenta' },
+                                ...demoAccounts.map((account) => ({
+                                    value: account.email,
+                                    label: `${account.role} · ${account.name}`,
+                                })),
+                            ]}
+                        />
                     </Field>
                 </div>
             ) : null}

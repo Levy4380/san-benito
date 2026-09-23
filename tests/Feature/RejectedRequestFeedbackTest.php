@@ -74,7 +74,7 @@ class RejectedRequestFeedbackTest extends TestCase
                 'ranges' => [['start' => '09:00', 'end' => '10:00']],
                 'block_weekends' => false,
             ])
-            ->assertForbidden();
+            ->assertRedirect('/');
 
         $this->assertTrue(
             collect($logged)->contains(

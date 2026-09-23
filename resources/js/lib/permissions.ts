@@ -24,6 +24,7 @@ export const Permission = {
     PatientsCreate: 'patients.create',
     AdminsManage: 'admins.manage',
     SpecialtiesManage: 'specialties.manage',
+    HealthInsurancesManage: 'health_insurances.manage',
 } as const;
 
 export type PermissionName = (typeof Permission)[keyof typeof Permission];

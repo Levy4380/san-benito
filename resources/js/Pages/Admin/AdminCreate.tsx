@@ -2,8 +2,8 @@ import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
-import NativeSelect from '@/Components/Form/NativeSelect';
 import TextInput from '@/Components/Form/TextInput';
 import Results from '@/Components/Surfaces/Results';
 import { Head, useForm } from '@inertiajs/react';
@@ -40,12 +40,7 @@ export default function AdminAdminCreate() {
                             }}
                         >
                             <Field label="Nombre" htmlFor="name">
-                                <TextInput
-                                    id="name"
-                                    value={form.data.name}
-                                    onChange={(event) => form.setData('name', event.target.value)}
-                                    required
-                                />
+                                <TextInput id="name" value={form.data.name} onChange={(event) => form.setData('name', event.target.value)} required />
                             </Field>
                             <Field label="Correo" htmlFor="email">
                                 <TextInput
@@ -66,10 +61,15 @@ export default function AdminAdminCreate() {
                                 />
                             </Field>
                             <Field label="Rol" htmlFor="role">
-                                <NativeSelect id="role" value={form.data.role} onChange={(event) => form.setData('role', event.target.value)}>
-                                    <option value="admin">Admin</option>
-                                    <option value="super_admin">Super admin</option>
-                                </NativeSelect>
+                                <Combobox
+                                    id="role"
+                                    value={form.data.role}
+                                    onChange={(role) => form.setData('role', role)}
+                                    options={[
+                                        { value: 'admin', label: 'Admin' },
+                                        { value: 'super_admin', label: 'Super admin' },
+                                    ]}
+                                />
                             </Field>
                             <Btn type="submit" disabled={form.processing}>
                                 <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

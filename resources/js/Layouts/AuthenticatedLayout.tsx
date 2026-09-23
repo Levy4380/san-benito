@@ -89,7 +89,8 @@ export default function AuthenticatedLayout({ children }: Props) {
                 <main
                     data-app-main=""
                     className={cn(
-                        'm-[var(--app-frame)] flex min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-x-hidden overflow-y-auto rounded-[var(--app-radius)] bg-paper p-[var(--space-md)]',
+                        'flex min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-x-hidden overflow-y-auto rounded-[var(--app-radius)] bg-paper p-[var(--space-md)]',
+                        'min-[1200px]:m-[var(--app-frame)]',
                         'min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:p-[var(--space-lg)_var(--space-xl)]',
                         chromeMainPadClass,
                         isHome && 'min-[1200px]:overflow-visible',

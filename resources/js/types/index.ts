@@ -24,6 +24,11 @@ export type Specialty = {
     name: string;
 };
 
+export type HealthInsurance = {
+    id: number;
+    name: string;
+};
+
 export type DoctorRecord = {
     id: number;
     license_number: string;

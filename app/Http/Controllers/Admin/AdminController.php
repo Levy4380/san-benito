@@ -14,17 +14,12 @@ class AdminController extends Controller
 {
     public function index(Request $request, AdminUserService $users): Response
     {
-        $name = $request->input('name');
-        $email = $request->input('email');
+        $term = $request->input('q');
 
         return Inertia::render('Admin/Admins', [
-            'users' => $users->listStaff(
-                is_string($name) ? $name : null,
-                is_string($email) ? $email : null,
-            ),
+            'users' => $users->listStaff(is_string($term) ? $term : null),
             'filters' => [
-                'name' => is_string($name) ? $name : '',
-                'email' => is_string($email) ? $email : '',
+                'q' => is_string($term) ? $term : '',
             ],
         ]);
     }

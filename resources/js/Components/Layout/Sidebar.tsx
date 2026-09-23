@@ -67,7 +67,6 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
     }
 
     const role = primaryRole(user.roles);
-    const hasHome = hasPermission(user.permissions, Permission.PortalHome);
     const nav = navFor(user.permissions);
     const roleLabel = roleLabelFor(role);
 
@@ -80,11 +79,11 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
                 'relative flex flex-col gap-[var(--space-lg)] bg-transparent p-[var(--space-md)]',
                 'min-[1200px]:col-start-1 min-[1200px]:row-start-1 min-[1200px]:z-40 min-[1200px]:min-h-0 min-[1200px]:overflow-x-hidden min-[1200px]:overflow-y-auto min-[1200px]:pt-[calc(var(--space-md)+var(--brand-logo-size)+var(--sidebar-brand-gap))]',
                 isHome && 'min-[1200px]:overflow-visible min-[1200px]:px-0',
-                'max-[1199px]:absolute max-[1199px]:inset-0 max-[1199px]:z-[56] max-[1199px]:h-full max-[1199px]:w-full max-[1199px]:gap-[var(--space-sm)] max-[1199px]:overflow-x-hidden max-[1199px]:overflow-y-auto max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:p-[var(--space-sm)] max-[1199px]:pt-[calc(var(--app-frame)+var(--mobile-header-h)+var(--space-sm))]',
+                'max-[1199px]:absolute max-[1199px]:inset-0 max-[1199px]:z-[56] max-[1199px]:h-full max-[1199px]:w-full max-[1199px]:gap-[var(--space-sm)] max-[1199px]:overflow-x-hidden max-[1199px]:overflow-y-auto max-[1199px]:rounded-[var(--app-radius)] max-[1199px]:bg-paper max-[1199px]:p-[var(--space-sm)] max-[1199px]:pt-[calc(var(--mobile-header-h)+var(--space-sm))]',
             )}
         >
             <Link
-                href={hasHome ? '/home' : '/admin/appointments'}
+                href="/"
                 id="brand-home"
                 aria-label="Ir al inicio"
                 className={cn(

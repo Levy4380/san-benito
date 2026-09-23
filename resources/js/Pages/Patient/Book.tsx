@@ -1,11 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { NotebookPen } from 'lucide-react';
+import { Calendar, List, NotebookPen } from 'lucide-react';
 import { useState } from 'react';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
-import ViewSwitch from '@/Components/Common/ViewSwitch';
+import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import DoctorCard from '@/Components/Surfaces/DoctorCard';
@@ -19,6 +19,13 @@ import { wallTime } from '@/lib/datetime';
 import { specialtyNames } from '@/lib/specialties';
 import { cn } from '@/lib/utils';
 import type { DoctorRecord, Slot, Specialty } from '@/types';
+
+const scheduleViews: readonly ViewSwitchOption<'list' | 'cal'>[] = [
+    { value: 'list', label: 'Lista', icon: List },
+    { value: 'cal', label: 'Calendario', icon: Calendar },
+];
+
+const defaultScheduleView = 'list' satisfies 'list' | 'cal';
 
 type Coverage = 'particular' | 'health_insurance';
 
@@ -44,7 +51,7 @@ export default function Book({
     filters,
 }: Props) {
     const step = !filters.coverage ? 'coverage' : !filters.specialty_id ? 'specialty' : !filters.doctor_id ? 'doctor' : 'horario';
-    const [mode, setMode] = useState<'list' | 'cal'>('list');
+    const [mode, setMode] = useState<'list' | 'cal'>(defaultScheduleView);
     const [mobileDayOpen, setMobileDayOpen] = useState(Boolean(filters.date));
     const [month, setMonth] = useState((filters.date ?? daysWithSlots[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const tones = Object.fromEntries((daysWithSlots ?? []).map((day) => [day, 'has' as const]));
@@ -155,6 +162,8 @@ export default function Book({
                         <>
                             <ViewSwitch
                                 className="mb-3 self-start"
+                                options={scheduleViews}
+                                defaultValue={defaultScheduleView}
                                 value={mode}
                                 onChange={(next) => {
                                     setMode(next);

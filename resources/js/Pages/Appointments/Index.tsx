@@ -1,11 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { History, NotebookPen, X } from 'lucide-react';
+import { Calendar, History, List, NotebookPen, X } from 'lucide-react';
 import { useState } from 'react';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
-import ViewSwitch from '@/Components/Common/ViewSwitch';
+import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
@@ -20,8 +20,15 @@ type Props = {
     today: string;
 };
 
+const appointmentViews: readonly ViewSwitchOption<'list' | 'cal'>[] = [
+    { value: 'list', label: 'Lista', icon: List },
+    { value: 'cal', label: 'Calendario', icon: Calendar },
+];
+
+const defaultAppointmentView = 'list' satisfies 'list' | 'cal';
+
 export default function MyAppointments({ appointments, today }: Props) {
-    const [mode, setMode] = useState<'list' | 'cal'>('list');
+    const [mode, setMode] = useState<'list' | 'cal'>(defaultAppointmentView);
     const { ask, dialog } = useConfirm();
     const days = appointments.map((appointment) => wallDate(appointment.starts_at));
     const tones = Object.fromEntries(days.map((day) => [day, 'has' as const]));
@@ -75,6 +82,8 @@ export default function MyAppointments({ appointments, today }: Props) {
                         actions={
                             <>
                                 <ViewSwitch
+                                    options={appointmentViews}
+                                    defaultValue={defaultAppointmentView}
                                     value={mode}
                                     onChange={(next) => {
                                         setMode(next);

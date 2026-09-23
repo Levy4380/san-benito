@@ -8,7 +8,7 @@ import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
-import DoctorCard from '@/Components/Surfaces/DoctorCard';
+import CatalogCard from '@/Components/Surfaces/CatalogCard';
 import Empty from '@/Components/Surfaces/Empty';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
@@ -135,7 +135,7 @@ export default function Book({
                             ) : (
                                 <ResultList>
                                     {doctors.map((item) => (
-                                        <DoctorCard
+                                        <CatalogCard
                                             key={item.id}
                                             className={cn(
                                                 'flex-row items-center justify-between gap-[var(--space-sm)]',
@@ -152,7 +152,7 @@ export default function Book({
                                                     Turno más cercano
                                                 </span>
                                             ) : null}
-                                        </DoctorCard>
+                                        </CatalogCard>
                                     ))}
                                 </ResultList>
                             )}

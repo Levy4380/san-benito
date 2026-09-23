@@ -4,13 +4,10 @@ import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
-import DoctorCard, { DoctorGrid } from '@/Components/Surfaces/DoctorCard';
-import Empty from '@/Components/Surfaces/Empty';
-import Filters from '@/Components/Surfaces/Filters';
-import Results from '@/Components/Surfaces/Results';
+import Catalog from '@/Components/Surfaces/Catalog';
 import type { RoleName } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Search, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 type StaffRole = { name: string } | string;
@@ -74,32 +71,20 @@ export default function AdminAdmins({ users, filters }: Props) {
                 }
             >
                 <StageCard>
-                    <Results>
-                        <Filters onSubmit={submitFilters}>
-                            <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
-                                <TextInput id="q" name="q" defaultValue={filters.q} />
-                            </Field>
-                            <Btn type="submit" className="self-end">
-                                <Search className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Buscar
-                            </Btn>
-                        </Filters>
-                        {users.length === 0 ? (
-                            <Empty>
-                                {hasFilters ? 'No hay administradores con esos filtros.' : 'Todavía no hay administradores.'}
-                            </Empty>
-                        ) : (
-                            <DoctorGrid>
-                                {users.map((user) => (
-                                    <DoctorCard key={user.id} as="div">
-                                        <strong>{user.name}</strong>
-                                        <span>{user.email}</span>
-                                        <span>{staffRoleLabel(user.roles)}</span>
-                                    </DoctorCard>
-                                ))}
-                            </DoctorGrid>
-                        )}
-                    </Results>
+                    <Catalog
+                        filterVariant="one"
+                        onSearch={submitFilters}
+                        empty={hasFilters ? 'No hay administradores con esos filtros.' : 'Todavía no hay administradores.'}
+                        items={users.map((user) => ({
+                            key: user.id,
+                            title: user.name,
+                            lines: [user.email, staffRoleLabel(user.roles)],
+                        }))}
+                    >
+                        <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
+                            <TextInput id="q" name="q" defaultValue={filters.q} />
+                        </Field>
+                    </Catalog>
                 </StageCard>
             </PageScreen>
         </>

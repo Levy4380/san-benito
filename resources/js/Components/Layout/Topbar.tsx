@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { focusVisibleClass } from '@/lib/clinico-control';
 import { initials } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
@@ -53,8 +53,15 @@ export default function Topbar({ navOpen, userOpen, onToggleNav, onToggleUser }:
                     />
                 </span>
             </button>
-            <span className="pointer-events-none min-w-0 flex-1 overflow-hidden text-center font-display text-[0.95rem] font-bold tracking-[-0.02em] text-ellipsis whitespace-nowrap text-ink max-md:text-[0.9rem]">
+            <span className="min-w-0 flex-1 overflow-hidden text-center font-display text-[0.95rem] font-bold tracking-[-0.02em] text-ellipsis whitespace-nowrap text-ink max-md:text-[0.9rem]">
+                <Link
+                href="/"
+                id="brand-home"
+                aria-label="Ir al inicio"
+                className="min-w-0 cursor-pointer flex-1 overflow-hidden text-center font-display text-[0.95rem] font-bold tracking-[-0.02em] text-ellipsis whitespace-nowrap text-ink max-md:text-[0.9rem]">
+            
                 San Benito
+            </Link>
             </span>
             <button
                 type="button"

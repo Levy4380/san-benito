@@ -15,11 +15,11 @@ import { FormEventHandler } from 'react';
 
 type Props = {
     patients: PatientRecord[];
-    filters: { name: string; email: string };
+    filters: { q: string };
 };
 
 export default function AdminPatients({ patients, filters }: Props) {
-    const hasFilters = filters.name.trim() !== '' || filters.email.trim() !== '';
+    const hasFilters = filters.q.trim() !== '';
 
     const submitFilters: FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
@@ -49,11 +49,8 @@ export default function AdminPatients({ patients, filters }: Props) {
                 <StageCard>
                     <Results>
                         <Filters onSubmit={submitFilters}>
-                            <Field label="Nombre" htmlFor="filter_name" flush className="min-w-0">
-                                <TextInput id="filter_name" name="name" defaultValue={filters.name} />
-                            </Field>
-                            <Field label="Correo" htmlFor="filter_email" flush className="min-w-0">
-                                <TextInput id="filter_email" name="email" defaultValue={filters.email} />
+                            <Field label="Nombre, DNI o correo" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} />
                             </Field>
                             <Btn type="submit" className="self-end">
                                 <Search className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

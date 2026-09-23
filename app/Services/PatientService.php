@@ -64,25 +64,21 @@ class PatientService
     /**
      * @return Collection<int, Patient>
      */
-    public function list(?string $name = null, ?string $email = null)
+    public function list(?string $term = null)
     {
         $query = Patient::query()
             ->with(['user', 'healthInsurances'])
             ->orderBy('id');
 
-        $name = trim((string) $name);
+        $term = trim((string) $term);
 
-        if ($name !== '') {
-            $query->whereHas('user', function ($users) use ($name) {
-                $users->where('name', 'like', '%'.$name.'%');
-            });
-        }
-
-        $email = trim((string) $email);
-
-        if ($email !== '') {
-            $query->whereHas('user', function ($users) use ($email) {
-                $users->where('email', 'like', '%'.$email.'%');
+        if ($term !== '') {
+            $query->where(function ($patients) use ($term) {
+                $patients->where('dni', 'like', '%'.$term.'%')
+                    ->orWhereHas('user', function ($users) use ($term) {
+                        $users->where('name', 'like', '%'.$term.'%')
+                            ->orWhere('email', 'like', '%'.$term.'%');
+                    });
             });
         }
 

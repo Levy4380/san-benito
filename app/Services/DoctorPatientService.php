@@ -52,7 +52,8 @@ class DoctorPatientService
             ->where(function ($query) use ($term) {
                 $query->where('dni', 'like', '%'.$term.'%')
                     ->orWhereHas('user', function ($users) use ($term) {
-                        $users->where('name', 'like', '%'.$term.'%');
+                        $users->where('name', 'like', '%'.$term.'%')
+                            ->orWhere('email', 'like', '%'.$term.'%');
                     });
             })
             ->orderBy('id')

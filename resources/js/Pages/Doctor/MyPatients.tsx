@@ -38,7 +38,7 @@ export default function MyPatients({ patients, candidates, filters }: Props) {
                 <StageCard>
                     <Results>
                         <Filters variant="one" onSubmit={submit}>
-                            <Field label="Nombre o DNI" htmlFor="q" flush className="min-w-0">
+                            <Field label="Nombre, DNI o correo" htmlFor="q" flush className="min-w-0">
                                 <TextInput id="q" name="q" defaultValue={filters.q} />
                             </Field>
                             <Btn type="submit" className="self-end">

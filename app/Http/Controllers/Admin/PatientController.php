@@ -18,17 +18,12 @@ class PatientController extends Controller
 {
     public function index(Request $request, PatientService $patients): Response
     {
-        $name = $request->input('name');
-        $email = $request->input('email');
+        $term = $request->input('q');
 
         return Inertia::render('Admin/Patients', [
-            'patients' => $patients->list(
-                is_string($name) ? $name : null,
-                is_string($email) ? $email : null,
-            ),
+            'patients' => $patients->list(is_string($term) ? $term : null),
             'filters' => [
-                'name' => is_string($name) ? $name : '',
-                'email' => is_string($email) ? $email : '',
+                'q' => is_string($term) ? $term : '',
             ],
         ]);
     }

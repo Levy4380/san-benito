@@ -706,7 +706,7 @@ class ProductRequirementsTest extends TestCase
     {
         $doctor = $this->makeDoctor();
         $own = $this->makePatient(['name' => 'Marta Propia'], ['dni' => '33999888']);
-        $other = $this->makePatient(['name' => 'Otro Paciente']);
+        $other = $this->makePatient(['name' => 'Otro Paciente', 'email' => 'otro.unico@example.com']);
         $doctor->patients()->syncWithoutDetaching([$own->id]);
 
         $this->actingAs($doctor->user)
@@ -717,12 +717,21 @@ class ProductRequirementsTest extends TestCase
         $this->actingAs($doctor->user)
             ->get('/my-patients?q=3399')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('candidates', 1));
+            ->assertInertia(fn ($page) => $page->has('candidates', 1)->has('patients', 1));
 
         $this->actingAs($doctor->user)
             ->get('/my-patients?q=Ot')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('candidates', 1));
+            ->assertInertia(fn ($page) => $page->has('candidates', 1)->has('patients', 1));
+
+        $this->actingAs($doctor->user)
+            ->get('/my-patients?q=otro.unico')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('candidates', 1)
+                ->where('candidates.0.user.email', 'otro.unico@example.com')
+                ->has('patients', 1)
+                ->where('patients.0.id', $own->id));
     }
 
     public function test_17_post_login_and_register_go_to_portal_homes(): void

@@ -96,7 +96,7 @@ export default function CalendarMonth({
             className={cn(
                 '@container flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-rule bg-paper p-[var(--space-2xs)] [container-type:size] md:p-[var(--space-sm)]',
                 /* Phone: near-square, capped so short viewports (e.g. 340×525) keep toolbar + CTA visible */
-                'max-md:mx-auto max-md:aspect-square max-md:h-auto max-md:w-full max-md:max-h-[min(100%,38dvh)] max-md:max-w-[min(100%,38dvh)]',
+                'max-md:mx-auto max-md:aspect-square max-md:h-auto max-md:w-full max-md:max-h-[min(100%,50dvh)] max-md:max-w-[min(100%,50dvh)]',
                 phoneSurfaceRadiusClass,
             )}
         >
@@ -171,7 +171,7 @@ export default function CalendarMonth({
             {legend && legend.length > 0 ? (
                 <div
                     data-cal-legend=""
-                    className="mt-[0.35rem] flex shrink-0 flex-wrap items-center gap-x-[0.55rem] gap-y-[0.2rem] text-[0.65rem] leading-[1.2] text-ink-2 max-md:hidden"
+                    className="mt-[0.35rem] flex shrink-0 flex-wrap items-center gap-x-[0.55rem] gap-y-[0.2rem] text-[0.65rem] leading-[1.2] text-ink-2 "
                 >
                     {legend.map((item) => (
                         <span key={item.tone} className="inline-flex max-w-none shrink-0 items-center gap-1">

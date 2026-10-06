@@ -68,7 +68,7 @@ export default function AdminAppointments({ appointments, filters, doctors, pati
                                             defaultValue={filters.patient_id != null ? String(filters.patient_id) : ''}
                                             options={[
                                                 { value: '', label: 'Todos' },
-                                                ...patients.map((patient) => ({ value: String(patient.id), label: patient.user.name })),
+                                                ...patients.map((patient) => ({ value: String(patient.id), label: patient.name })),
                                             ]}
                                         />
                                     </Field>

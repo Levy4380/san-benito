@@ -22,14 +22,14 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
 
     return (
         <>
-            <Head title={patient.user.name} />
-            <PageScreen header={<PageHeader title={patient.user.name} backHref="/admin/patients" backLabel="Pacientes" />}>
+            <Head title={patient.name} />
+            <PageScreen header={<PageHeader title={patient.name} backHref="/admin/patients" backLabel="Pacientes" />}>
                 <StageCard>
                     <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <dl className="m-0 grid w-full gap-[var(--space-sm)]">
                             <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Nombre</dt>
-                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.user.name}</dd>
+                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.name}</dd>
                             </div>
                             <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">DNI</dt>
@@ -41,7 +41,7 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
                             </div>
                             <div className="grid gap-[0.2rem]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Teléfono</dt>
-                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.user.phone ?? '—'}</dd>
+                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.phone ?? '—'}</dd>
                             </div>
                         </dl>
                         <form

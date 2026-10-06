@@ -62,7 +62,7 @@ export default function DoctorHome({ upcoming }: Props) {
                                         actions={
                                             <PatientProfileBtn
                                                 patientId={appointment.patient_id}
-                                                name={appointment.patient?.user.name}
+                                                name={appointment.patient?.name}
                                                 label="Ver paciente"
                                             />
                                         }

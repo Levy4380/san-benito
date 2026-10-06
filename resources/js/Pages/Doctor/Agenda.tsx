@@ -1,30 +1,26 @@
+import AssignModal from '@/Components/Agenda/AssignModal';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
-import BackLink from '@/Components/Common/BackLink';
+import DayTimeline from '@/Components/Calendar/DayTimeline';
+import TimelineAppointmentDialog from '@/Components/Calendar/TimelineAppointmentDialog';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
-import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import StageCard from '@/Components/Common/StageCard';
-import { useConfirm } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, useConfirm } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
-import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import Time24 from '@/Components/Form/Time24';
-import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
-import Empty from '@/Components/Surfaces/Empty';
 import Hint from '@/Components/Surfaces/Hint';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
-import SlotRow from '@/Components/Surfaces/SlotRow';
-import Surface from '@/Components/Surfaces/Surface';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
-import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, PatientRecord, Slot } from '@/types';
+import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, Slot } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CalendarPlus, Plus, Trash2, UserPlus, X } from 'lucide-react';
-import { ReactNode, useState } from 'react';
+import { CalendarPlus, Plus, Trash2, Undo2, UserPlus } from 'lucide-react';
+import { useState } from 'react';
 
-type PanelStep = 'day' | 'load' | 'assign';
+type PanelStep = 'day' | 'load';
 
 type Props = {
     doctor: DoctorRecord;
@@ -34,30 +30,24 @@ type Props = {
     slots: Slot[];
     appointments: AppointmentRecord[];
     tones: Record<string, 'empty' | 'has' | 'full'>;
-    patients: PatientRecord[];
-    preselectedPatient: PatientRecord | null;
+    now: string;
 };
 
-function agendaHref(date: string, panel: PanelStep = 'day', patientId?: string) {
-    const params = new URLSearchParams({ date });
+type AgendaModal = 'load' | 'assign';
 
-    if (panel !== 'day') {
-        params.set('panel', panel);
-    }
-
-    if (panel === 'assign' && patientId) {
-        params.set('patient_id', patientId);
-    }
-
-    return `/agenda?${params.toString()}`;
-}
-
-export default function Agenda({ doctor, selectedDate, panel, windows, slots, appointments, tones, patients, preselectedPatient }: Props) {
+export default function Agenda({ doctor, selectedDate, panel, windows, slots, appointments, tones, now }: Props) {
     const [month, setMonth] = useState(selectedDate.slice(0, 7) + '-01');
-    const [mobileDayOpen, setMobileDayOpen] = useState(panel !== 'day' || Boolean(preselectedPatient));
-    const [patientId, setPatientId] = useState(preselectedPatient?.id?.toString() ?? '');
-    const [specialtyId, setSpecialtyId] = useState(doctor.specialties.length === 1 ? String(doctor.specialties[0].id) : '');
+    const [mobileDayOpen, setMobileDayOpen] = useState(panel !== 'day');
+    const [modal, setModal] = useState<AgendaModal | null>(panel === 'load' ? 'load' : null);
+    const [assignStartsAt, setAssignStartsAt] = useState<string | undefined>(undefined);
+
+    const openAssign = (startsAt?: string) => {
+        setAssignStartsAt(startsAt);
+        setModal('assign');
+    };
     const [start, setStart] = useState('09:00');
+    const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
+    const openAppointment = appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
     const { ask, dialog } = useConfirm();
     const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
 
@@ -66,27 +56,17 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
         router.get('/agenda', { date }, { preserveState: true });
     };
 
-    const assign = (startsAt: string) => {
-        if (!patientId || !specialtyId) {
-            return;
+    const closeModal = () => {
+        setModal(null);
+        shortForm.clearErrors();
+        if (panel !== 'day') {
+            router.get('/agenda', { date: selectedDate }, { preserveState: true, preserveScroll: true, replace: true });
         }
-        router.post('/agenda/appointments', {
-            starts_at: startsAt,
-            patient_id: Number(patientId),
-            specialty_id: Number(specialtyId),
-        });
     };
 
-    const cancel = async (id: number) => {
-        const ok = await ask({
-            title: 'Cancelar turno',
-            message: '¿Cancelar este turno? El horario volverá a estar disponible.',
-            confirmLabel: 'Cancelar turno',
-            danger: true,
-        });
-        if (ok) {
-            router.delete(`/appointments/${id}`);
-        }
+    const loadWindow = () => {
+        shortForm.transform(() => ({ starts_at: `${selectedDate} ${start}:00` }));
+        shortForm.post('/agenda/windows', { preserveScroll: true, onSuccess: () => setModal(null) });
     };
 
     const removeWindow = async (id: number) => {
@@ -97,16 +77,12 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
             danger: true,
         });
         if (ok) {
-            router.delete(`/agenda/windows/${id}`);
+            router.delete(`/agenda/windows/${id}`, { preserveScroll: true });
         }
     };
 
-    const panelTitle =
-        panel === 'load'
-            ? 'Cargar un turno'
-            : panel === 'assign'
-              ? 'Asignar turno'
-              : `Turnos de ${formatDateLabel(selectedDate).replace(/^./, (letter) => letter.toUpperCase())}`;
+    const dayLabel = formatDateLabel(selectedDate);
+    const panelTitle = `Turnos de ${dayLabel.replace(/^./, (letter) => letter.toUpperCase())}`;
 
     const dayMeta = `${appointments.length} reserva${appointments.length === 1 ? '' : 's'} · ${slots.length} hueco${slots.length === 1 ? '' : 's'} libre${slots.length === 1 ? '' : 's'}.`;
 
@@ -125,178 +101,101 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
         />
     );
 
-    const dayActions = (sticky: boolean) =>
-        panel === 'day' ? (
-            <div
-                className={cn(
-                    'border-rule bg-paper mt-auto grid shrink-0 grid-cols-2 gap-[0.55rem] border-t pt-[var(--space-sm)]',
-                    sticky && 'sticky bottom-0 z-[6] -mx-[var(--space-sm)] px-[var(--space-sm)] pb-[0.65rem]',
-                )}
-            >
-                <Btn block asChild>
-                    <Link href={agendaHref(selectedDate, 'load')} preserveState>
-                        <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Cargar un turno
-                    </Link>
-                </Btn>
-                <Btn variant="outline" block asChild>
-                    <Link href={agendaHref(selectedDate, 'assign')} preserveState>
-                        <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Asignar turno
-                    </Link>
-                </Btn>
-            </div>
-        ) : null;
+    const dayActions = (sticky: boolean) => (
+        <div
+            className={cn(
+                'border-rule bg-paper mt-auto grid shrink-0 grid-cols-2 gap-[0.55rem] border-t pt-[var(--space-sm)]',
+                sticky && 'sticky bottom-0 z-[6] -mx-[var(--space-sm)] px-[var(--space-sm)] pb-[0.65rem]',
+            )}
+        >
+            <Btn type="button" block onClick={() => setModal('load')}>
+                <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                Cargar un turno
+            </Btn>
+            <Btn type="button" variant="outline" block onClick={() => openAssign()}>
+                <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                Asignar turno
+            </Btn>
+        </div>
+    );
 
-    const panelBody = (opts: { stickyDayActions: boolean }): ReactNode => (
+    const panelBody = (opts: { stickyDayActions: boolean }) => (
         <>
-            {panel === 'day' ? (
-                <>
-                    <Hint className="mt-[0.25rem] shrink-0">{dayMeta}</Hint>
-                    <BookingList>
-                        {appointments.length === 0 ? (
-                            <Empty>Sin reservas este día.</Empty>
-                        ) : (
-                            appointments.map((appointment) => (
-                                <BookingCard key={appointment.id}>
-                                    <BookingCardRow>
-                                        <BookingCardFields appointment={appointment} />
-                                        <BookingCardActions>
-                                            <PatientProfileBtn
-                                                patientId={appointment.patient_id}
-                                                name={appointment.patient?.user.name}
-                                                size="xs"
-                                                label="Ver paciente"
-                                            />
-                                            <Btn type="button" variant="danger" size="xs" onClick={() => cancel(appointment.id)}>
-                                                <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />
-                                                Cancelar turno
-                                            </Btn>
-                                        </BookingCardActions>
-                                    </BookingCardRow>
-                                </BookingCard>
-                            ))
-                        )}
-                    </BookingList>
-                    {dayActions(opts.stickyDayActions)}
-                </>
-            ) : null}
-            {panel === 'load' ? (
-                <>
-                    <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" href={agendaHref(selectedDate)}>
-                        Atrás
-                    </BackLink>
-                    <Surface
-                        as="form"
-                        className="shrink-0 gap-[var(--space-sm)]"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            shortForm.setData('starts_at', `${selectedDate} ${start}:00`);
-                            shortForm.post('/agenda/windows');
-                        }}
-                    >
-                        <div className="flex min-w-0 items-start justify-between gap-[0.65rem]">
-                            <h3 className="m-0 min-w-0 flex-1 leading-[1.25]">Cargar un turno</h3>
-                            <Btn type="submit" size="sm" className="shrink-0 self-start" disabled={shortForm.processing}>
-                                <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Cargar un turno
-                            </Btn>
-                        </div>
-                        <Field label="Hora de inicio" flush>
-                            <Time24 value={start} onChange={setStart} />
-                        </Field>
-                    </Surface>
-                    <PanelScroll className="pt-[var(--space-sm)]">
-                        {windows.map((window) => (
-                            <ListRow key={window.id}>
-                                <span>
-                                    Franja {wallTime(window.starts_at)} — {wallTime(window.ends_at)}
-                                </span>
-                                <Btn
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="shrink-0 self-start"
-                                    onClick={() => removeWindow(window.id)}
-                                >
-                                    <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Borrar franja
-                                </Btn>
-                            </ListRow>
-                        ))}
-                    </PanelScroll>
-                </>
-            ) : null}
-            {panel === 'assign' ? (
-                <>
-                    <BackLink className="mb-[var(--space-sm)] shrink-0 self-start" href={agendaHref(selectedDate)}>
-                        Atrás
-                    </BackLink>
-                    {preselectedPatient && patientId === String(preselectedPatient.id) ? (
-                        <Hint className="mb-[var(--space-sm)] shrink-0">
-                            Asignando turno a <strong className="text-ink">{preselectedPatient.user.name}</strong>. Elegí un horario disponible.
-                        </Hint>
-                    ) : null}
-                    <Field label="Paciente vinculado" htmlFor="patient_id" className="shrink-0">
-                        <div className="flex min-w-0 items-center gap-[0.5rem]">
-                            <Combobox
-                                id="patient_id"
-                                className="min-w-0 flex-1"
-                                value={patientId}
-                                placeholder="Elegí un paciente"
-                                onChange={setPatientId}
-                                options={[
-                                    { value: '', label: 'Elegí un paciente' },
-                                    ...patients.map((patient) => ({ value: String(patient.id), label: patient.user.name })),
-                                ]}
-                            />
-                            {patientId ? (
-                                <PatientProfileBtn
-                                    patientId={Number(patientId)}
-                                    name={patients.find((patient) => String(patient.id) === patientId)?.user.name}
-                                />
-                            ) : null}
-                        </div>
-                    </Field>
-                    <Field label="Especialidad" htmlFor="specialty_id" className="shrink-0">
-                        <Combobox
-                            id="specialty_id"
-                            value={specialtyId}
-                            placeholder="Elegí una especialidad"
-                            onChange={setSpecialtyId}
-                            options={[
-                                { value: '', label: 'Elegí una especialidad' },
-                                ...doctor.specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
-                            ]}
-                        />
-                    </Field>
-                    <PanelScroll className="pt-0">
-                        {slots.length === 0 ? (
-                            <Empty>No hay huecos libres este día.</Empty>
-                        ) : (
-                            slots.map((slot) => (
-                                <SlotRow key={slot.starts_at}>
-                                    <strong>
-                                        {wallTime(slot.starts_at)} — {wallTime(slot.ends_at)}
-                                    </strong>
-                                    <Btn
-                                        type="button"
-                                        size="sm"
-                                        className="shrink-0"
-                                        disabled={!patientId || !specialtyId}
-                                        onClick={() => assign(slot.starts_at)}
-                                    >
-                                        <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Asignar
-                                    </Btn>
-                                </SlotRow>
-                            ))
-                        )}
-                    </PanelScroll>
-                </>
-            ) : null}
+            <Hint className="mt-[0.25rem] shrink-0">{dayMeta}</Hint>
+            <DayTimeline
+                className="mt-[var(--space-xs)] mb-[var(--space-sm)] min-h-[12rem] flex-1"
+                date={selectedDate}
+                now={now}
+                stepMinutes={doctor.slot_duration_minutes}
+                bands={windows.map((window) => ({ key: window.id, starts_at: window.starts_at, ends_at: window.ends_at }))}
+                blocks={appointments.map((appointment) => ({
+                    key: appointment.id,
+                    starts_at: appointment.starts_at,
+                    ends_at: appointment.ends_at,
+                    title: appointment.patient?.name ?? 'Paciente',
+                    subtitle: appointment.specialty?.name,
+                }))}
+                onBlockSelect={(key) => setOpenAppointmentId(Number(key))}
+                freeSlots={slots}
+                onFreeSelect={openAssign}
+            />
+            {dayActions(opts.stickyDayActions)}
         </>
     );
+
+    const modalFooter = (
+        <div className="flex justify-end">
+            <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeModal}>
+                <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                Volver
+            </Btn>
+        </div>
+    );
+
+    const loadModal =
+        modal === 'load' ? (
+            <ConfirmDialog title="Cargar un turno" message={dayLabel} onDismiss={closeModal}>
+                <div className="flex max-h-[60dvh] min-h-0 flex-col">
+                    <form
+                        className="flex shrink-0 items-end gap-[0.65rem]"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            loadWindow();
+                        }}
+                    >
+                        <Field label="Hora de inicio" error={shortForm.errors.starts_at} flush className="min-w-0 flex-1">
+                            <Time24 value={start} onChange={setStart} />
+                        </Field>
+                        <Btn type="submit" className="shrink-0" disabled={shortForm.processing}>
+                            <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                            Cargar
+                        </Btn>
+                    </form>
+                    {windows.length > 0 ? (
+                        <PanelScroll className="pt-[var(--space-sm)]">
+                            {windows.map((window) => (
+                                <ListRow key={window.id}>
+                                    <span>
+                                        Franja {wallTime(window.starts_at)} — {wallTime(window.ends_at)}
+                                    </span>
+                                    <Btn
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="shrink-0 self-start"
+                                        onClick={() => removeWindow(window.id)}
+                                    >
+                                        <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                        Borrar franja
+                                    </Btn>
+                                </ListRow>
+                            ))}
+                        </PanelScroll>
+                    ) : null}
+                </div>
+                {modalFooter}
+            </ConfirmDialog>
+        ) : null;
 
     return (
         <>
@@ -321,15 +220,10 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
                 <StageCard id="agenda-body">
                     <MobileDaySwap
                         dayOpen={mobileDayOpen}
-                        onBackToCalendar={() => {
-                            setMobileDayOpen(false);
-                            if (panel !== 'day') {
-                                router.get('/agenda', { date: selectedDate }, { preserveState: true });
-                            }
-                        }}
+                        onBackToCalendar={() => setMobileDayOpen(false)}
                         calendar={renderCalendar()}
                         panel={
-                            <Panel title={panel === 'day' ? panelTitle : undefined} className="h-full min-h-0 gap-0">
+                            <Panel title={panelTitle} className="h-full min-h-0 gap-0">
                                 {panelBody({ stickyDayActions: true })}
                             </Panel>
                         }
@@ -337,12 +231,22 @@ export default function Agenda({ doctor, selectedDate, panel, windows, slots, ap
 
                     <StageCard layout="split" className="max-md:!hidden">
                         {renderCalendar()}
-                        <Panel title={panel === 'day' ? panelTitle : undefined} className="gap-0">
+                        <Panel title={panelTitle} className="gap-0">
                             {panelBody({ stickyDayActions: false })}
                         </Panel>
                     </StageCard>
                 </StageCard>
             </PageScreen>
+            {loadModal}
+            {modal === 'assign' ? <AssignModal date={selectedDate} startsAt={assignStartsAt} onDismiss={() => setModal(null)} /> : null}
+            {openAppointment ? (
+                <TimelineAppointmentDialog
+                    appointment={openAppointment}
+                    profileHref={`/my-patients/${openAppointment.patient_id}`}
+                    canCancel
+                    onDismiss={() => setOpenAppointmentId(null)}
+                />
+            ) : null}
             {dialog}
         </>
     );

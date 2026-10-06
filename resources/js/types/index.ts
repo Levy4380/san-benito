@@ -39,10 +39,13 @@ export type DoctorRecord = {
 
 export type PatientRecord = {
     id: number;
+    name: string;
+    email: string;
+    phone: string | null;
     dni: string;
     birth_date: string;
     health_insurance: string | null;
-    user: { id: number; name: string; email: string; phone: string | null };
+    user: { id: number; name: string; email: string; phone: string | null } | null;
 };
 
 export type Slot = {

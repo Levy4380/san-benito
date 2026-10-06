@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterPatientRequest extends FormRequest
@@ -18,11 +21,28 @@ class RegisterPatientRequest extends FormRequest
      */
     public function rules(): array
     {
+        $dni = Rule::unique(Patient::class, 'dni');
+        $chartId = $this->unattachedChartId();
+
+        if ($chartId !== null) {
+            $dni->ignore($chartId);
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class),
+                Rule::unique(Patient::class, 'email')->where(
+                    fn ($query) => $query->whereNotNull('user_id'),
+                ),
+            ],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'dni' => ['required', 'string', 'max:32', 'unique:patients,dni'],
+            'dni' => ['required', 'string', 'max:32', $dni],
             'birth_date' => ['required', 'date', 'before:today'],
             'phone' => ['nullable', 'string', 'max:32'],
             'health_insurance_id' => ['nullable', 'integer', 'exists:health_insurances,id'],
@@ -69,5 +89,21 @@ class RegisterPatientRequest extends FormRequest
                 'health_insurance_id' => null,
             ]);
         }
+    }
+
+    private function unattachedChartId(): ?int
+    {
+        $email = $this->input('email');
+
+        if (! is_string($email) || $email === '') {
+            return null;
+        }
+
+        $id = Patient::query()
+            ->where('email', Str::lower($email))
+            ->whereNull('user_id')
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 }

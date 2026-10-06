@@ -110,6 +110,16 @@ class AppointmentService
         return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
     }
 
+    /**
+     * Staff books any calculated slot of any doctor for any patient; the doctor_patient link is created if missing.
+     */
+    public function assignAsStaff(Doctor $doctor, int $patientId, string $startsAt, int $specialtyId): Appointment
+    {
+        $patient = Patient::query()->findOrFail($patientId);
+
+        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
+    }
+
     public function cancel(Appointment $appointment): void
     {
         if (! $appointment->starts_at->gt(now())) {

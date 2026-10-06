@@ -1,0 +1,59 @@
+name: Deploy HTML Demo
+
+on:
+  push:
+    branches:
+      - staging
+    paths:
+      - 'demo/**'
+      - '.github/workflows/static.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Prepare site
+        run: |
+          set -euo pipefail
+          mkdir -p _site/images
+          cp demo/cirugias/index.html _site/index.html
+          cp demo/cirugias/demo.css _site/demo.css
+          cp demo/cirugias/demo.js _site/demo.js
+          if [ -f demo/cirugias/cirugias-diseno-v1.html ]; then
+            cp demo/cirugias/cirugias-diseno-v1.html _site/cirugias-diseno-v1.html
+          fi
+          cp public/images/san-benito-logo.png _site/images/san-benito-logo.png
+          sed -i 's|../../public/images/san-benito-logo.png|images/san-benito-logo.png|g' _site/index.html
+          ls -la _site
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

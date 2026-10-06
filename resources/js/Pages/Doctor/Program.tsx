@@ -1,24 +1,25 @@
-import { Head, useForm } from '@inertiajs/react';
-import { CalendarCheck, Check, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import CalendarMonth from '@/Components/Calendar/CalendarMonth';
+import DayTimeline from '@/Components/Calendar/DayTimeline';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import StepPills from '@/Components/Common/StepPills';
 import WizardStickyCta, { WizardStickyAction } from '@/Components/Common/WizardStickyCta';
-import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import { Btn } from '@/Components/Form/Btn';
 import CheckLabel from '@/Components/Form/CheckLabel';
-import Empty from '@/Components/Surfaces/Empty';
 import Field from '@/Components/Form/Field';
+import Time24 from '@/Components/Form/Time24';
+import Empty from '@/Components/Surfaces/Empty';
 import Hint from '@/Components/Surfaces/Hint';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
-import Time24 from '@/Components/Form/Time24';
-import { formatDateLabel, isWeekendKey, minutesBetween, todayKey, weekdayKeysOfMonth } from '@/lib/datetime';
+import { formatDateLabel, isWeekendKey, minutesBetween, pad2, todayKey, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { DoctorRecord } from '@/types';
+import { Head, useForm } from '@inertiajs/react';
+import { CalendarCheck, Check, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 type Range = { start: string; end: string };
 type Tone = 'empty' | 'has' | 'full';
@@ -34,6 +35,59 @@ const PROGRAM_LEGEND = [
     { tone: 'full' as const, label: 'Todo reservado' },
     { tone: 'selected' as const, label: 'Seleccionado' },
 ];
+
+function toMinutes(time: string): number {
+    const [hour, minute] = time.split(':').map(Number);
+
+    return (hour ?? 0) * 60 + (minute ?? 0);
+}
+
+function toTime(minutes: number): string {
+    return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
+}
+
+function sortRanges(ranges: Range[]): Range[] {
+    return [...ranges].sort((a, b) => a.start.localeCompare(b.start));
+}
+
+/** Union: overlapping or touching ranges merge into one, so the server never sees overlaps. */
+function paintRange(ranges: Range[], start: number, end: number): Range[] {
+    let from = start;
+    let to = end;
+    const rest = ranges.filter((range) => {
+        const rangeStart = toMinutes(range.start);
+        const rangeEnd = toMinutes(range.end);
+        if (rangeStart > to || rangeEnd < from) {
+            return true;
+        }
+        from = Math.min(from, rangeStart);
+        to = Math.max(to, rangeEnd);
+
+        return false;
+    });
+
+    return sortRanges([...rest, { start: toTime(from), end: toTime(to) }]);
+}
+
+/** Subtract [start, end); leftovers shorter than one slot are dropped. */
+function eraseRange(ranges: Range[], start: number, end: number, minLength: number): Range[] {
+    return sortRanges(
+        ranges.flatMap((range) => {
+            const rangeStart = toMinutes(range.start);
+            const rangeEnd = toMinutes(range.end);
+            if (rangeStart >= end || rangeEnd <= start) {
+                return [range];
+            }
+
+            return [
+                [rangeStart, Math.min(start, rangeEnd)],
+                [Math.max(end, rangeStart), rangeEnd],
+            ]
+                .filter(([pieceStart, pieceEnd]) => pieceEnd - pieceStart >= minLength)
+                .map(([pieceStart, pieceEnd]) => ({ start: toTime(pieceStart), end: toTime(pieceEnd) }));
+        }),
+    );
+}
 
 export default function Program({ doctor, tones }: Props) {
     const [step, setStep] = useState<'when' | 'hours'>('when');
@@ -86,14 +140,19 @@ export default function Program({ doctor, tones }: Props) {
         if (!draftOk) {
             return;
         }
-        setRanges((current) => {
-            if (current.some((range) => range.start === start && range.end === end)) {
-                return current;
-            }
-
-            return [...current, { start, end }];
-        });
+        setRanges((current) => paintRange(current, toMinutes(start), toMinutes(end)));
     };
+
+    const paintOnTimeline = (from: number, to: number, on: boolean) => {
+        if (on) {
+            setRanges((current) => paintRange(current, from, Math.min(Math.max(to, from + duration), 24 * 60 - 1)));
+
+            return;
+        }
+        setRanges((current) => eraseRange(current, from, to, duration));
+    };
+
+    const timelineDate = selectedDays[0] ?? todayKey();
 
     const goHours = () => {
         if (selectedDays.length === 0) {
@@ -122,8 +181,7 @@ export default function Program({ doctor, tones }: Props) {
         form.post('/agenda/program');
     };
 
-    const countLabel =
-        selectedDays.length === 1 ? `1 día · ${formatDateLabel(selectedDays[0])}` : `${selectedDays.length} días seleccionados.`;
+    const countLabel = selectedDays.length === 1 ? `1 día · ${formatDateLabel(selectedDays[0])}` : `${selectedDays.length} días seleccionados.`;
 
     const hoursMeta =
         selectedDays.length === 1
@@ -152,7 +210,15 @@ export default function Program({ doctor, tones }: Props) {
                         title="Programar turnos"
                         backLabel="Atrás"
                         onBack={step === 'hours' ? () => setStep('when') : undefined}
-                        steps={<StepPills steps={[{ key: 'when', label: 'Cuándo' }, { key: 'hours', label: 'Horario' }]} current={step} />}
+                        steps={
+                            <StepPills
+                                steps={[
+                                    { key: 'when', label: 'Cuándo' },
+                                    { key: 'hours', label: 'Horario' },
+                                ]}
+                                current={step}
+                            />
+                        }
                     />
                 }
             >
@@ -217,60 +283,84 @@ export default function Program({ doctor, tones }: Props) {
                     ) : (
                         <Results className="relative gap-[var(--space-md)] pb-[calc(var(--control-h)+1.75rem)]">
                             <Hint className="m-0 shrink-0">{hoursMeta}</Hint>
-                            <div className="grid w-full gap-[var(--space-md)] sm:grid-cols-2">
-                                <Field label="Hora de inicio" htmlFor="program-start-h" flush>
-                                    <Time24 id="program-start" value={start} onChange={setStart} />
-                                </Field>
-                                <Field label="Hora de finalización" htmlFor="program-end-h" flush>
-                                    <Time24 id="program-end" value={end} onChange={setEnd} />
-                                </Field>
+                            <Hint id="program-paint-hint" className="m-0 shrink-0">
+                                Arrastrá sobre la línea de tiempo para pintar una franja; arrastrá sobre una franja para borrarla.
+                            </Hint>
+                            <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-md)] md:flex-row">
+                                <DayTimeline
+                                    className="max-h-none max-md:order-first max-md:h-[min(38dvh,22rem)] max-md:flex-none md:min-h-[14rem] md:flex-1"
+                                    date={timelineDate}
+                                    stepMinutes={duration}
+                                    label="Franjas a programar por hora"
+                                    bands={ranges.map((range) => ({
+                                        key: `${range.start}-${range.end}`,
+                                        starts_at: `${timelineDate} ${range.start}:00`,
+                                        ends_at: `${timelineDate} ${range.end}:00`,
+                                    }))}
+                                    blocks={[]}
+                                    onPaint={paintOnTimeline}
+                                />
+                                <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-md)] overflow-auto">
+                                    <div className="grid w-full gap-[var(--space-md)] sm:grid-cols-2">
+                                        <Field label="Hora de inicio" htmlFor="program-start-h" flush>
+                                            <Time24 id="program-start" value={start} onChange={setStart} />
+                                        </Field>
+                                        <Field label="Hora de finalización" htmlFor="program-end-h" flush>
+                                            <Time24 id="program-end" value={end} onChange={setEnd} />
+                                        </Field>
+                                    </div>
+                                    <div className="flex shrink-0 flex-wrap gap-[0.5rem]">
+                                        <Btn type="button" variant="outline" disabled={!draftOk} onClick={addRange}>
+                                            <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                            Agregar franja
+                                        </Btn>
+                                    </div>
+                                    <div className="flex flex-col gap-[0.5rem]">
+                                        {ranges.length === 0 ? (
+                                            <Empty className="m-0">Todavía no agregaste franjas.</Empty>
+                                        ) : (
+                                            <>
+                                                <h2 className="m-0 text-[length:var(--text-md)]">Franjas</h2>
+                                                {ranges.map((range, index) => (
+                                                    <SlotRow key={`${range.start}-${range.end}-${index}`}>
+                                                        <p className="min-w-0 flex-1 overflow-hidden text-sm text-ellipsis whitespace-nowrap">
+                                                            <span className="font-mono font-medium">
+                                                                {range.start} — {range.end}
+                                                            </span>
+                                                            <span className="text-ink-2">
+                                                                {' '}
+                                                                · {selectedDays.length} día{selectedDays.length === 1 ? '' : 's'}
+                                                            </span>
+                                                        </p>
+                                                        <Btn
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="shrink-0"
+                                                            onClick={() => setRanges((current) => current.filter((_, i) => i !== index))}
+                                                        >
+                                                            <Minus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                                            Quitar
+                                                        </Btn>
+                                                    </SlotRow>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
+                                    {Object.values(form.errors).length > 0 ? (
+                                        <Empty className="m-0" role="alert">
+                                            {Object.values(form.errors).join(' ')}
+                                        </Empty>
+                                    ) : null}
+                                </div>
                             </div>
-                            <div className="flex shrink-0 flex-wrap gap-[0.5rem]">
-                                <Btn type="button" variant="outline" disabled={!draftOk} onClick={addRange}>
-                                    <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Agregar franja
-                                </Btn>
-                            </div>
-                            <div className="flex min-h-0 flex-1 flex-col gap-[0.5rem] overflow-auto">
-                                {ranges.length === 0 ? (
-                                    <Empty className="m-0">Todavía no agregaste franjas.</Empty>
-                                ) : (
-                                    <>
-                                        <h2 className="m-0 text-[length:var(--text-md)]">Franjas</h2>
-                                        {ranges.map((range, index) => (
-                                            <SlotRow key={`${range.start}-${range.end}-${index}`}>
-                                                <p className="min-w-0 flex-1 overflow-hidden text-sm text-ellipsis whitespace-nowrap">
-                                                    <span className="font-mono font-medium">
-                                                        {range.start} — {range.end}
-                                                    </span>
-                                                    <span className="text-ink-2">
-                                                        {' '}
-                                                        · {selectedDays.length} día{selectedDays.length === 1 ? '' : 's'}
-                                                    </span>
-                                                </p>
-                                                <Btn
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="shrink-0"
-                                                    onClick={() => setRanges((current) => current.filter((_, i) => i !== index))}
-                                                >
-                                                    <Minus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                                    Quitar
-                                                </Btn>
-                                            </SlotRow>
-                                        ))}
-                                    </>
-                                )}
-                            </div>
-                            {Object.values(form.errors).length > 0 ? (
-                                <Empty className="m-0" role="alert">
-                                    {Object.values(form.errors).join(' ')}
-                                </Empty>
-                            ) : null}
                             <WizardStickyCta
                                 className="absolute right-0 bottom-0 left-0 mx-0 rounded-b-lg px-[var(--space-md)] max-md:px-[var(--space-sm)]"
-                                meta={ranges.length === 0 ? 'Agregá al menos una franja.' : `${ranges.length} franja${ranges.length === 1 ? '' : 's'} · N×M`}
+                                meta={
+                                    ranges.length === 0
+                                        ? 'Agregá al menos una franja.'
+                                        : `${ranges.length} franja${ranges.length === 1 ? '' : 's'} · N×M`
+                                }
                             >
                                 <WizardStickyAction onClick={submit} disabled={form.processing || ranges.length === 0}>
                                     <Check className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

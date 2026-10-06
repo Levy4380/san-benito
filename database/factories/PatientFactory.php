@@ -21,4 +21,33 @@ class PatientFactory extends Factory
             'birth_date' => fake()->date('Y-m-d', '-18 years'),
         ];
     }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Patient $patient): void {
+            if ($patient->user_id === null) {
+                return;
+            }
+
+            $user = User::query()->find($patient->user_id);
+
+            if ($user === null) {
+                return;
+            }
+
+            $patient->name = $user->name;
+            $patient->email = $user->email;
+            $patient->phone = $user->phone;
+        });
+    }
+
+    public function withoutUser(): static
+    {
+        return $this->state(fn (): array => [
+            'user_id' => null,
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->optional()->numerify('11########'),
+        ]);
+    }
 }

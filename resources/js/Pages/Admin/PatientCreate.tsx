@@ -2,6 +2,7 @@ import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { Btn } from '@/Components/Form/Btn';
+import CheckLabel from '@/Components/Form/CheckLabel';
 import Field from '@/Components/Form/Field';
 import NativeSelect from '@/Components/Form/NativeSelect';
 import TextInput from '@/Components/Form/TextInput';
@@ -16,6 +17,7 @@ type Props = {
 
 export default function AdminPatientCreate({ healthInsurances }: Props) {
     const form = useForm({
+        with_account: false,
         name: '',
         email: '',
         password: '',
@@ -55,7 +57,7 @@ export default function AdminPatientCreate({ healthInsurances }: Props) {
                                     required
                                 />
                             </Field>
-                            <Field label="Correo" htmlFor="email">
+                            <Field label="Correo" htmlFor="email" error={form.errors.email}>
                                 <TextInput
                                     id="email"
                                     type="email"
@@ -64,16 +66,25 @@ export default function AdminPatientCreate({ healthInsurances }: Props) {
                                     required
                                 />
                             </Field>
-                            <Field label="Contraseña" htmlFor="password">
-                                <TextInput
-                                    id="password"
-                                    type="password"
-                                    value={form.data.password}
-                                    onChange={(event) => form.setData('password', event.target.value)}
-                                    required
-                                />
-                            </Field>
-                            <Field label="DNI" htmlFor="dni">
+                            <CheckLabel
+                                checked={form.data.with_account}
+                                onChange={(checked) => form.setData('with_account', checked)}
+                                className="mb-[var(--space-sm)]"
+                            >
+                                Crear cuenta
+                            </CheckLabel>
+                            {form.data.with_account ? (
+                                <Field label="Contraseña" htmlFor="password" error={form.errors.password}>
+                                    <TextInput
+                                        id="password"
+                                        type="password"
+                                        value={form.data.password}
+                                        onChange={(event) => form.setData('password', event.target.value)}
+                                        required
+                                    />
+                                </Field>
+                            ) : null}
+                            <Field label="DNI" htmlFor="dni" error={form.errors.dni}>
                                 <TextInput
                                     id="dni"
                                     value={form.data.dni}
@@ -81,7 +92,7 @@ export default function AdminPatientCreate({ healthInsurances }: Props) {
                                     required
                                 />
                             </Field>
-                            <Field label="Fecha de nacimiento" htmlFor="birth_date">
+                            <Field label="Fecha de nacimiento" htmlFor="birth_date" error={form.errors.birth_date}>
                                 <TextInput
                                     id="birth_date"
                                     type="date"

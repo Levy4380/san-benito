@@ -1,8 +1,11 @@
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
+import DayTimeline from '@/Components/Calendar/DayTimeline';
+import TimelineAppointmentDialog from '@/Components/Calendar/TimelineAppointmentDialog';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
+import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
@@ -10,10 +13,11 @@ import Empty from '@/Components/Surfaces/Empty';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import SlotRow from '@/Components/Surfaces/SlotRow';
-import { wallTime } from '@/lib/datetime';
-import type { DoctorRecord, Slot } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { NotebookPen } from 'lucide-react';
+import { formatDateLabel, wallTime } from '@/lib/datetime';
+import { hasPermission, Permission } from '@/lib/permissions';
+import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, SharedData, Slot } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { CalendarPlus, NotebookPen, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 
 type Props = {
@@ -23,12 +27,47 @@ type Props = {
     slots: Slot[];
     previewDays: string[];
     specialtyId: number | null;
+    timeline?: {
+        windows: AvailabilityWindowRecord[];
+        appointments: AppointmentRecord[];
+        now: string;
+    };
+    bookingTones?: Record<string, 'empty' | 'has'>;
+    patients?: { id: number; name: string; dni: string }[];
 };
 
-export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots, previewDays, specialtyId }: Props) {
+export default function DoctorSlots({
+    doctor,
+    selectedDate,
+    daysWithSlots,
+    slots,
+    previewDays,
+    specialtyId,
+    timeline,
+    bookingTones,
+    patients,
+}: Props) {
     const [month, setMonth] = useState((selectedDate ?? previewDays[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const [mobileDayOpen, setMobileDayOpen] = useState(Boolean(selectedDate));
-    const tones = Object.fromEntries(daysWithSlots.map((day) => [day, 'has' as const]));
+    const [bookingOpen, setBookingOpen] = useState(false);
+    const [patientId, setPatientId] = useState('');
+    const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
+    const { auth } = usePage<SharedData>().props;
+    const canViewPatient = hasPermission(auth.user?.permissions, Permission.PatientsCatalogView);
+    const canCancel = hasPermission(auth.user?.permissions, Permission.AppointmentsCancel);
+    const staffDay = timeline && selectedDate ? { date: selectedDate, ...timeline } : null;
+    const openAppointment = staffDay?.appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
+    const assigning = Boolean(staffDay && patients);
+    const tones = staffDay ? (bookingTones ?? {}) : Object.fromEntries(daysWithSlots.map((day) => [day, 'has' as const]));
+    const legend = staffDay
+        ? [
+              { tone: 'empty' as const, label: 'Sin reservas' },
+              { tone: 'has' as const, label: 'Con reservas' },
+          ]
+        : [
+              { tone: 'empty' as const, label: 'Sin turnos' },
+              { tone: 'has' as const, label: 'Con turnos' },
+          ];
     const onlySpecialty = doctor.specialties.length === 1 ? doctor.specialties[0] : null;
     const selectedSpecialtyId = specialtyId ?? onlySpecialty?.id ?? null;
     const selectedSpecialty = doctor.specialties.find((specialty) => specialty.id === selectedSpecialtyId) ?? null;
@@ -45,6 +84,13 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
         go({ date, specialty_id: selectedSpecialtyId ?? undefined });
     };
 
+    const changeMonth = (next: string) => {
+        setMonth(next);
+        if (staffDay) {
+            go({ date: next, specialty_id: selectedSpecialtyId ?? undefined });
+        }
+    };
+
     const chooseSpecialty = (value: string) => {
         go({
             date: selectedDate ?? undefined,
@@ -54,6 +100,25 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
 
     const book = (startsAt: string) => {
         if (!selectedSpecialtyId) {
+            return;
+        }
+        if (assigning) {
+            if (patientId) {
+                router.post(
+                    `/admin/doctors/${doctor.id}/appointments`,
+                    {
+                        starts_at: startsAt,
+                        specialty_id: selectedSpecialtyId,
+                        patient_id: Number(patientId),
+                    },
+                    {
+                        onSuccess: () => {
+                            setBookingOpen(false);
+                            setPatientId('');
+                        },
+                    },
+                );
+            }
             return;
         }
         router.post(`/doctors/${doctor.id}/appointments`, {
@@ -97,7 +162,13 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
                         <strong>
                             {wallTime(slot.starts_at)} — {wallTime(slot.ends_at)}
                         </strong>
-                        <Btn type="button" size="sm" className="shrink-0" disabled={!selectedSpecialtyId} onClick={() => book(slot.starts_at)}>
+                        <Btn
+                            type="button"
+                            size="sm"
+                            className="shrink-0"
+                            disabled={!selectedSpecialtyId || (assigning && !patientId)}
+                            onClick={() => book(slot.starts_at)}
+                        >
                             <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                             Reservar
                         </Btn>
@@ -106,6 +177,69 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
             )}
         </PanelScroll>
     );
+
+    const staffDayTitle = staffDay ? `Agenda del ${formatDateLabel(staffDay.date)}` : null;
+
+    const staffDayBody = staffDay ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <DayTimeline
+                className="mt-[var(--space-xs)] min-h-[12rem] flex-1"
+                date={staffDay.date}
+                now={staffDay.now}
+                stepMinutes={doctor.slot_duration_minutes}
+                bands={staffDay.windows.map((window) => ({ key: window.id, starts_at: window.starts_at, ends_at: window.ends_at }))}
+                blocks={staffDay.appointments.map((appointment) => ({
+                    key: appointment.id,
+                    starts_at: appointment.starts_at,
+                    ends_at: appointment.ends_at,
+                    title: appointment.patient?.name ?? 'Paciente',
+                    subtitle: appointment.specialty?.name,
+                }))}
+                onBlockSelect={(key) => setOpenAppointmentId(Number(key))}
+            />
+            <div className="flex shrink-0 justify-end pt-[var(--space-sm)]">
+                <Btn type="button" onClick={() => setBookingOpen(true)}>
+                    <CalendarPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                    Agendar turno
+                </Btn>
+            </div>
+        </div>
+    ) : null;
+
+    const bookingDialog =
+        staffDay && bookingOpen ? (
+            <ConfirmDialog
+                title="Agendar turno"
+                message={`${doctor.user.name} · ${formatDateLabel(staffDay.date)}`}
+                onDismiss={() => setBookingOpen(false)}
+            >
+                <div className="flex max-h-[60dvh] min-h-0 flex-col">
+                    {specialtyField('slot_specialty_id_modal')}
+                    {patients ? (
+                        <Field label="Paciente" htmlFor="slot_patient_id" className="shrink-0">
+                            <Combobox
+                                id="slot_patient_id"
+                                value={patientId}
+                                placeholder="Elegí un paciente"
+                                searchLabel="Buscar por nombre o DNI"
+                                onChange={setPatientId}
+                                options={[
+                                    { value: '', label: 'Elegí un paciente' },
+                                    ...patients.map((patient) => ({ value: String(patient.id), label: `${patient.name} · DNI ${patient.dni}` })),
+                                ]}
+                            />
+                        </Field>
+                    ) : null}
+                    {dayBody}
+                </div>
+                <div className="flex justify-end">
+                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={() => setBookingOpen(false)}>
+                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                        Volver
+                    </Btn>
+                </div>
+            </ConfirmDialog>
+        ) : null;
 
     return (
         <>
@@ -126,31 +260,36 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
                         dayOpen={mobileDayOpen}
                         onBackToCalendar={() => {
                             setMobileDayOpen(false);
-                            go({ specialty_id: selectedSpecialtyId ?? undefined });
+                            if (!staffDay) {
+                                go({ specialty_id: selectedSpecialtyId ?? undefined });
+                            }
                         }}
                         calendar={
                             <div className="flex h-full min-h-0 flex-col gap-[var(--space-xs)]">
-                                {specialtyField('slot_specialty_id_mobile_cal')}
+                                {staffDay ? null : specialtyField('slot_specialty_id_mobile_cal')}
                                 <div className="flex min-h-0 flex-1 items-center justify-center">
                                     <CalendarMonth
                                         month={month}
                                         selected={selectedDate}
                                         tones={tones}
                                         onSelect={selectDay}
-                                        onMonthChange={setMonth}
-                                        legend={[
-                                            { tone: 'empty', label: 'Sin turnos' },
-                                            { tone: 'has', label: 'Con turnos' },
-                                        ]}
+                                        onMonthChange={changeMonth}
+                                        legend={legend}
                                     />
                                 </div>
                             </div>
                         }
                         panel={
-                            <Panel title={selectedDate ?? 'Próximos días con turnos'} className="h-full min-h-0 gap-0">
-                                {specialtyField('slot_specialty_id_mobile_day')}
-                                {dayBody}
-                            </Panel>
+                            staffDay ? (
+                                <Panel title={staffDayTitle} className="h-full min-h-0 gap-0">
+                                    {staffDayBody}
+                                </Panel>
+                            ) : (
+                                <Panel title={selectedDate ?? 'Próximos días con turnos'} className="h-full min-h-0 gap-0">
+                                    {specialtyField('slot_specialty_id_mobile_day')}
+                                    {dayBody}
+                                </Panel>
+                            )
                         }
                     />
 
@@ -160,19 +299,31 @@ export default function DoctorSlots({ doctor, selectedDate, daysWithSlots, slots
                             selected={selectedDate}
                             tones={tones}
                             onSelect={selectDay}
-                            onMonthChange={setMonth}
-                            legend={[
-                                { tone: 'empty', label: 'Sin turnos' },
-                                { tone: 'has', label: 'Con turnos' },
-                            ]}
+                            onMonthChange={changeMonth}
+                            legend={legend}
                         />
-                        <Panel sheet title={!selectedDate ? 'Próximos días con turnos' : selectedDate}>
-                            {specialtyField('slot_specialty_id')}
-                            {dayBody}
-                        </Panel>
+                        {staffDay ? (
+                            <Panel title={staffDayTitle} className="gap-0">
+                                {staffDayBody}
+                            </Panel>
+                        ) : (
+                            <Panel sheet title={!selectedDate ? 'Próximos días con turnos' : selectedDate}>
+                                {specialtyField('slot_specialty_id')}
+                                {dayBody}
+                            </Panel>
+                        )}
                     </StageCard>
                 </StageCard>
             </PageScreen>
+            {bookingDialog}
+            {openAppointment ? (
+                <TimelineAppointmentDialog
+                    appointment={openAppointment}
+                    profileHref={canViewPatient ? `/admin/patients/${openAppointment.patient_id}` : null}
+                    canCancel={canCancel}
+                    onDismiss={() => setOpenAppointmentId(null)}
+                />
+            ) : null}
         </>
     );
 }

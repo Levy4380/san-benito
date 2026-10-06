@@ -47,9 +47,9 @@ export default function AdminPatients({ patients, filters }: Props) {
                         empty={hasFilters ? 'No hay pacientes con esos filtros.' : 'Todavía no hay pacientes.'}
                         items={patients.map((patient) => ({
                             key: patient.id,
-                            title: patient.user.name,
-                            lines: [patient.user.email, `DNI ${patient.dni}`],
-                            actions: [{ kind: 'info', href: `/admin/patients/${patient.id}`, name: patient.user.name }],
+                            title: patient.name,
+                            lines: [patient.email, `DNI ${patient.dni}`],
+                            actions: [{ kind: 'info', href: `/admin/patients/${patient.id}`, name: patient.name }],
                         }))}
                         primary={
                             <Field label="Nombre, DNI o correo" htmlFor="q" flush className="min-w-0">

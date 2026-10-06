@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Permission;
 use App\Models\Doctor;
+use App\Services\AgendaService;
 use App\Services\AvailabilityService;
 use App\Services\DoctorSearchService;
+use App\Services\PatientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -17,10 +20,17 @@ class DoctorSlotsController extends Controller
         Doctor $doctor,
         AvailabilityService $availability,
         DoctorSearchService $search,
+        AgendaService $agenda,
+        PatientService $patients,
     ): Response {
         $doctor = $search->profile($doctor);
+        $staff = Permission::AppointmentsCatalogView->allows($request->user());
         $day = $request->string('date')->toString();
-        $selectedDate = $day !== '' ? Carbon::parse($day)->toDateString() : null;
+        $selectedDate = match (true) {
+            $day !== '' => Carbon::parse($day)->toDateString(),
+            $staff => now()->toDateString(),
+            default => null,
+        };
 
         $daysWithSlots = $availability->upcomingDaysWithSlots($doctor, 5);
 
@@ -44,6 +54,8 @@ class DoctorSlotsController extends Controller
             'slots' => $daySlots,
             'previewDays' => $daysWithSlots,
             'specialtyId' => $specialty?->id,
+            ...($staff && $selectedDate ? $agenda->staffDayTimeline($doctor, $selectedDate) : []),
+            ...(Permission::AppointmentsAssign->allows($request->user()) ? ['patients' => $patients->options()] : []),
         ]);
     }
 }

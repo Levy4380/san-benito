@@ -23,6 +23,8 @@ type Props = {
     paint?: boolean;
     selectedDates?: string[];
     blockWeekends?: boolean;
+    /** Y-m-d days that cannot be painted or selected. */
+    disabledDates?: string[];
     minDate?: string;
     /** Y-m-d (or wall datetime) from the server. Days before it stay clickable, at lower opacity. */
     today?: string;
@@ -39,6 +41,7 @@ export default function CalendarMonth({
     paint,
     selectedDates,
     blockWeekends,
+    disabledDates,
     minDate,
     today,
     legend,
@@ -148,7 +151,7 @@ export default function CalendarMonth({
                 ))}
                 {days.map((day) => {
                     const tone = tones?.[day.key] ?? 'empty';
-                    const blocked = Boolean(blockWeekends && isWeekendKey(day.key));
+                    const blocked = Boolean((blockWeekends && isWeekendKey(day.key)) || disabledDates?.includes(day.key));
                     const isPast = Boolean(minDate && day.key < minDate);
                     const isDimmed = Boolean(todayKey && day.inMonth && day.key < todayKey);
                     const isMuted = !day.inMonth || blocked || isPast;

@@ -46,14 +46,14 @@ class RejectedRequestFeedbackTest extends TestCase
             ->assertSessionHasErrors()
             ->assertSessionHas('toast', function (array $toast): bool {
                 return ($toast['variant'] ?? null) === 'warn'
-                    && str_contains((string) ($toast['message'] ?? ''), 'solapa');
+                    && str_contains((string) ($toast['message'] ?? ''), 'franjas');
             });
 
         $this->assertTrue(
             collect($logged)->contains(
                 fn (MessageLogged $event) => $event->level === 'warning'
                     && str_contains($event->message, 'Pedido rechazado')
-                    && str_contains($event->message, 'solapa')
+                    && str_contains($event->message, 'franjas')
             ),
             'Expected a warning log for the overlapping window rejection.',
         );

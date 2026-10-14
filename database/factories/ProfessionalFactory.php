@@ -2,17 +2,17 @@
 
 namespace Database\Factories;
 
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Models\Specialty;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Doctor>
+ * @extends Factory<Professional>
  */
-class DoctorFactory extends Factory
+class ProfessionalFactory extends Factory
 {
-    protected $model = Doctor::class;
+    protected $model = Professional::class;
 
     public function definition(): array
     {
@@ -25,13 +25,13 @@ class DoctorFactory extends Factory
 
     public function configure(): static
     {
-        return $this->afterCreating(function (Doctor $doctor): void {
-            if ($doctor->specialties()->exists()) {
+        return $this->afterCreating(function (Professional $professional): void {
+            if ($professional->specialties()->exists()) {
                 return;
             }
 
             $specialty = Specialty::query()->first() ?? Specialty::factory()->create();
-            $doctor->specialties()->attach($specialty->id);
+            $professional->specialties()->attach($specialty->id);
         });
     }
 }

@@ -3,28 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Services\AgendaService;
 use App\Services\AvailabilityService;
-use App\Services\DoctorSearchService;
 use App\Services\PatientService;
+use App\Services\ProfessionalSearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class DoctorSlotsController extends Controller
+class ProfessionalSlotsController extends Controller
 {
     public function index(
         Request $request,
-        Doctor $doctor,
+        Professional $professional,
         AvailabilityService $availability,
-        DoctorSearchService $search,
+        ProfessionalSearchService $search,
         AgendaService $agenda,
         PatientService $patients,
     ): Response {
-        $doctor = $search->profile($doctor);
-        $staff = Permission::AppointmentsCatalogView->allows($request->user());
+        $professional = $search->profile($professional);
+        $staff = $request->routeIs('admin.professionals.slots');
         $day = $request->string('date')->toString();
         $selectedDate = match (true) {
             $day !== '' => Carbon::parse($day)->toDateString(),
@@ -32,7 +32,7 @@ class DoctorSlotsController extends Controller
             default => null,
         };
 
-        $daysWithSlots = $availability->upcomingDaysWithSlots($doctor, 5);
+        $daysWithSlots = $availability->upcomingDaysWithSlots($professional, 5);
 
         $daySlots = collect();
         if ($selectedDate) {
@@ -43,26 +43,26 @@ class DoctorSlotsController extends Controller
                 ? ($dayEnd->lt(now())
                     ? collect()
                     : $availability->calculateSlots(
-                        $doctor,
+                        $professional,
                         $dayStart->lt(now()) ? now() : $dayStart,
                         $dayEnd,
                     )->values())
-                : $availability->nextOfferableSlotPerDay($doctor, $dayStart, $dayEnd);
+                : $availability->nextOfferableSlotPerDay($professional, $dayStart, $dayEnd);
         }
 
         $requestedSpecialtyId = $request->filled('specialty_id') ? $request->integer('specialty_id') : null;
         $specialty = $requestedSpecialtyId
-            ? $doctor->specialties->firstWhere('id', $requestedSpecialtyId)
+            ? $professional->specialties->firstWhere('id', $requestedSpecialtyId)
             : null;
 
-        return Inertia::render('Doctors/Slots', [
-            'doctor' => $doctor,
+        return Inertia::render('Professionals/Slots', [
+            'professional' => $professional,
             'selectedDate' => $selectedDate,
             'daysWithSlots' => $daysWithSlots,
             'slots' => $daySlots,
             'previewDays' => $daysWithSlots,
             'specialtyId' => $specialty?->id,
-            ...($staff && $selectedDate ? $agenda->staffDayTimeline($doctor, $selectedDate) : []),
+            ...($staff && $selectedDate ? $agenda->staffDayTimeline($professional, $selectedDate) : []),
             ...(Permission::AppointmentsAssign->allows($request->user()) ? ['patients' => $patients->options()] : []),
         ]);
     }

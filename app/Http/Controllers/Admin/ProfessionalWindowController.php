@@ -6,19 +6,19 @@ use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProgramAvailabilityWindowsRequest;
 use App\Http\Requests\StoreAvailabilityWindowRequest;
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Services\AvailabilityWindowService;
 use Illuminate\Http\RedirectResponse;
 
-class DoctorWindowController extends Controller
+class ProfessionalWindowController extends Controller
 {
     public function store(
         StoreAvailabilityWindowRequest $request,
-        Doctor $doctor,
+        Professional $professional,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityCreate);
-        $windows->createShortWindow($doctor, $request->validated('starts_at'));
+        $windows->assertOwnedBy($request->user(), $professional, Permission::AvailabilityCreate);
+        $windows->createShortWindow($professional, $request->validated('starts_at'));
 
         return back()->with('toast', [
             'message' => 'Cargaste el horario.',
@@ -28,14 +28,14 @@ class DoctorWindowController extends Controller
 
     public function program(
         ProgramAvailabilityWindowsRequest $request,
-        Doctor $doctor,
+        Professional $professional,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityProgram);
+        $windows->assertOwnedBy($request->user(), $professional, Permission::AvailabilityProgram);
         $data = $request->validated();
 
         $windows->program(
-            $doctor,
+            $professional,
             $data['dates'],
             $data['ranges'],
             (bool) ($data['block_weekends'] ?? false),

@@ -25,12 +25,12 @@ class PatientChartWithoutAccountTest extends TestCase
     public function test_super_admin_creates_a_chart_without_a_user_and_it_can_be_listed_and_linked(): void
     {
         $super = $this->makeSuperAdmin();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $usersBefore = User::query()->count();
         $rolesBefore = DB::table('model_has_roles')->count();
 
         $this->actingAs($super)
-            ->post('/admin/patients', [
+            ->post('/patients', [
                 'with_account' => false,
                 'name' => 'Nora Sin Cuenta',
                 'email' => 'nora.sin@example.com',
@@ -40,7 +40,7 @@ class PatientChartWithoutAccountTest extends TestCase
                 'phone' => '1199990000',
                 'health_insurance_id' => '',
             ])
-            ->assertRedirect('/admin/patients')
+            ->assertRedirect('/admin/pacientes')
             ->assertSessionHas('toast.message', 'Creaste el paciente.');
 
         $this->assertAuthenticatedAs($super);
@@ -56,7 +56,7 @@ class PatientChartWithoutAccountTest extends TestCase
         $this->assertSame(0, $chart->healthInsurances()->count());
 
         $this->actingAs($super)
-            ->get('/admin/patients')
+            ->get('/admin/pacientes')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Patients')
@@ -67,12 +67,12 @@ class PatientChartWithoutAccountTest extends TestCase
                 ->where('patients.0.user', null));
 
         $this->actingAs($super)
-            ->get('/admin/patients?q=nora.sin')
+            ->get('/admin/pacientes?q=nora.sin')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('patients', 1)->where('patients.0.id', $chart->id));
 
-        $this->actingAs($doctor->user)
-            ->get('/my-patients?q=Nora')
+        $this->actingAs($professional->user)
+            ->get('/profesional/mis-pacientes?q=Nora')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('candidates', 1)
@@ -80,12 +80,12 @@ class PatientChartWithoutAccountTest extends TestCase
                 ->where('candidates.0.name', 'Nora Sin Cuenta')
                 ->where('candidates.0.user', null));
 
-        $this->actingAs($doctor->user)
+        $this->actingAs($professional->user)
             ->post('/my-patients', ['patient_id' => $chart->id])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('doctor_patient', [
-            'doctor_id' => $doctor->id,
+        $this->assertDatabaseHas('professional_patient', [
+            'professional_id' => $professional->id,
             'patient_id' => $chart->id,
         ]);
     }
@@ -94,7 +94,7 @@ class PatientChartWithoutAccountTest extends TestCase
     {
         $osde = HealthInsurance::factory()->create(['name' => 'OSDE']);
         $swiss = HealthInsurance::factory()->create(['name' => 'Swiss Medical']);
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $chart = Patient::factory()->withoutUser()->create([
             'name' => 'Ficha Vieja',
             'email' => 'ficha@example.com',
@@ -103,10 +103,10 @@ class PatientChartWithoutAccountTest extends TestCase
             'birth_date' => '1988-07-21',
         ]);
         $chart->healthInsurances()->sync([$osde->id]);
-        $doctor->patients()->syncWithoutDetaching([$chart->id]);
+        $professional->patients()->syncWithoutDetaching([$chart->id]);
         $appointment = Appointment::factory()->create([
             'patient_id' => $chart->id,
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
         ]);
 
         $this->post('/register', [
@@ -118,7 +118,7 @@ class PatientChartWithoutAccountTest extends TestCase
             'birth_date' => '1988-07-21',
             'phone' => '1155556666',
             'health_insurance_id' => $swiss->id,
-        ])->assertRedirect('/');
+        ])->assertRedirect('/paciente');
 
         $this->assertAuthenticated();
         $this->assertSame(1, Patient::query()->count());
@@ -139,15 +139,15 @@ class PatientChartWithoutAccountTest extends TestCase
             'id' => $appointment->id,
             'patient_id' => $chart->id,
         ]);
-        $this->assertDatabaseHas('doctor_patient', [
-            'doctor_id' => $doctor->id,
+        $this->assertDatabaseHas('professional_patient', [
+            'professional_id' => $professional->id,
             'patient_id' => $chart->id,
         ]);
     }
 
     public function test_register_rejects_an_existing_user_email_without_new_rows(): void
     {
-        $this->makeDoctor(['email' => 'doc@example.com']);
+        $this->makeProfessional(['email' => 'doc@example.com']);
         $users = User::query()->count();
         $patients = Patient::query()->count();
 
@@ -230,11 +230,11 @@ class PatientChartWithoutAccountTest extends TestCase
 
     public function test_deleting_the_user_keeps_the_chart_and_its_appointments(): void
     {
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $patient = $this->makePatient();
         $appointment = Appointment::factory()->create([
             'patient_id' => $patient->id,
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
         ]);
 
         $patient->user->delete();

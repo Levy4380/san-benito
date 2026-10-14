@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Appointment;
 use App\Models\Specialty;
 use App\Models\User;
+use App\Support\RoleRedirector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
@@ -20,25 +21,25 @@ class AdminSpecialtySettingsTest extends TestCase
         $this->seedCatalog();
     }
 
-    public function test_24_patient_doctor_and_admin_cannot_manage_specialties(): void
+    public function test_24_patient_professional_and_admin_cannot_manage_specialties(): void
     {
         $patient = $this->makePatient();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $admin = $this->makeAdmin();
         $specialty = Specialty::query()->firstOrFail();
 
-        foreach ([$patient->user, $doctor->user, $admin] as $user) {
-            $this->actingAs($user)->get('/admin/settings')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/settings/specialties')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/settings/specialties/create')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/settings/specialties/'.$specialty->id.'/edit')->assertRedirect('/');
-            $this->actingAs($user)->post('/admin/settings/specialties', ['name' => 'Oftalmología'])->assertRedirect('/');
-            $this->actingAs($user)->patch('/admin/settings/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertRedirect('/');
-            $this->actingAs($user)->delete('/admin/settings/specialties/'.$specialty->id)->assertRedirect('/');
-            $this->actingAs($user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
-            $this->actingAs($user)->patch('/admin/doctors/'.$doctor->id.'/specialties', [
+        foreach ([$patient->user, $professional->user, $admin] as $user) {
+            $this->actingAs($user)->get('/admin/configuracion')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/configuracion/especialidades')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/configuracion/especialidades/crear')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/configuracion/especialidades/'.$specialty->id.'/editar')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->post('/specialties', ['name' => 'Oftalmología'])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->patch('/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->delete('/specialties/'.$specialty->id)->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [$specialty->id],
-            ])->assertRedirect('/');
+            ])->assertRedirect(RoleRedirector::landing($user));
         }
 
         $this->assertDatabaseHas('specialties', [
@@ -52,34 +53,34 @@ class AdminSpecialtySettingsTest extends TestCase
         $super = $this->makeSuperAdmin();
 
         $this->actingAs($super)
-            ->get('/admin/settings')
+            ->get('/admin/configuracion')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Settings')
                 ->missing('specialties'));
 
         $this->actingAs($super)
-            ->get('/admin/settings/specialties')
+            ->get('/admin/configuracion/especialidades')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Specialties')
                 ->has('specialties'));
 
         $this->actingAs($super)
-            ->get('/admin/settings/specialties/create')
+            ->get('/admin/configuracion/especialidades/crear')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Admin/SpecialtyCreate'));
 
         $this->actingAs($super)
-            ->post('/admin/settings/specialties', ['name' => '  Oftalmología  '])
-            ->assertRedirect('/admin/settings/specialties');
+            ->post('/specialties', ['name' => '  Oftalmología  '])
+            ->assertRedirect('/admin/configuracion/especialidades');
 
         $this->assertDatabaseHas('specialties', ['name' => 'Oftalmología']);
 
         $created = Specialty::query()->where('name', 'Oftalmología')->firstOrFail();
 
         $this->actingAs($this->makeAdmin())
-            ->post('/admin/doctors', [
+            ->post('/professionals', [
                 'name' => 'Carla Ruiz',
                 'email' => 'carla@example.com',
                 'password' => 'password',
@@ -88,26 +89,26 @@ class AdminSpecialtySettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertNotNull(User::query()->where('email', 'carla@example.com')->first()?->doctor);
+        $this->assertNotNull(User::query()->where('email', 'carla@example.com')->first()?->professional);
 
         $this->actingAs($super)
-            ->post('/admin/settings/specialties', ['name' => 'Oftalmología'])
+            ->post('/specialties', ['name' => 'Oftalmología'])
             ->assertSessionHasErrors('name');
 
         $neurologia = Specialty::factory()->create(['name' => 'Neurología']);
 
         $this->actingAs($super)
-            ->get('/admin/settings/specialties/'.$neurologia->id.'/edit')
+            ->get('/admin/configuracion/especialidades/'.$neurologia->id.'/editar')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/SpecialtyEdit')
                 ->where('specialty.id', $neurologia->id)
                 ->where('specialty.name', 'Neurología')
-                ->has('doctors'));
+                ->has('professionals'));
 
         $this->actingAs($super)
-            ->patch('/admin/settings/specialties/'.$neurologia->id, ['name' => 'Neurología clínica'])
-            ->assertRedirect('/admin/settings/specialties');
+            ->patch('/specialties/'.$neurologia->id, ['name' => 'Neurología clínica'])
+            ->assertRedirect('/admin/configuracion/especialidades');
 
         $this->assertDatabaseHas('specialties', [
             'id' => $neurologia->id,
@@ -115,36 +116,36 @@ class AdminSpecialtySettingsTest extends TestCase
         ]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/specialties/'.$neurologia->id, ['name' => 'Oftalmología'])
+            ->patch('/specialties/'.$neurologia->id, ['name' => 'Oftalmología'])
             ->assertSessionHasErrors('name');
 
         $this->actingAs($super)
-            ->patch('/admin/settings/specialties/'.$neurologia->id, ['name' => 'Neurología clínica'])
-            ->assertRedirect('/admin/settings/specialties');
+            ->patch('/specialties/'.$neurologia->id, ['name' => 'Neurología clínica'])
+            ->assertRedirect('/admin/configuracion/especialidades');
 
         $unused = Specialty::factory()->create(['name' => 'Temporal']);
 
         $this->actingAs($super)
-            ->delete('/admin/settings/specialties/'.$unused->id)
+            ->delete('/specialties/'.$unused->id)
             ->assertRedirect();
 
         $this->assertDatabaseMissing('specialties', ['id' => $unused->id]);
     }
 
-    public function test_24_super_admin_deletes_specialty_and_detaches_doctors(): void
+    public function test_24_super_admin_deletes_specialty_and_detaches_professionals(): void
     {
         $super = $this->makeSuperAdmin();
         $kept = Specialty::factory()->create(['name' => 'Se queda']);
         $removed = Specialty::factory()->create(['name' => 'En uso']);
-        $onlyThat = $this->makeDoctor(['name' => 'Solo esa'], ['specialty_id' => $removed->id]);
-        $alsoOther = $this->makeDoctor(['name' => 'También otra'], ['specialty_ids' => [$removed->id, $kept->id]]);
+        $onlyThat = $this->makeProfessional(['name' => 'Solo esa'], ['specialty_id' => $removed->id]);
+        $alsoOther = $this->makeProfessional(['name' => 'También otra'], ['specialty_ids' => [$removed->id, $kept->id]]);
 
         $this->actingAs($super)
-            ->delete('/admin/settings/specialties/'.$removed->id)
+            ->delete('/specialties/'.$removed->id)
             ->assertRedirect();
 
         $this->assertDatabaseMissing('specialties', ['id' => $removed->id]);
-        $this->assertDatabaseMissing('doctor_specialty', ['specialty_id' => $removed->id]);
+        $this->assertDatabaseMissing('professional_specialty', ['specialty_id' => $removed->id]);
         $this->assertTrue($onlyThat->fresh()->specialties()->doesntExist());
         $this->assertEqualsCanonicalizing(
             [$kept->id],
@@ -154,112 +155,112 @@ class AdminSpecialtySettingsTest extends TestCase
         $this->assertNotNull($alsoOther->fresh());
     }
 
-    public function test_24_super_admin_syncs_associated_doctors_and_can_leave_zero(): void
+    public function test_24_super_admin_syncs_associated_professionals_and_can_leave_zero(): void
     {
         $super = $this->makeSuperAdmin();
         $specialty = Specialty::factory()->create(['name' => 'Dermatología clínica']);
         $other = Specialty::factory()->create(['name' => 'Otra']);
-        $assigned = $this->makeDoctor(['name' => 'Ana Asignada'], ['specialty_ids' => [$specialty->id, $other->id]]);
-        $candidate = $this->makeDoctor(['name' => 'Luis Candidato'], ['specialty_id' => $other->id]);
+        $assigned = $this->makeProfessional(['name' => 'Ana Asignada'], ['specialty_ids' => [$specialty->id, $other->id]]);
+        $candidate = $this->makeProfessional(['name' => 'Luis Candidato'], ['specialty_id' => $other->id]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/specialties/'.$specialty->id, [
+            ->patch('/specialties/'.$specialty->id, [
                 'name' => 'Dermatología clínica',
-                'doctor_ids' => [$candidate->id],
+                'professional_ids' => [$candidate->id],
             ])
-            ->assertRedirect('/admin/settings/specialties');
+            ->assertRedirect('/admin/configuracion/especialidades');
 
-        $this->assertDatabaseHas('doctor_specialty', [
-            'doctor_id' => $candidate->id,
+        $this->assertDatabaseHas('professional_specialty', [
+            'professional_id' => $candidate->id,
             'specialty_id' => $specialty->id,
         ]);
-        $this->assertDatabaseMissing('doctor_specialty', [
-            'doctor_id' => $assigned->id,
+        $this->assertDatabaseMissing('professional_specialty', [
+            'professional_id' => $assigned->id,
             'specialty_id' => $specialty->id,
         ]);
-        $this->assertDatabaseHas('doctor_specialty', [
-            'doctor_id' => $assigned->id,
+        $this->assertDatabaseHas('professional_specialty', [
+            'professional_id' => $assigned->id,
             'specialty_id' => $other->id,
         ]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/specialties/'.$specialty->id, [
+            ->patch('/specialties/'.$specialty->id, [
                 'name' => 'Dermatología clínica',
-                'doctor_ids' => [],
+                'professional_ids' => [],
             ])
-            ->assertRedirect('/admin/settings/specialties');
+            ->assertRedirect('/admin/configuracion/especialidades');
 
-        $this->assertDatabaseMissing('doctor_specialty', ['specialty_id' => $specialty->id]);
+        $this->assertDatabaseMissing('professional_specialty', ['specialty_id' => $specialty->id]);
         $this->assertTrue($candidate->fresh()->specialties()->whereKey($other->id)->exists());
     }
 
-    public function test_24_super_admin_associates_specialties_from_doctor_profile(): void
+    public function test_24_super_admin_associates_specialties_from_professional_profile(): void
     {
         $super = $this->makeSuperAdmin();
         $kept = Specialty::factory()->create(['name' => 'Clínica extra']);
         $added = Specialty::factory()->create(['name' => 'Nueva asociación']);
-        $doctor = $this->makeDoctor(['name' => 'Ana Perfil'], ['specialty_id' => $kept->id]);
+        $professional = $this->makeProfessional(['name' => 'Ana Perfil'], ['specialty_id' => $kept->id]);
 
         $this->actingAs($this->makePatient()->user)
-            ->get('/doctors/'.$doctor->id)
+            ->get('/paciente/profesionales/'.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Show')
+                ->component('Professionals/Show')
                 ->missing('specialties'));
 
         $this->actingAs($this->makeAdmin())
-            ->get('/doctors/'.$doctor->id)
+            ->get('/admin/profesionales/'.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Show')
+                ->component('Professionals/Show')
                 ->missing('specialties'));
 
         $this->actingAs($this->makeAdmin())
-            ->get('/doctors/'.$doctor->id.'/specialties')
-            ->assertRedirect('/');
+            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
+            ->assertRedirect('/admin');
 
         $this->actingAs($super)
-            ->get('/doctors/'.$doctor->id)
+            ->get('/paciente/profesionales/'.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Show')
+                ->component('Professionals/Show')
                 ->missing('specialties'));
 
         $this->actingAs($super)
-            ->get('/doctors/'.$doctor->id.'/specialties')
+            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Specialties')
+                ->component('Professionals/Specialties')
                 ->has('specialties', Specialty::query()->count()));
 
         $this->actingAs($super)
-            ->patch('/admin/doctors/'.$doctor->id.'/specialties', [
+            ->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [$added->id],
             ])
-            ->assertRedirect('/doctors/'.$doctor->id);
+            ->assertRedirect('/admin/profesionales/'.$professional->id);
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
-            $doctor->fresh()->specialties()->pluck('specialties.id')->all(),
+            $professional->fresh()->specialties()->pluck('specialties.id')->all(),
         );
 
         $this->actingAs($super)
-            ->patch('/admin/doctors/'.$doctor->id.'/specialties', [
+            ->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [],
             ])
-            ->assertRedirect('/doctors/'.$doctor->id);
+            ->assertRedirect('/admin/profesionales/'.$professional->id);
 
-        $this->assertTrue($doctor->fresh()->specialties()->doesntExist());
+        $this->assertTrue($professional->fresh()->specialties()->doesntExist());
     }
 
     public function test_24_cannot_delete_specialty_with_appointments(): void
     {
         $super = $this->makeSuperAdmin();
         $specialty = Specialty::factory()->create(['name' => 'Con turnos']);
-        $doctor = $this->makeDoctor(['name' => 'Ana Con turno'], ['specialty_id' => $specialty->id]);
+        $professional = $this->makeProfessional(['name' => 'Ana Con turno'], ['specialty_id' => $specialty->id]);
         $patient = $this->makePatient();
         Appointment::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'specialty_id' => $specialty->id,
             'starts_at' => now()->subDay()->setTime(10, 0, 0),
@@ -267,13 +268,13 @@ class AdminSpecialtySettingsTest extends TestCase
         ]);
 
         $this->actingAs($super)
-            ->delete('/admin/settings/specialties/'.$specialty->id)
+            ->delete('/specialties/'.$specialty->id)
             ->assertSessionHasErrors('specialty');
 
         $this->assertDatabaseHas('specialties', ['id' => $specialty->id, 'name' => 'Con turnos']);
         $this->assertDatabaseHas('appointments', ['specialty_id' => $specialty->id]);
-        $this->assertDatabaseHas('doctor_specialty', [
-            'doctor_id' => $doctor->id,
+        $this->assertDatabaseHas('professional_specialty', [
+            'professional_id' => $professional->id,
             'specialty_id' => $specialty->id,
         ]);
     }

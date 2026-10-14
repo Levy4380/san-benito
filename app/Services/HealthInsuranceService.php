@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Doctor;
 use App\Models\HealthInsurance;
+use App\Models\Professional;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +15,7 @@ class HealthInsuranceService
     public function list(): Collection
     {
         return HealthInsurance::query()
-            ->withCount('doctors')
+            ->withCount('professionals')
             ->orderBy('name')
             ->get();
     }
@@ -31,23 +31,23 @@ class HealthInsuranceService
     }
 
     /**
-     * @return array{healthInsurance: array{id: int, name: string}, doctors: list<array{id: int, name: string, assigned: bool}>}
+     * @return array{healthInsurance: array{id: int, name: string}, professionals: list<array{id: int, name: string, assigned: bool}>}
      */
     public function editForm(HealthInsurance $healthInsurance): array
     {
-        $assigned = $healthInsurance->doctors()->pluck('doctors.id')->all();
+        $assigned = $healthInsurance->professionals()->pluck('professionals.id')->all();
         $assignedSet = array_flip($assigned);
 
-        $doctors = Doctor::query()
+        $professionals = Professional::query()
             ->with('user')
-            ->join('users', 'users.id', '=', 'doctors.user_id')
+            ->join('users', 'users.id', '=', 'professionals.user_id')
             ->orderBy('users.name')
-            ->select('doctors.*')
+            ->select('professionals.*')
             ->get()
-            ->map(fn (Doctor $doctor): array => [
-                'id' => $doctor->id,
-                'name' => $doctor->user->name,
-                'assigned' => isset($assignedSet[$doctor->id]),
+            ->map(fn (Professional $professional): array => [
+                'id' => $professional->id,
+                'name' => $professional->user->name,
+                'assigned' => isset($assignedSet[$professional->id]),
             ])
             ->all();
 
@@ -56,7 +56,7 @@ class HealthInsuranceService
                 'id' => $healthInsurance->id,
                 'name' => $healthInsurance->name,
             ],
-            'doctors' => $doctors,
+            'professionals' => $professionals,
         ];
     }
 
@@ -71,7 +71,7 @@ class HealthInsuranceService
     }
 
     /**
-     * @param  array{name: string, doctor_ids?: list<int>}  $data
+     * @param  array{name: string, professional_ids?: list<int>}  $data
      */
     public function update(HealthInsurance $healthInsurance, array $data): HealthInsurance
     {
@@ -80,8 +80,8 @@ class HealthInsuranceService
                 'name' => $data['name'],
             ]);
 
-            if (array_key_exists('doctor_ids', $data)) {
-                $healthInsurance->doctors()->sync($data['doctor_ids']);
+            if (array_key_exists('professional_ids', $data)) {
+                $healthInsurance->professionals()->sync($data['professional_ids']);
             }
 
             return $healthInsurance;

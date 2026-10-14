@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
 
-class DoctorSlotsTimelineTest extends TestCase
+class ProfessionalSlotsTimelineTest extends TestCase
 {
     use CreatesDomainUsers;
     use RefreshDatabase;
@@ -21,60 +21,60 @@ class DoctorSlotsTimelineTest extends TestCase
         $this->travelTo(Carbon::parse('2026-10-07 10:30:00'));
     }
 
-    public function test_admin_without_date_gets_today_timeline_of_that_doctor_only(): void
+    public function test_admin_without_date_gets_today_timeline_of_that_professional_only(): void
     {
         $admin = $this->makeAdmin();
-        $doctor = $this->makeDoctor();
-        $other = $this->makeDoctor();
+        $professional = $this->makeProfessional();
+        $other = $this->makeProfessional();
         $patient = $this->makePatient();
 
         $morning = AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 12:00:00',
         ]);
         $overnight = AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-06 22:00:00',
             'ends_at' => '2026-10-07 02:00:00',
         ]);
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-08 09:00:00',
             'ends_at' => '2026-10-08 12:00:00',
         ]);
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $other->id,
+            'professional_id' => $other->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 12:00:00',
         ]);
 
         $booked = Appointment::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 09:20:00',
         ]);
         Appointment::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'starts_at' => '2026-10-08 09:00:00',
             'ends_at' => '2026-10-08 09:20:00',
         ]);
         Appointment::factory()->create([
-            'doctor_id' => $other->id,
+            'professional_id' => $other->id,
             'patient_id' => $patient->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 09:20:00',
         ]);
 
         $this->actingAs($admin)
-            ->get('/doctors/'.$doctor->id.'/slots')
+            ->get('/admin/profesionales/'.$professional->id.'/horarios')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Slots')
+                ->component('Professionals/Slots')
                 ->where('selectedDate', '2026-10-07')
-                ->has('doctor.slot_duration_minutes')
+                ->has('professional.slot_duration_minutes')
                 ->has('timeline.windows', 2)
                 ->where('timeline.windows.0.id', $overnight->id)
                 ->where('timeline.windows.1.id', $morning->id)
@@ -98,15 +98,15 @@ class DoctorSlotsTimelineTest extends TestCase
     public function test_admin_with_date_gets_that_day(): void
     {
         $admin = $this->makeAdmin();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-09-15 09:00:00',
             'ends_at' => '2026-09-15 10:00:00',
         ]);
 
         $this->actingAs($admin)
-            ->get('/doctors/'.$doctor->id.'/slots?date=2026-09-15')
+            ->get('/admin/profesionales/'.$professional->id.'/horarios?date=2026-09-15')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('selectedDate', '2026-09-15')
@@ -116,41 +116,41 @@ class DoctorSlotsTimelineTest extends TestCase
                 ->has('slots', 0));
     }
 
-    public function test_doctor_agenda_gets_day_timeline_props(): void
+    public function test_professional_agenda_gets_day_timeline_props(): void
     {
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $patient = $this->makePatient();
 
         $overnight = AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-06 22:00:00',
             'ends_at' => '2026-10-07 02:00:00',
         ]);
         $morning = AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 12:00:00',
         ]);
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => '2026-10-08 09:00:00',
             'ends_at' => '2026-10-08 12:00:00',
         ]);
         $booked = Appointment::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'starts_at' => '2026-10-07 09:00:00',
             'ends_at' => '2026-10-07 09:20:00',
         ]);
 
-        $this->actingAs($doctor->user)
-            ->get('/agenda')
+        $this->actingAs($professional->user)
+            ->get('/profesional/agenda')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctor/Agenda')
+                ->component('Professional/Agenda')
                 ->where('selectedDate', '2026-10-07')
                 ->where('now', '2026-10-07 10:30:00')
-                ->has('doctor.slot_duration_minutes')
+                ->has('professional.slot_duration_minutes')
                 ->has('windows', 2)
                 ->where('windows.0.id', $overnight->id)
                 ->where('windows.1.id', $morning->id)
@@ -163,19 +163,19 @@ class DoctorSlotsTimelineTest extends TestCase
     public function test_patient_keeps_current_props_without_timeline(): void
     {
         $patient = $this->makePatient();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
 
         $this->actingAs($patient->user)
-            ->get('/doctors/'.$doctor->id.'/slots')
+            ->get('/paciente/profesionales/'.$professional->id.'/horarios')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Slots')
+                ->component('Professionals/Slots')
                 ->where('selectedDate', null)
                 ->missing('timeline')
                 ->missing('bookingTones'));
 
         $this->actingAs($patient->user)
-            ->get('/doctors/'.$doctor->id.'/slots?date=2026-10-07')
+            ->get('/paciente/profesionales/'.$professional->id.'/horarios?date=2026-10-07')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('selectedDate', '2026-10-07')

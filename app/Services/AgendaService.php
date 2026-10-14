@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
+use App\Models\Professional;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -12,33 +12,33 @@ class AgendaService
 {
     public function __construct(
         private readonly AvailabilityService $availability,
-        private readonly DoctorPatientService $links,
+        private readonly ProfessionalPatientService $links,
     ) {}
 
     /**
      * @return array<string, mixed>
      */
-    public function pageData(Doctor $doctor, ?string $date, mixed $panel = null): array
+    public function pageData(Professional $professional, ?string $date, mixed $panel = null): array
     {
         $selected = $date ? Carbon::parse($date) : now();
         $monthStart = $selected->copy()->startOfMonth()->startOfDay();
         $monthEnd = $selected->copy()->endOfMonth()->endOfDay();
 
         $windows = AvailabilityWindow::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($monthStart, $monthEnd)
             ->orderBy('starts_at')
             ->get();
 
         $appointments = Appointment::query()
-            ->forDoctor($doctor)
-            ->with(['doctor.user', 'doctor.specialties', 'patient.user', 'specialty'])
+            ->forProfessional($professional)
+            ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty'])
             ->whereBetween('starts_at', [$monthStart, $monthEnd])
             ->orderBy('starts_at')
             ->get();
 
         $slots = $this->availability->calculateSlots(
-            $doctor,
+            $professional,
             $monthStart->lt(now()) ? now() : $monthStart->copy(),
             $monthEnd,
         );
@@ -50,14 +50,14 @@ class AgendaService
         $dayEnd = $selected->copy()->endOfDay();
         $dayWindows = $windows->filter(fn (AvailabilityWindow $window) => $window->starts_at->lte($dayEnd) && $window->ends_at->gt($dayStart))->values();
 
-        $tones = $this->calendarTones($doctor, $monthStart, $monthEnd, $slots, $appointments, $windows);
+        $tones = $this->calendarTones($professional, $monthStart, $monthEnd, $slots, $appointments, $windows);
 
         $step = is_string($panel) && in_array($panel, ['day', 'load'], true)
             ? $panel
             : 'day';
 
         return [
-            'doctor' => $doctor->load(['user', 'specialties']),
+            'professional' => $professional->load(['user', 'specialties']),
             'selectedDate' => $dayKey,
             'panel' => $step,
             'windows' => $dayWindows,
@@ -70,50 +70,51 @@ class AgendaService
     }
 
     /**
-     * Data for the doctor's assign modal: linked patients, specialties, upcoming days with free slots and the free slots of one day.
+     * Data for the professional's assign modal: linked patients, specialties, upcoming days with free slots and the free slots of one day.
      *
      * @return array<string, mixed>
      */
-    public function assignOptions(Doctor $doctor, ?string $date): array
+    public function assignOptions(Professional $professional, ?string $date, ?string $month = null): array
     {
-        $days = $this->availability->upcomingDaysWithSlots($doctor, 10);
+        $days = $this->availability->upcomingDaysWithSlots($professional, 10);
         $day = $date ? Carbon::parse($date) : Carbon::parse($days->first() ?? now());
         $dayStart = $day->copy()->startOfDay();
         $dayEnd = $day->copy()->endOfDay();
 
         $slots = $dayEnd->lt(now())
             ? collect()
-            : $this->availability->calculateSlots($doctor, $dayStart->lt(now()) ? now() : $dayStart, $dayEnd)->values();
+            : $this->availability->calculateSlots($professional, $dayStart->lt(now()) ? now() : $dayStart, $dayEnd)->values();
 
         return [
             'date' => $day->toDateString(),
             'today' => now()->toDateString(),
             'days' => $days,
             'slots' => $slots,
-            'slotMinutes' => $doctor->slot_duration_minutes,
-            'timeline' => $this->dayTimeline($doctor, $day),
-            'patients' => $this->links->patientsFor($doctor)
+            'slotMinutes' => $professional->slot_duration_minutes,
+            'timeline' => $this->dayTimeline($professional, $day),
+            'tones' => $this->tonesForMonth($professional, Carbon::parse($month ?? now()->toDateString())),
+            'patients' => $this->links->patientsFor($professional)
                 ->map(fn ($patient) => ['id' => $patient->id, 'name' => $patient->name, 'dni' => $patient->dni])
                 ->values(),
-            'specialties' => $doctor->specialties()->orderBy('name')->get(['specialties.id', 'specialties.name'])
+            'specialties' => $professional->specialties()->orderBy('name')->get(['specialties.id', 'specialties.name'])
                 ->map(fn ($specialty) => ['id' => $specialty->id, 'name' => $specialty->name])
                 ->values(),
         ];
     }
 
     /**
-     * Staff view of one doctor day: windows as bands, bookings as blocks, month tones by booking.
+     * Staff view of one professional day: windows as bands, bookings as blocks, month tones by booking.
      *
      * @return array{timeline: array<string, mixed>, bookingTones: array<string, string>}
      */
-    public function staffDayTimeline(Doctor $doctor, string $date): array
+    public function staffDayTimeline(Professional $professional, string $date): array
     {
         $day = Carbon::parse($date);
         $monthStart = $day->copy()->startOfMonth()->startOfDay();
         $monthEnd = $day->copy()->endOfMonth()->endOfDay();
 
         $bookedDays = Appointment::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->whereBetween('starts_at', [$monthStart, $monthEnd])
             ->pluck('starts_at')
             ->map(fn (Carbon $startsAt) => $startsAt->toDateString())
@@ -127,7 +128,7 @@ class AgendaService
         }
 
         return [
-            'timeline' => $this->dayTimeline($doctor, $day),
+            'timeline' => $this->dayTimeline($professional, $day),
             'bookingTones' => $bookingTones,
         ];
     }
@@ -137,19 +138,19 @@ class AgendaService
      *
      * @return array{windows: Collection<int, AvailabilityWindow>, appointments: Collection<int, Appointment>, now: string}
      */
-    private function dayTimeline(Doctor $doctor, Carbon $day): array
+    private function dayTimeline(Professional $professional, Carbon $day): array
     {
         $dayStart = $day->copy()->startOfDay();
         $dayEnd = $day->copy()->endOfDay();
 
         return [
             'windows' => AvailabilityWindow::query()
-                ->forDoctor($doctor)
+                ->forProfessional($professional)
                 ->overlapping($dayStart, $dayEnd)
                 ->orderBy('starts_at')
                 ->get(),
             'appointments' => Appointment::query()
-                ->forDoctor($doctor)
+                ->forProfessional($professional)
                 ->whereDate('starts_at', $dayStart->toDateString())
                 ->with(['patient', 'specialty'])
                 ->orderBy('starts_at')
@@ -161,26 +162,51 @@ class AgendaService
     /**
      * @return array<string, string>
      */
-    public function tonesForNearbyMonths(Doctor $doctor): array
+    public function tonesForMonth(Professional $professional, Carbon $month): array
     {
-        $monthStart = now()->copy()->startOfMonth()->subMonths(1)->startOfDay();
-        $monthEnd = now()->copy()->addMonths(2)->endOfMonth()->endOfDay();
+        $monthStart = $month->copy()->startOfMonth()->startOfDay();
+        $monthEnd = $month->copy()->endOfMonth()->endOfDay();
         $windows = AvailabilityWindow::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($monthStart, $monthEnd)
             ->orderBy('starts_at')
             ->get();
         $appointments = Appointment::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->whereBetween('starts_at', [$monthStart, $monthEnd])
             ->get();
         $slots = $this->availability->calculateSlots(
-            $doctor,
+            $professional,
             $monthStart->lt(now()) ? now() : $monthStart->copy(),
             $monthEnd,
         );
 
-        return $this->calendarTones($doctor, $monthStart, $monthEnd, $slots, $appointments, $windows);
+        return $this->calendarTones($professional, $monthStart, $monthEnd, $slots, $appointments, $windows);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function tonesForNearbyMonths(Professional $professional): array
+    {
+        $monthStart = now()->copy()->startOfMonth()->subMonths(1)->startOfDay();
+        $monthEnd = now()->copy()->addMonths(2)->endOfMonth()->endOfDay();
+        $windows = AvailabilityWindow::query()
+            ->forProfessional($professional)
+            ->overlapping($monthStart, $monthEnd)
+            ->orderBy('starts_at')
+            ->get();
+        $appointments = Appointment::query()
+            ->forProfessional($professional)
+            ->whereBetween('starts_at', [$monthStart, $monthEnd])
+            ->get();
+        $slots = $this->availability->calculateSlots(
+            $professional,
+            $monthStart->lt(now()) ? now() : $monthStart->copy(),
+            $monthEnd,
+        );
+
+        return $this->calendarTones($professional, $monthStart, $monthEnd, $slots, $appointments, $windows);
     }
 
     /**
@@ -190,7 +216,7 @@ class AgendaService
      * @return array<string, string>
      */
     private function calendarTones(
-        Doctor $doctor,
+        Professional $professional,
         Carbon $monthStart,
         Carbon $monthEnd,
         Collection $slots,

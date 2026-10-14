@@ -2,8 +2,8 @@
 
 namespace Tests\Concerns;
 
-use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Professional;
 use App\Models\Specialty;
 use App\Models\User;
 
@@ -20,33 +20,33 @@ trait CreatesDomainUsers
         return $patientModel->load('user');
     }
 
-    protected function makeDoctor(array $user = [], array $doctor = []): Doctor
+    protected function makeProfessional(array $user = [], array $professional = []): Professional
     {
         $userModel = User::factory()->create($user);
-        $specialtyIds = $this->specialtyIdsFromDoctorAttributes($doctor);
-        unset($doctor['specialty_id'], $doctor['specialty_ids']);
+        $specialtyIds = $this->specialtyIdsFromProfessionalAttributes($professional);
+        unset($professional['specialty_id'], $professional['specialty_ids']);
 
-        $doctorModel = Doctor::factory()->create(array_merge([
+        $professionalModel = Professional::factory()->create(array_merge([
             'user_id' => $userModel->id,
-        ], $doctor));
-        $doctorModel->specialties()->sync($specialtyIds);
-        $userModel->assignRole('doctor');
+        ], $professional));
+        $professionalModel->specialties()->sync($specialtyIds);
+        $userModel->assignRole('professional');
 
-        return $doctorModel->load(['user', 'specialties']);
+        return $professionalModel->load(['user', 'specialties']);
     }
 
     /**
-     * @param  array<string, mixed>  $doctor
+     * @param  array<string, mixed>  $professional
      * @return list<int>
      */
-    private function specialtyIdsFromDoctorAttributes(array $doctor): array
+    private function specialtyIdsFromProfessionalAttributes(array $professional): array
     {
-        if (array_key_exists('specialty_ids', $doctor)) {
-            return array_values(array_map('intval', (array) $doctor['specialty_ids']));
+        if (array_key_exists('specialty_ids', $professional)) {
+            return array_values(array_map('intval', (array) $professional['specialty_ids']));
         }
 
-        if (array_key_exists('specialty_id', $doctor)) {
-            return [(int) $doctor['specialty_id']];
+        if (array_key_exists('specialty_id', $professional)) {
+            return [(int) $professional['specialty_id']];
         }
 
         $specialty = Specialty::query()->first() ?? Specialty::factory()->create(['name' => 'Clínica Médica']);

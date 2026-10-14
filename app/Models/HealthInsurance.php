@@ -19,9 +19,9 @@ class HealthInsurance extends Model
         'name',
     ];
 
-    public function doctors(): BelongsToMany
+    public function professionals(): BelongsToMany
     {
-        return $this->belongsToMany(Doctor::class, 'doctor_health_insurance')->withTimestamps();
+        return $this->belongsToMany(Professional::class, 'professional_health_insurance')->withTimestamps();
     }
 
     public function patients(): BelongsToMany

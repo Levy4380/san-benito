@@ -12,10 +12,10 @@ final class LocalDemoAccounts
     public static function loginPicker(): array
     {
         return [
-            ['role' => 'Super admin', 'name' => 'Super admin', 'email' => 'superadmin@test.test'],
-            ['role' => 'Admin', 'name' => 'Secretaria', 'email' => 'admin@test.test'],
-            ['role' => 'Doctor', 'name' => 'Doctor', 'email' => 'doctor@test.test'],
-            ['role' => 'Paciente', 'name' => 'Paciente', 'email' => 'paciente@test.test'],
+            ['role' => 'Super admin', 'name' => 'Administrador General', 'email' => 'superadmin@test.test'],
+            ['role' => 'Admin', 'name' => 'Cuenta de Secretaria', 'email' => 'admin@test.test'],
+            ['role' => 'Profesional', 'name' => 'Cuenta de Doctor', 'email' => 'Doctor@test.test'],
+            ['role' => 'Paciente', 'name' => 'Cuenta de Paciente', 'email' => 'paciente@test.test'],
         ];
     }
 }

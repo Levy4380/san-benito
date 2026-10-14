@@ -30,6 +30,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return Inertia::location(redirect()->to(RoleRedirector::home()));
+        return Inertia::location(redirect()->to(RoleRedirector::landing($user)));
     }
 }

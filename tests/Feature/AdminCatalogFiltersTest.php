@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\HealthInsurance;
 use App\Models\Specialty;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesDomainUsers;
@@ -18,45 +19,43 @@ class AdminCatalogFiltersTest extends TestCase
         $this->seedCatalog();
     }
 
-    public function test_admin_doctors_list_all_without_filters_and_filter_by_specialty_and_name(): void
+    public function test_admin_professionals_list_all_without_filters_and_filter_by_specialty_and_name(): void
     {
         $admin = $this->makeAdmin();
         $specialty = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
-        $this->makeDoctor(['name' => 'Ana Pérez'], ['specialty_id' => $specialty->id]);
-        $this->makeDoctor(['name' => 'Luis Gómez']);
-        $this->makeDoctor(['name' => 'Sin Especialidad'], ['specialty_ids' => []]);
+        $this->makeProfessional(['name' => 'Ana Pérez'], ['specialty_id' => $specialty->id]);
+        $this->makeProfessional(['name' => 'Luis Gómez']);
+        $this->makeProfessional(['name' => 'Sin Especialidad'], ['specialty_ids' => []]);
 
         $this->actingAs($admin)
-            ->get('/admin/doctors')
+            ->get('/admin/profesionales')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Admin/Doctors')
-                ->has('doctors', 3)
+                ->component('Admin/Professionals')
+                ->has('professionals', 3)
                 ->where('filters.specialty_id', 'all')
                 ->where('filters.q', ''))
             ->assertDontSee('Matrícula');
 
         $this->actingAs($admin)
-            ->get('/admin/doctors/create')
+            ->getJson('/professionals/create')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Admin/DoctorCreate')
-                ->has('specialties'));
+            ->assertJsonStructure(['specialties', 'healthInsurances']);
 
         $this->actingAs($admin)
-            ->get('/admin/doctors?specialty_id='.$specialty->id)
+            ->get('/admin/profesionales?specialty_id='.$specialty->id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('doctors', 1)->where('doctors.0.user.name', 'Ana Pérez'));
+            ->assertInertia(fn ($page) => $page->has('professionals', 1)->where('professionals.0.user.name', 'Ana Pérez'));
 
         $this->actingAs($admin)
-            ->get('/admin/doctors?q=Ana')
+            ->get('/admin/profesionales?q=Ana')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('doctors', 1)->where('doctors.0.user.name', 'Ana Pérez'));
+            ->assertInertia(fn ($page) => $page->has('professionals', 1)->where('professionals.0.user.name', 'Ana Pérez'));
 
         $this->actingAs($admin)
-            ->get('/admin/doctors?specialty_id=all')
+            ->get('/admin/profesionales?specialty_id=all')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('doctors', 3));
+            ->assertInertia(fn ($page) => $page->has('professionals', 3));
     }
 
     public function test_super_admin_admins_list_all_without_filters_and_filter_by_name_and_email(): void
@@ -64,11 +63,11 @@ class AdminCatalogFiltersTest extends TestCase
         $super = $this->makeSuperAdmin(['name' => 'Sofía Super', 'email' => 'sofia@example.com']);
         $this->makeAdmin(['name' => 'Ana Admin', 'email' => 'ana@example.com']);
         $this->makeAdmin(['name' => 'Luis Admin', 'email' => 'luis@example.com']);
-        $this->makeDoctor(['name' => 'Doctor Fuera']);
+        $this->makeProfessional(['name' => 'Professional Fuera']);
         $this->makePatient(['name' => 'Paciente Fuera']);
 
         $this->actingAs($super)
-            ->get('/admin/admins')
+            ->get('/admin/administradores')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Admins')
@@ -76,7 +75,7 @@ class AdminCatalogFiltersTest extends TestCase
                 ->where('filters.q', ''));
 
         $this->actingAs($super)
-            ->get('/admin/admins?q=Ana')
+            ->get('/admin/administradores?q=Ana')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('users', 1)
@@ -84,7 +83,7 @@ class AdminCatalogFiltersTest extends TestCase
                 ->where('filters.q', 'Ana'));
 
         $this->actingAs($super)
-            ->get('/admin/admins?q=luis@')
+            ->get('/admin/administradores?q=luis@')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('users', 1)
@@ -95,23 +94,29 @@ class AdminCatalogFiltersTest extends TestCase
     public function test_super_admin_patients_list_all_without_filters_and_filter_by_name_and_email(): void
     {
         $super = $this->makeSuperAdmin(['name' => 'Sofía Super', 'email' => 'sofia@example.com']);
+        $osde = HealthInsurance::factory()->create(['name' => 'OSDE']);
+        $swiss = HealthInsurance::factory()->create(['name' => 'Swiss Medical']);
         $this->makeAdmin(['name' => 'Ana Admin', 'email' => 'ana@example.com']);
-        $this->makeDoctor(['name' => 'Ana Pérez', 'email' => 'ana.doc@example.com']);
-        $this->makePatient(['name' => 'Luis Paciente', 'email' => 'luis@example.com'], ['dni' => '44556677']);
-        $this->makePatient(['name' => 'Ana Paciente', 'email' => 'ana.pac@example.com']);
+        $this->makeProfessional(['name' => 'Ana Pérez', 'email' => 'ana.doc@example.com']);
+        $luis = $this->makePatient(['name' => 'Luis Paciente', 'email' => 'luis@example.com'], ['dni' => '44556677']);
+        $ana = $this->makePatient(['name' => 'Ana Paciente', 'email' => 'ana.pac@example.com']);
+        $luis->healthInsurances()->attach($osde);
+        $ana->healthInsurances()->attach($swiss);
 
         $this->actingAs($super)
-            ->get('/admin/patients')
+            ->get('/admin/pacientes')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Patients')
                 ->has('patients', 2)
+                ->has('healthInsurances', 2)
                 ->where('patients.0.user.name', 'Luis Paciente')
                 ->where('patients.1.user.name', 'Ana Paciente')
-                ->where('filters.q', ''));
+                ->where('filters.q', '')
+                ->where('filters.health_insurance_id', 'all'));
 
         $this->actingAs($super)
-            ->get('/admin/patients?q=Ana')
+            ->get('/admin/pacientes?q=Ana')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('patients', 1)
@@ -119,7 +124,7 @@ class AdminCatalogFiltersTest extends TestCase
                 ->where('filters.q', 'Ana'));
 
         $this->actingAs($super)
-            ->get('/admin/patients?q=luis@')
+            ->get('/admin/pacientes?q=luis@')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('patients', 1)
@@ -128,11 +133,24 @@ class AdminCatalogFiltersTest extends TestCase
                 ->where('filters.q', 'luis@'));
 
         $this->actingAs($super)
-            ->get('/admin/patients?q=44556')
+            ->get('/admin/pacientes?q=44556')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('patients', 1)
                 ->where('patients.0.user.name', 'Luis Paciente')
                 ->where('filters.q', '44556'));
+
+        $this->actingAs($super)
+            ->get('/admin/pacientes?health_insurance_id='.$osde->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('patients', 1)
+                ->where('patients.0.user.name', 'Luis Paciente')
+                ->where('filters.health_insurance_id', (string) $osde->id));
+
+        $this->actingAs($super)
+            ->get('/admin/pacientes?health_insurance_id=all')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('patients', 2));
     }
 }

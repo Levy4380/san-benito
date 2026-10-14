@@ -19,7 +19,7 @@ class Appointment extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'doctor_id',
+        'professional_id',
         'patient_id',
         'specialty_id',
         'starts_at',
@@ -37,9 +37,9 @@ class Appointment extends Model
         ];
     }
 
-    public function doctor(): BelongsTo
+    public function professional(): BelongsTo
     {
-        return $this->belongsTo(Doctor::class);
+        return $this->belongsTo(Professional::class);
     }
 
     public function patient(): BelongsTo
@@ -56,11 +56,11 @@ class Appointment extends Model
      * @param  Builder<Appointment>  $query
      * @return Builder<Appointment>
      */
-    public function scopeForDoctor(Builder $query, Doctor|int $doctor): Builder
+    public function scopeForProfessional(Builder $query, Professional|int $professional): Builder
     {
-        $doctorId = $doctor instanceof Doctor ? $doctor->id : $doctor;
+        $professionalId = $professional instanceof Professional ? $professional->id : $professional;
 
-        return $query->where('doctor_id', $doctorId);
+        return $query->where('professional_id', $professionalId);
     }
 
     /**

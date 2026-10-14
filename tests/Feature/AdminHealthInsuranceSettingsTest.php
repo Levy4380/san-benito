@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\HealthInsurance;
 use App\Models\Specialty;
 use App\Models\User;
+use App\Support\RoleRedirector;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -27,7 +28,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
     {
         $this->assertFalse(Schema::hasColumn('patients', 'health_insurance'));
         $this->assertTrue(Schema::hasTable('health_insurances'));
-        $this->assertTrue(Schema::hasTable('doctor_health_insurance'));
+        $this->assertTrue(Schema::hasTable('professional_health_insurance'));
         $this->assertTrue(Schema::hasTable('patient_health_insurance'));
     }
 
@@ -46,27 +47,27 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         }
     }
 
-    public function test_patient_doctor_and_admin_cannot_manage_health_insurances(): void
+    public function test_patient_professional_and_admin_cannot_manage_health_insurances(): void
     {
         $patient = $this->makePatient();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $admin = $this->makeAdmin();
         $healthInsurance = HealthInsurance::factory()->create(['name' => 'OSDE']);
 
-        foreach ([$patient->user, $doctor->user, $admin] as $user) {
-            $this->actingAs($user)->get('/admin/settings/health-insurances')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/settings/health-insurances/create')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/settings/health-insurances/'.$healthInsurance->id.'/edit')->assertRedirect('/');
-            $this->actingAs($user)->post('/admin/settings/health-insurances', ['name' => 'Galeno'])->assertRedirect('/');
-            $this->actingAs($user)->patch('/admin/settings/health-insurances/'.$healthInsurance->id, ['name' => 'Renombrada'])->assertRedirect('/');
-            $this->actingAs($user)->delete('/admin/settings/health-insurances/'.$healthInsurance->id)->assertRedirect('/');
-            $this->actingAs($user)->get('/doctors/'.$doctor->id.'/health-insurances')->assertRedirect('/');
-            $this->actingAs($user)->patch('/admin/doctors/'.$doctor->id.'/health-insurances', [
+        foreach ([$patient->user, $professional->user, $admin] as $user) {
+            $this->actingAs($user)->get('/admin/configuracion/obras-sociales')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/configuracion/obras-sociales/crear')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/configuracion/obras-sociales/'.$healthInsurance->id.'/editar')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->post('/health-insurances', ['name' => 'Galeno'])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->patch('/health-insurances/'.$healthInsurance->id, ['name' => 'Renombrada'])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->delete('/health-insurances/'.$healthInsurance->id)->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/profesionales/'.$professional->id.'/obras-sociales')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [$healthInsurance->id],
-            ])->assertRedirect('/');
-            $this->actingAs($user)->patch('/admin/patients/'.$patient->id.'/health-insurance', [
+            ])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => $healthInsurance->id,
-            ])->assertRedirect('/');
+            ])->assertRedirect(RoleRedirector::landing($user));
         }
 
         $this->assertDatabaseHas('health_insurances', [
@@ -80,32 +81,32 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $super = $this->makeSuperAdmin();
 
         $this->actingAs($super)
-            ->get('/admin/settings')
+            ->get('/admin/configuracion')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Admin/Settings'));
 
         $this->actingAs($super)
-            ->get('/admin/settings/health-insurances')
+            ->get('/admin/configuracion/obras-sociales')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/HealthInsurances')
                 ->has('healthInsurances'));
 
         $this->actingAs($super)
-            ->get('/admin/settings/health-insurances/create')
+            ->get('/admin/configuracion/obras-sociales/crear')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Admin/HealthInsuranceCreate'));
 
         $this->actingAs($super)
-            ->post('/admin/settings/health-insurances', ['name' => '  Galeno  '])
-            ->assertRedirect('/admin/settings/health-insurances');
+            ->post('/health-insurances', ['name' => '  Galeno  '])
+            ->assertRedirect('/admin/configuracion/obras-sociales');
 
         $this->assertDatabaseHas('health_insurances', ['name' => 'Galeno']);
 
         $created = HealthInsurance::query()->where('name', 'Galeno')->firstOrFail();
 
         $this->actingAs($this->makeAdmin())
-            ->post('/admin/doctors', [
+            ->post('/professionals', [
                 'name' => 'Carla Ruiz',
                 'email' => 'carla@example.com',
                 'password' => 'password',
@@ -115,15 +116,15 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $doctor = User::query()->where('email', 'carla@example.com')->first()?->doctor;
-        $this->assertNotNull($doctor);
-        $this->assertDatabaseHas('doctor_health_insurance', [
-            'doctor_id' => $doctor->id,
+        $professional = User::query()->where('email', 'carla@example.com')->first()?->professional;
+        $this->assertNotNull($professional);
+        $this->assertDatabaseHas('professional_health_insurance', [
+            'professional_id' => $professional->id,
             'health_insurance_id' => $created->id,
         ]);
 
         $this->actingAs($this->makeAdmin())
-            ->post('/admin/doctors', [
+            ->post('/professionals', [
                 'name' => 'Sin Obra',
                 'email' => 'sinobra@example.com',
                 'password' => 'password',
@@ -133,28 +134,28 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $without = User::query()->where('email', 'sinobra@example.com')->first()?->doctor;
+        $without = User::query()->where('email', 'sinobra@example.com')->first()?->professional;
         $this->assertNotNull($without);
         $this->assertTrue($without->healthInsurances()->doesntExist());
 
         $this->actingAs($super)
-            ->post('/admin/settings/health-insurances', ['name' => 'Galeno'])
+            ->post('/health-insurances', ['name' => 'Galeno'])
             ->assertSessionHasErrors('name');
 
         $osde = HealthInsurance::factory()->create(['name' => 'OSDE']);
 
         $this->actingAs($super)
-            ->get('/admin/settings/health-insurances/'.$osde->id.'/edit')
+            ->get('/admin/configuracion/obras-sociales/'.$osde->id.'/editar')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/HealthInsuranceEdit')
                 ->where('healthInsurance.id', $osde->id)
                 ->where('healthInsurance.name', 'OSDE')
-                ->has('doctors'));
+                ->has('professionals'));
 
         $this->actingAs($super)
-            ->patch('/admin/settings/health-insurances/'.$osde->id, ['name' => 'OSDE 210'])
-            ->assertRedirect('/admin/settings/health-insurances');
+            ->patch('/health-insurances/'.$osde->id, ['name' => 'OSDE 210'])
+            ->assertRedirect('/admin/configuracion/obras-sociales');
 
         $this->assertDatabaseHas('health_insurances', [
             'id' => $osde->id,
@@ -162,13 +163,13 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         ]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/health-insurances/'.$osde->id, ['name' => 'Galeno'])
+            ->patch('/health-insurances/'.$osde->id, ['name' => 'Galeno'])
             ->assertSessionHasErrors('name');
 
         $unused = HealthInsurance::factory()->create(['name' => 'Temporal']);
 
         $this->actingAs($super)
-            ->delete('/admin/settings/health-insurances/'.$unused->id)
+            ->delete('/health-insurances/'.$unused->id)
             ->assertRedirect();
 
         $this->assertDatabaseMissing('health_insurances', ['id' => $unused->id]);
@@ -180,119 +181,119 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $removed = HealthInsurance::factory()->create(['name' => 'En uso']);
         $kept = HealthInsurance::factory()->create(['name' => 'Se queda']);
         $specialty = Specialty::factory()->create(['name' => 'Clínica extra']);
-        $doctor = $this->makeDoctor(['name' => 'Ana Vinculada'], ['specialty_id' => $specialty->id]);
+        $professional = $this->makeProfessional(['name' => 'Ana Vinculada'], ['specialty_id' => $specialty->id]);
         $patient = $this->makePatient(['name' => 'Nora Vinculada']);
-        $doctor->healthInsurances()->sync([$removed->id, $kept->id]);
+        $professional->healthInsurances()->sync([$removed->id, $kept->id]);
         $patient->healthInsurances()->sync([$removed->id]);
         $appointment = Appointment::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'specialty_id' => $specialty->id,
         ]);
 
         $this->actingAs($super)
-            ->delete('/admin/settings/health-insurances/'.$removed->id)
+            ->delete('/health-insurances/'.$removed->id)
             ->assertRedirect();
 
         $this->assertDatabaseMissing('health_insurances', ['id' => $removed->id]);
-        $this->assertDatabaseMissing('doctor_health_insurance', ['health_insurance_id' => $removed->id]);
+        $this->assertDatabaseMissing('professional_health_insurance', ['health_insurance_id' => $removed->id]);
         $this->assertDatabaseMissing('patient_health_insurance', ['health_insurance_id' => $removed->id]);
-        $this->assertDatabaseHas('doctor_health_insurance', [
-            'doctor_id' => $doctor->id,
+        $this->assertDatabaseHas('professional_health_insurance', [
+            'professional_id' => $professional->id,
             'health_insurance_id' => $kept->id,
         ]);
-        $this->assertNotNull($doctor->fresh());
+        $this->assertNotNull($professional->fresh());
         $this->assertNotNull($patient->fresh());
-        $this->assertNotNull($doctor->user()->first());
+        $this->assertNotNull($professional->user()->first());
         $this->assertNotNull($patient->user()->first());
         $this->assertDatabaseHas('appointments', ['id' => $appointment->id]);
     }
 
-    public function test_super_admin_syncs_associated_doctors_and_can_leave_zero(): void
+    public function test_super_admin_syncs_associated_professionals_and_can_leave_zero(): void
     {
         $super = $this->makeSuperAdmin();
         $healthInsurance = HealthInsurance::factory()->create(['name' => 'OSDE']);
         $other = HealthInsurance::factory()->create(['name' => 'Swiss Medical']);
-        $assigned = $this->makeDoctor(['name' => 'Ana Asignada']);
-        $candidate = $this->makeDoctor(['name' => 'Luis Candidato']);
+        $assigned = $this->makeProfessional(['name' => 'Ana Asignada']);
+        $candidate = $this->makeProfessional(['name' => 'Luis Candidato']);
         $assigned->healthInsurances()->sync([$healthInsurance->id, $other->id]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/health-insurances/'.$healthInsurance->id, [
+            ->patch('/health-insurances/'.$healthInsurance->id, [
                 'name' => 'OSDE',
-                'doctor_ids' => [$candidate->id],
+                'professional_ids' => [$candidate->id],
             ])
-            ->assertRedirect('/admin/settings/health-insurances');
+            ->assertRedirect('/admin/configuracion/obras-sociales');
 
-        $this->assertDatabaseHas('doctor_health_insurance', [
-            'doctor_id' => $candidate->id,
+        $this->assertDatabaseHas('professional_health_insurance', [
+            'professional_id' => $candidate->id,
             'health_insurance_id' => $healthInsurance->id,
         ]);
-        $this->assertDatabaseMissing('doctor_health_insurance', [
-            'doctor_id' => $assigned->id,
+        $this->assertDatabaseMissing('professional_health_insurance', [
+            'professional_id' => $assigned->id,
             'health_insurance_id' => $healthInsurance->id,
         ]);
-        $this->assertDatabaseHas('doctor_health_insurance', [
-            'doctor_id' => $assigned->id,
+        $this->assertDatabaseHas('professional_health_insurance', [
+            'professional_id' => $assigned->id,
             'health_insurance_id' => $other->id,
         ]);
 
         $this->actingAs($super)
-            ->patch('/admin/settings/health-insurances/'.$healthInsurance->id, [
+            ->patch('/health-insurances/'.$healthInsurance->id, [
                 'name' => 'OSDE',
-                'doctor_ids' => [],
+                'professional_ids' => [],
             ])
-            ->assertRedirect('/admin/settings/health-insurances');
+            ->assertRedirect('/admin/configuracion/obras-sociales');
 
-        $this->assertDatabaseMissing('doctor_health_insurance', ['health_insurance_id' => $healthInsurance->id]);
+        $this->assertDatabaseMissing('professional_health_insurance', ['health_insurance_id' => $healthInsurance->id]);
         $this->assertTrue($candidate->fresh()->healthInsurances()->whereKey($other->id)->doesntExist());
         $this->assertTrue($assigned->fresh()->healthInsurances()->whereKey($other->id)->exists());
     }
 
-    public function test_super_admin_associates_health_insurances_from_doctor_profile(): void
+    public function test_super_admin_associates_health_insurances_from_professional_profile(): void
     {
         $super = $this->makeSuperAdmin();
         $kept = HealthInsurance::factory()->create(['name' => 'OSDE']);
         $added = HealthInsurance::factory()->create(['name' => 'Swiss Medical']);
-        $doctor = $this->makeDoctor(['name' => 'Ana Perfil']);
-        $doctor->healthInsurances()->sync([$kept->id]);
+        $professional = $this->makeProfessional(['name' => 'Ana Perfil']);
+        $professional->healthInsurances()->sync([$kept->id]);
 
         $this->actingAs($this->makePatient()->user)
-            ->get('/doctors/'.$doctor->id)
+            ->get('/paciente/profesionales/'.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/Show')
+                ->component('Professionals/Show')
                 ->missing('healthInsurances'));
 
         $this->actingAs($this->makeAdmin())
-            ->get('/doctors/'.$doctor->id.'/health-insurances')
-            ->assertRedirect('/');
+            ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
+            ->assertRedirect('/admin');
 
         $this->actingAs($super)
-            ->get('/doctors/'.$doctor->id.'/health-insurances')
+            ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Doctors/HealthInsurances')
+                ->component('Professionals/HealthInsurances')
                 ->has('healthInsurances', HealthInsurance::query()->count()));
 
         $this->actingAs($super)
-            ->patch('/admin/doctors/'.$doctor->id.'/health-insurances', [
+            ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [$added->id],
             ])
-            ->assertRedirect('/doctors/'.$doctor->id);
+            ->assertRedirect('/admin/profesionales/'.$professional->id);
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
-            $doctor->fresh()->healthInsurances()->pluck('health_insurances.id')->all(),
+            $professional->fresh()->healthInsurances()->pluck('health_insurances.id')->all(),
         );
 
         $this->actingAs($super)
-            ->patch('/admin/doctors/'.$doctor->id.'/health-insurances', [
+            ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [],
             ])
-            ->assertRedirect('/doctors/'.$doctor->id);
+            ->assertRedirect('/admin/profesionales/'.$professional->id);
 
-        $this->assertTrue($doctor->fresh()->healthInsurances()->doesntExist());
+        $this->assertTrue($professional->fresh()->healthInsurances()->doesntExist());
     }
 
     public function test_registration_rejects_a_health_insurance_string(): void
@@ -320,7 +321,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             'dni' => '40111888',
             'birth_date' => '1995-04-10',
             'health_insurance_id' => '',
-        ])->assertRedirect('/');
+        ])->assertRedirect('/paciente');
 
         $empty = User::query()->where('email', 'nora-osde@example.com')->first();
         $this->assertNotNull($empty);
@@ -337,7 +338,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             'dni' => '40111777',
             'birth_date' => '1994-04-10',
             'health_insurance_id' => $osde->id,
-        ])->assertRedirect('/');
+        ])->assertRedirect('/paciente');
 
         $linked = User::query()->where('email', 'luis-osde@example.com')->first();
         $this->assertSame('OSDE', $linked?->patient?->health_insurance);
@@ -352,7 +353,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $patient->healthInsurances()->sync([$osde->id]);
 
         $this->actingAs($super)
-            ->get('/admin/patients/'.$patient->id)
+            ->get('/admin/pacientes/'.$patient->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/UserPatient')
@@ -360,10 +361,10 @@ class AdminHealthInsuranceSettingsTest extends TestCase
                 ->has('healthInsurances'));
 
         $this->actingAs($super)
-            ->patch('/admin/patients/'.$patient->id.'/health-insurance', [
+            ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => $swiss->id,
             ])
-            ->assertRedirect('/admin/patients/'.$patient->id);
+            ->assertRedirect('/admin/pacientes/'.$patient->id);
 
         $this->assertSame('Swiss Medical', $patient->fresh()->health_insurance);
         $this->assertEqualsCanonicalizing(
@@ -372,16 +373,16 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         );
 
         $this->actingAs($super)
-            ->patch('/admin/patients/'.$patient->id.'/health-insurance', [
+            ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => '',
             ])
-            ->assertRedirect('/admin/patients/'.$patient->id);
+            ->assertRedirect('/admin/pacientes/'.$patient->id);
 
         $this->assertNull($patient->fresh()->health_insurance);
         $this->assertDatabaseMissing('patient_health_insurance', ['patient_id' => $patient->id]);
 
         $this->actingAs($super)
-            ->patch('/admin/patients/'.$patient->id.'/health-insurance', [
+            ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => 'OSDE',
             ])
             ->assertSessionHasErrors('health_insurance_id');

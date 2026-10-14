@@ -12,6 +12,8 @@ class PatientHomeController extends Controller
 {
     public function index(Request $request, PatientService $patients, AppointmentService $appointments): Response
     {
+        abort_unless($request->user()?->hasRole('patient'), 403);
+
         $patient = $patients->forUser($request->user());
 
         return Inertia::render('Patient/Home', [

@@ -15,13 +15,13 @@ class BookingWizardController extends Controller
         $coverage = $request->string('coverage')->toString();
         $coverage = in_array($coverage, ['particular', 'health_insurance'], true) ? $coverage : null;
         $specialtyId = $request->filled('specialty_id') ? $request->integer('specialty_id') : null;
-        $doctorId = $request->filled('doctor_id') ? $request->integer('doctor_id') : null;
+        $professionalId = $request->filled('professional_id') ? $request->integer('professional_id') : null;
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
 
         return Inertia::render('Patient/Book', $wizard->pageData(
             $coverage,
             $specialtyId,
-            $doctorId,
+            $professionalId,
             $date,
             $patients->forUser($request->user()),
         ));

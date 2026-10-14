@@ -3,24 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreDoctorRequest;
-use App\Services\DoctorSearchService;
-use App\Services\DoctorService;
+use App\Http\Requests\Admin\StoreProfessionalRequest;
 use App\Services\HealthInsuranceService;
+use App\Services\ProfessionalSearchService;
+use App\Services\ProfessionalService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class DoctorController extends Controller
+class ProfessionalController extends Controller
 {
-    public function index(Request $request, DoctorSearchService $search): Response
+    public function index(Request $request, ProfessionalSearchService $search): Response
     {
         $specialty = $search->parseSpecialtyFilter($request->input('specialty_id'));
         $name = $request->input('q');
 
-        return Inertia::render('Admin/Doctors', [
-            'doctors' => $search->search($specialty['id'], is_string($name) ? $name : null, true),
+        return Inertia::render('Admin/Professionals', [
+            'professionals' => $search->search($specialty['id'], is_string($name) ? $name : null, true),
             'specialties' => $search->specialties(),
             'filters' => [
                 'specialty_id' => $specialty['value'],
@@ -29,20 +30,20 @@ class DoctorController extends Controller
         ]);
     }
 
-    public function create(DoctorSearchService $search, HealthInsuranceService $healthInsurances): Response
+    public function create(ProfessionalSearchService $search, HealthInsuranceService $healthInsurances): JsonResponse
     {
-        return Inertia::render('Admin/DoctorCreate', [
+        return response()->json([
             'specialties' => $search->specialties(),
             'healthInsurances' => $healthInsurances->options(),
         ]);
     }
 
-    public function store(StoreDoctorRequest $request, DoctorService $doctors): RedirectResponse
+    public function store(StoreProfessionalRequest $request, ProfessionalService $professionals): RedirectResponse
     {
-        $doctors->create($request->validated());
+        $professionals->create($request->validated());
 
         return redirect()
-            ->route('admin.doctors.index')
+            ->route('admin.professionals.index')
             ->with('toast', [
                 'message' => 'Creaste al profesional.',
                 'variant' => 'ok',

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
+use App\Models\Professional;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -13,18 +13,18 @@ class AvailabilityService
     /**
      * @return Collection<int, array{starts_at: string, ends_at: string}>
      */
-    public function calculateSlots(Doctor $doctor, Carbon $rangeStart, Carbon $rangeEnd): Collection
+    public function calculateSlots(Professional $professional, Carbon $rangeStart, Carbon $rangeEnd): Collection
     {
-        $duration = (int) $doctor->slot_duration_minutes;
+        $duration = (int) $professional->slot_duration_minutes;
 
         $windows = AvailabilityWindow::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($rangeStart, $rangeEnd)
             ->orderBy('starts_at')
             ->get();
 
         $appointments = Appointment::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($rangeStart, $rangeEnd)
             ->get();
 
@@ -67,16 +67,16 @@ class AvailabilityService
      *
      * @return Collection<int, array{starts_at: string, ends_at: string}>
      */
-    public function nextOfferableSlotPerDay(Doctor $doctor, Carbon $rangeStart, Carbon $rangeEnd): Collection
+    public function nextOfferableSlotPerDay(Professional $professional, Carbon $rangeStart, Carbon $rangeEnd): Collection
     {
-        return $this->calculateSlots($doctor, $rangeStart, $rangeEnd)
+        return $this->calculateSlots($professional, $rangeStart, $rangeEnd)
             ->unique(fn (array $slot): string => substr($slot['starts_at'], 0, 10))
             ->values();
     }
 
-    public function isBookableSlot(Doctor $doctor, Carbon $startsAt): bool
+    public function isBookableSlot(Professional $professional, Carbon $startsAt): bool
     {
-        $duration = (int) $doctor->slot_duration_minutes;
+        $duration = (int) $professional->slot_duration_minutes;
         $endsAt = $startsAt->copy()->addMinutes($duration);
 
         if (! $startsAt->gt(now())) {
@@ -84,7 +84,7 @@ class AvailabilityService
         }
 
         $window = AvailabilityWindow::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->where('starts_at', '<=', $startsAt)
             ->where('ends_at', '>=', $endsAt)
             ->orderBy('starts_at')
@@ -101,7 +101,7 @@ class AvailabilityService
         }
 
         $overlaps = Appointment::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($startsAt, $endsAt)
             ->exists();
 
@@ -111,11 +111,11 @@ class AvailabilityService
     /**
      * @return Collection<int, string> Y-m-d keys of days that have at least one free slot
      */
-    public function upcomingDaysWithSlots(Doctor $doctor, int $limitDays): Collection
+    public function upcomingDaysWithSlots(Professional $professional, int $limitDays): Collection
     {
         $start = now();
         $end = now()->addDays(60)->endOfDay();
-        $slots = $this->calculateSlots($doctor, $start, $end);
+        $slots = $this->calculateSlots($professional, $start, $end);
 
         return $slots
             ->map(fn (array $slot) => substr($slot['starts_at'], 0, 10))
@@ -124,10 +124,10 @@ class AvailabilityService
             ->values();
     }
 
-    public function nextAvailableStartsAt(Doctor $doctor, ?Carbon $until = null): ?string
+    public function nextAvailableStartsAt(Professional $professional, ?Carbon $until = null): ?string
     {
         $slot = $this->calculateSlots(
-            $doctor,
+            $professional,
             now(),
             $until ?? now()->addDays(60)->endOfDay(),
         )->first();

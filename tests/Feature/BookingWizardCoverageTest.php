@@ -25,38 +25,38 @@ class BookingWizardCoverageTest extends TestCase
     {
         $patient = $this->makePatient();
         $cardio = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
-        $doctor = $this->makeDoctor(['name' => 'Sin Obra'], ['specialty_id' => $cardio->id]);
+        $professional = $this->makeProfessional(['name' => 'Sin Obra'], ['specialty_id' => $cardio->id]);
         $start = $this->nextWeekdayNine();
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => $start,
             'ends_at' => $start->copy()->addHour(),
         ]);
 
         $this->actingAs($patient->user)
-            ->get('/book')
+            ->get('/paciente/reserva')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Patient/Book')
                 ->where('has_health_insurance', false)
                 ->where('filters.coverage', null)
-                ->has('doctors', 0));
+                ->has('professionals', 0));
 
         $this->actingAs($patient->user)
-            ->get('/book?coverage=health_insurance&specialty_id='.$cardio->id)
+            ->get('/paciente/reserva?coverage=health_insurance&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('filters.coverage', null)
                 ->where('filters.specialty_id', null)
-                ->has('doctors', 0));
+                ->has('professionals', 0));
 
         $this->actingAs($patient->user)
-            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
+            ->get('/paciente/reserva?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('filters.coverage', 'particular')
-                ->has('doctors', 1)
-                ->where('doctors.0.id', $doctor->id));
+                ->has('professionals', 1)
+                ->where('professionals.0.id', $professional->id));
     }
 
     public function test_health_insurance_coverage_filters_the_wizard_and_not_the_directory(): void
@@ -68,25 +68,25 @@ class BookingWizardCoverageTest extends TestCase
 
         $cardio = Specialty::query()->where('name', 'Cardiología')->firstOrFail();
         $derm = Specialty::query()->where('name', 'Dermatología')->firstOrFail();
-        $linked = $this->makeDoctor(['name' => 'Toma OSDE'], ['specialty_id' => $cardio->id]);
-        $unlinked = $this->makeDoctor(['name' => 'Particular'], ['specialty_id' => $cardio->id]);
-        $other = $this->makeDoctor(['name' => 'Otra Obra'], ['specialty_ids' => [$cardio->id, $derm->id]]);
-        $dermOnly = $this->makeDoctor(['name' => 'Solo Derma'], ['specialty_id' => $derm->id]);
+        $linked = $this->makeProfessional(['name' => 'Toma OSDE'], ['specialty_id' => $cardio->id]);
+        $unlinked = $this->makeProfessional(['name' => 'Particular'], ['specialty_id' => $cardio->id]);
+        $other = $this->makeProfessional(['name' => 'Otra Obra'], ['specialty_ids' => [$cardio->id, $derm->id]]);
+        $dermOnly = $this->makeProfessional(['name' => 'Solo Derma'], ['specialty_id' => $derm->id]);
         $linked->healthInsurances()->attach($osde->id);
         $other->healthInsurances()->attach($swiss->id);
 
         $start = $this->nextWeekdayNine();
 
-        foreach ([$linked, $unlinked, $other, $dermOnly] as $doctor) {
+        foreach ([$linked, $unlinked, $other, $dermOnly] as $professional) {
             AvailabilityWindow::factory()->create([
-                'doctor_id' => $doctor->id,
+                'professional_id' => $professional->id,
                 'starts_at' => $start,
                 'ends_at' => $start->copy()->addHour(),
             ]);
         }
 
         $this->actingAs($patient->user)
-            ->get('/book?coverage=health_insurance')
+            ->get('/paciente/reserva?coverage=health_insurance')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('has_health_insurance', true)
@@ -98,44 +98,44 @@ class BookingWizardCoverageTest extends TestCase
                 }));
 
         $this->actingAs($patient->user)
-            ->get('/book?coverage=health_insurance&specialty_id='.$cardio->id)
+            ->get('/paciente/reserva?coverage=health_insurance&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->has('doctors', 1)
-                ->where('doctors.0.id', $linked->id)
-                ->where('doctors', function ($doctors) use ($unlinked): bool {
-                    return collect($doctors)->pluck('id')->doesntContain($unlinked->id);
+                ->has('professionals', 1)
+                ->where('professionals.0.id', $linked->id)
+                ->where('professionals', function ($professionals) use ($unlinked): bool {
+                    return collect($professionals)->pluck('id')->doesntContain($unlinked->id);
                 }));
 
         $this->actingAs($patient->user)
-            ->get('/book?coverage=particular&specialty_id='.$cardio->id)
+            ->get('/paciente/reserva?coverage=particular&specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('doctors', function ($doctors) use ($linked, $unlinked): bool {
-                    $ids = collect($doctors)->pluck('id');
+                ->where('professionals', function ($professionals) use ($linked, $unlinked): bool {
+                    $ids = collect($professionals)->pluck('id');
 
                     return $ids->contains($linked->id) && $ids->contains($unlinked->id);
                 }));
 
         $this->actingAs($patient->user)
-            ->get('/doctors?specialty_id='.$cardio->id)
+            ->get('/paciente/profesionales?specialty_id='.$cardio->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('doctors', function ($doctors) use ($linked, $unlinked): bool {
-                    $ids = collect($doctors)->pluck('id');
+                ->where('professionals', function ($professionals) use ($linked, $unlinked): bool {
+                    $ids = collect($professionals)->pluck('id');
 
                     return $ids->contains($linked->id) && $ids->contains($unlinked->id);
                 }));
 
         $this->actingAs($patient->user)
-            ->post('/doctors/'.$unlinked->id.'/appointments', [
+            ->post('/professionals/'.$unlinked->id.'/appointments', [
                 'starts_at' => $start->format('Y-m-d H:i:s'),
                 'specialty_id' => $cardio->id,
             ])
-            ->assertRedirect('/my-appointments');
+            ->assertRedirect('/paciente/mis-turnos');
 
         $this->assertDatabaseHas('appointments', [
-            'doctor_id' => $unlinked->id,
+            'professional_id' => $unlinked->id,
             'patient_id' => $patient->id,
             'specialty_id' => $cardio->id,
         ]);

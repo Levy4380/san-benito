@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Models\Specialty;
 use Illuminate\Database\Eloquent\Collection;
 
-class DoctorSearchService
+class ProfessionalSearchService
 {
     /**
      * Query string `specialty_id`: vacío o "all" = Todas (lista completa).
@@ -23,7 +23,7 @@ class DoctorSearchService
     }
 
     /**
-     * @return Collection<int, Doctor>
+     * @return Collection<int, Professional>
      */
     public function search(?int $specialtyId, ?string $name, bool $filtered, bool $onlyWithSpecialties = false): Collection
     {
@@ -31,7 +31,7 @@ class DoctorSearchService
             return new Collection;
         }
 
-        $query = Doctor::query()->with(['user', 'specialties']);
+        $query = Professional::query()->with(['user', 'specialties']);
 
         if ($onlyWithSpecialties) {
             $query->withSpecialties();
@@ -52,20 +52,20 @@ class DoctorSearchService
         return $query->orderBy('id')->get();
     }
 
-    public function profile(Doctor $doctor): Doctor
+    public function profile(Professional $professional): Professional
     {
-        return $doctor->load(['user', 'specialties']);
+        return $professional->load(['user', 'specialties']);
     }
 
     /**
      * @return Collection<int, Specialty>
      */
-    public function specialties(bool $onlyWithDoctors = false): Collection
+    public function specialties(bool $onlyWithProfessionals = false): Collection
     {
         $query = Specialty::query()->orderBy('name');
 
-        if ($onlyWithDoctors) {
-            $query->has('doctors');
+        if ($onlyWithProfessionals) {
+            $query->has('professionals');
         }
 
         return $query->get();

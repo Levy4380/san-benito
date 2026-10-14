@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
+use App\Models\Professional;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
@@ -19,7 +19,7 @@ class AvailabilityWindowFactory extends Factory
         $start = Carbon::now()->addDay()->startOfHour();
 
         return [
-            'doctor_id' => Doctor::factory(),
+            'professional_id' => Professional::factory(),
             'starts_at' => $start,
             'ends_at' => $start->copy()->addHours(3),
         ];

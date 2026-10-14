@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\HealthInsurance;
 use App\Models\User;
+use App\Support\RoleRedirector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
@@ -19,30 +20,30 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->seedCatalog();
     }
 
-    public function test_admin_doctor_and_patient_cannot_access_patients_or_admins(): void
+    public function test_admin_professional_and_patient_cannot_access_patients_or_admins(): void
     {
         $patient = $this->makePatient();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $admin = $this->makeAdmin();
 
-        foreach ([$patient->user, $doctor->user, $admin] as $user) {
-            $this->actingAs($user)->get('/admin/patients')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/patients/create')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/admins')->assertRedirect('/');
-            $this->actingAs($user)->get('/admin/admins/create')->assertRedirect('/');
-            $this->actingAs($user)->post('/admin/patients', [
+        foreach ([$patient->user, $professional->user, $admin] as $user) {
+            $this->actingAs($user)->get('/admin/pacientes')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/patients/create')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/administradores')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/administradores/crear')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->post('/patients', [
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
                 'password' => 'password',
                 'dni' => '40111222',
                 'birth_date' => '1995-04-10',
-            ])->assertRedirect('/');
-            $this->actingAs($user)->post('/admin/admins', [
+            ])->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->post('/admins', [
                 'name' => 'Otro Admin',
                 'email' => 'otro.admin@example.com',
                 'password' => 'password',
                 'role' => 'admin',
-            ])->assertRedirect('/');
+            ])->assertRedirect(RoleRedirector::landing($user));
         }
     }
 
@@ -52,12 +53,12 @@ class AdminPatientsDirectoryTest extends TestCase
         $osde = HealthInsurance::factory()->create(['name' => 'OSDE']);
 
         $this->actingAs($super)
-            ->get('/admin/patients/create')
+            ->getJson('/patients/create')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Admin/PatientCreate'));
+            ->assertJsonStructure(['healthInsurances']);
 
         $this->actingAs($super)
-            ->post('/admin/patients', [
+            ->post('/patients', [
                 'name' => 'Texto Libre',
                 'email' => 'texto.admin@example.com',
                 'password' => 'password',
@@ -70,7 +71,7 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->assertNull(User::query()->where('email', 'texto.admin@example.com')->first());
 
         $this->actingAs($super)
-            ->post('/admin/patients', [
+            ->post('/patients', [
                 'with_account' => true,
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
@@ -80,7 +81,7 @@ class AdminPatientsDirectoryTest extends TestCase
                 'phone' => '1144445555',
                 'health_insurance_id' => $osde->id,
             ])
-            ->assertRedirect('/admin/patients');
+            ->assertRedirect('/admin/pacientes');
 
         $this->assertAuthenticatedAs($super);
 
@@ -106,7 +107,7 @@ class AdminPatientsDirectoryTest extends TestCase
         $existing = $this->makePatient(['email' => 'ya@example.com'], ['dni' => '33999888']);
 
         $this->actingAs($super)
-            ->post('/admin/patients', [
+            ->post('/patients', [
                 'name' => 'Duplicado Mail',
                 'email' => 'ya@example.com',
                 'password' => 'password',
@@ -116,7 +117,7 @@ class AdminPatientsDirectoryTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->actingAs($super)
-            ->post('/admin/patients', [
+            ->post('/patients', [
                 'name' => 'Duplicado Dni',
                 'email' => 'otro@example.com',
                 'password' => 'password',
@@ -135,7 +136,7 @@ class AdminPatientsDirectoryTest extends TestCase
         $patient = $this->makePatient(['name' => 'Luis Paciente'], ['dni' => '33999888']);
 
         $this->actingAs($super)
-            ->get('/admin/patients/'.$patient->id)
+            ->get('/admin/pacientes/'.$patient->id)
             ->assertOk()
             ->assertDontSee('Asignar turno')
             ->assertInertia(fn ($page) => $page
@@ -143,6 +144,6 @@ class AdminPatientsDirectoryTest extends TestCase
                 ->where('patient.name', 'Luis Paciente')
                 ->where('patient.dni', '33999888'));
 
-        $this->actingAs($super)->get('/admin/patients/999999')->assertNotFound();
+        $this->actingAs($super)->get('/admin/pacientes/999999')->assertNotFound();
     }
 }

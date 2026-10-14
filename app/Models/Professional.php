@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializesInstitutionalDates;
-use Database\Factories\DoctorFactory;
+use Database\Factories\ProfessionalFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Doctor extends Model
+class Professional extends Model
 {
-    /** @use HasFactory<DoctorFactory> */
+    /** @use HasFactory<ProfessionalFactory> */
     use HasFactory, SerializesInstitutionalDates;
 
     /**
@@ -42,14 +42,14 @@ class Doctor extends Model
 
     public function specialties(): BelongsToMany
     {
-        return $this->belongsToMany(Specialty::class, 'doctor_specialty')
+        return $this->belongsToMany(Specialty::class, 'professional_specialty')
             ->withTimestamps()
             ->orderBy('specialties.name');
     }
 
     public function healthInsurances(): BelongsToMany
     {
-        return $this->belongsToMany(HealthInsurance::class, 'doctor_health_insurance')
+        return $this->belongsToMany(HealthInsurance::class, 'professional_health_insurance')
             ->withTimestamps()
             ->orderBy('health_insurances.name');
     }
@@ -66,11 +66,11 @@ class Doctor extends Model
 
     public function patients(): BelongsToMany
     {
-        return $this->belongsToMany(Patient::class, 'doctor_patient')->withTimestamps();
+        return $this->belongsToMany(Patient::class, 'professional_patient')->withTimestamps();
     }
 
     /**
-     * @param  Builder<Doctor>  $query
+     * @param  Builder<Professional>  $query
      */
     public function scopeForSpecialty(Builder $query, int $specialtyId): void
     {
@@ -80,7 +80,7 @@ class Doctor extends Model
     }
 
     /**
-     * @param  Builder<Doctor>  $query
+     * @param  Builder<Professional>  $query
      */
     public function scopeWithSpecialties(Builder $query): void
     {

@@ -112,13 +112,33 @@ class PatientService
     }
 
     /**
+     * Query string `health_insurance_id`: vacío o "all" = Todas (lista completa).
+     *
+     * @return array{id: ?int, value: string}
+     */
+    public function parseHealthInsuranceFilter(mixed $input): array
+    {
+        if (! is_string($input) || $input === '' || $input === 'all') {
+            return ['id' => null, 'value' => 'all'];
+        }
+
+        return ['id' => (int) $input, 'value' => $input];
+    }
+
+    /**
      * @return Collection<int, Patient>
      */
-    public function list(?string $term = null)
+    public function list(?string $term = null, ?int $healthInsuranceId = null)
     {
         $query = Patient::query()
             ->with(['user', 'healthInsurances'])
             ->orderBy('id');
+
+        if ($healthInsuranceId !== null) {
+            $query->whereHas('healthInsurances', function ($insurances) use ($healthInsuranceId) {
+                $insurances->whereKey($healthInsuranceId);
+            });
+        }
 
         $term = trim((string) $term);
 

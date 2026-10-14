@@ -30,7 +30,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return Inertia::location(redirect()->intended(RoleRedirector::home()));
+        return Inertia::location(redirect()->intended(RoleRedirector::landing($request->user())));
     }
 
     public function destroy(Request $request): SymfonyResponse

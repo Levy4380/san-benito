@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-class DoctorService
+class ProfessionalService
 {
     /**
      * @param  array{name: string, email: string, password: string, license_number: string, specialty_ids: list<int>, health_insurance_ids?: list<int>, phone?: string|null, slot_duration_minutes?: int}  $data
@@ -22,16 +22,16 @@ class DoctorService
                 'password' => Hash::make($data['password']),
             ]);
 
-            $doctor = Doctor::query()->create([
+            $professional = Professional::query()->create([
                 'user_id' => $user->id,
                 'license_number' => $data['license_number'],
                 'slot_duration_minutes' => $data['slot_duration_minutes'] ?? 20,
             ]);
 
-            $doctor->specialties()->sync($data['specialty_ids']);
-            $doctor->healthInsurances()->sync($data['health_insurance_ids'] ?? []);
+            $professional->specialties()->sync($data['specialty_ids']);
+            $professional->healthInsurances()->sync($data['health_insurance_ids'] ?? []);
 
-            $user->assignRole('doctor');
+            $user->assignRole('professional');
 
             return $user;
         });
@@ -40,40 +40,40 @@ class DoctorService
     /**
      * @param  list<int>  $specialtyIds
      */
-    public function syncSpecialties(Doctor $doctor, array $specialtyIds): Doctor
+    public function syncSpecialties(Professional $professional, array $specialtyIds): Professional
     {
-        $doctor->specialties()->sync($specialtyIds);
+        $professional->specialties()->sync($specialtyIds);
 
-        return $doctor->refresh()->load(['user', 'specialties']);
+        return $professional->refresh()->load(['user', 'specialties']);
     }
 
     /**
      * @param  list<int>  $healthInsuranceIds
      */
-    public function syncHealthInsurances(Doctor $doctor, array $healthInsuranceIds): Doctor
+    public function syncHealthInsurances(Professional $professional, array $healthInsuranceIds): Professional
     {
-        $doctor->healthInsurances()->sync($healthInsuranceIds);
+        $professional->healthInsurances()->sync($healthInsuranceIds);
 
-        return $doctor->refresh()->load(['user', 'specialties', 'healthInsurances']);
+        return $professional->refresh()->load(['user', 'specialties', 'healthInsurances']);
     }
 
-    public function forUser(User $user): Doctor
+    public function forUser(User $user): Professional
     {
-        $doctor = $user->doctor;
+        $professional = $user->professional;
 
-        if ($doctor === null) {
+        if ($professional === null) {
             abort(403);
         }
 
-        return $doctor;
+        return $professional;
     }
 
-    public function updateSlotDuration(Doctor $doctor, int $minutes): Doctor
+    public function updateSlotDuration(Professional $professional, int $minutes): Professional
     {
-        $doctor->update([
+        $professional->update([
             'slot_duration_minutes' => $minutes,
         ]);
 
-        return $doctor->refresh();
+        return $professional->refresh();
     }
 }

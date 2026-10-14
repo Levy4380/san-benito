@@ -7,11 +7,11 @@ use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
-class StoreDoctorRequest extends FormRequest
+class StoreProfessionalRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Permission::DoctorsCreate->allows($this->user());
+        return Permission::ProfessionalsCreate->allows($this->user());
     }
 
     /**
@@ -23,7 +23,7 @@ class StoreDoctorRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', Password::defaults()],
-            'license_number' => ['required', 'string', 'max:64', 'unique:doctors,license_number'],
+            'license_number' => ['required', 'string', 'max:64', 'unique:professionals,license_number'],
             'specialty_ids' => ['required', 'array', 'min:1'],
             'specialty_ids.*' => ['integer', 'distinct', 'exists:specialties,id'],
             'health_insurance_ids' => ['sometimes', 'array'],

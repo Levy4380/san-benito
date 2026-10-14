@@ -5,7 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateDoctorHealthInsurancesRequest extends FormRequest
+class UpdateProfessionalHealthInsurancesRequest extends FormRequest
 {
     public function authorize(): bool
     {

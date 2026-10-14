@@ -3,6 +3,7 @@
 use App\Enums\Permission;
 use App\Http\Controllers\Admin\AdminController as AdminAdminController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
+use App\Http\Controllers\Admin\DoctorAppointmentController as AdminDoctorAppointmentController;
 use App\Http\Controllers\Admin\DoctorController as AdminDoctorController;
 use App\Http\Controllers\Admin\DoctorHealthInsuranceController as AdminDoctorHealthInsuranceController;
 use App\Http\Controllers\Admin\DoctorPatientController as AdminDoctorPatientController;
@@ -77,6 +78,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware(Permission::middleware(Permission::OwnAppointmentsAssign))->group(function () {
+        Route::get('/agenda/assign-options', [AgendaAssignController::class, 'options'])->name('agenda.assign-options');
         Route::post('/agenda/appointments', [AgendaAssignController::class, 'store'])->name('agenda.appointments.store');
     });
 
@@ -119,6 +121,10 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware(Permission::middleware(Permission::AvailabilityProgram))->group(function () {
             Route::post('/doctors/{doctor}/windows/program', [AdminDoctorWindowController::class, 'program'])->name('doctors.windows.program');
+        });
+
+        Route::middleware(Permission::middleware(Permission::AppointmentsAssign))->group(function () {
+            Route::post('/doctors/{doctor}/appointments', [AdminDoctorAppointmentController::class, 'store'])->name('doctors.appointments.store');
         });
 
         Route::middleware(Permission::middleware(Permission::PatientsLink))->group(function () {

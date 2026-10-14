@@ -13,6 +13,7 @@ export const Permission = {
     OwnAvailabilityProgram: 'own.availability.program',
     OwnAvailabilityDelete: 'own.availability.delete',
     AppointmentsCancel: 'appointments.cancel',
+    AppointmentsAssign: 'appointments.assign',
     AppointmentsCatalogView: 'appointments.catalog.view',
     PatientsLink: 'patients.link',
     AvailabilityCreate: 'availability.create',

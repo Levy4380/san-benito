@@ -53,7 +53,10 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                             key: doctor.id,
                             title: doctor.user.name,
                             lines: [specialtyNames(doctor.specialties), doctor.license_number],
-                            actions: [{ kind: 'info', href: `/doctors/${doctor.id}`, name: doctor.user.name }],
+                            actions: [
+                                { kind: 'info', href: `/doctors/${doctor.id}`, name: doctor.user.name },
+                                { kind: 'agenda', href: `/doctors/${doctor.id}/slots`, name: doctor.user.name },
+                            ],
                         }))}
                         primary={
                             <Field label="Nombre" htmlFor="q" flush className="min-w-0">

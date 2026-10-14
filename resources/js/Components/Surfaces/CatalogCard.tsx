@@ -4,7 +4,7 @@ import { phoneInteractivePadClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { Link } from '@inertiajs/react';
-import { CalendarClock, Info, Link2, UserPlus } from 'lucide-react';
+import { CalendarClock, CalendarDays, Info, Link2, UserPlus } from 'lucide-react';
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
 const catalogCardBase = cn(
@@ -17,7 +17,8 @@ const catalogCardInteractive = cn('cursor-pointer hover:border-accent', focusVis
 export type CatalogAction =
     | { kind: 'info'; href: string; name?: string }
     | { kind: 'slots'; href: string }
-    | { kind: 'assign'; href: string }
+    | { kind: 'agenda'; href: string; name?: string }
+    | { kind: 'assign'; onClick: () => void }
     | { kind: 'link'; onClick: () => void };
 
 export type CatalogLayout = 'grid' | 'list';
@@ -46,8 +47,10 @@ type DivProps = Common &
 type Props = ButtonProps | DivProps;
 
 function CatalogActionButtons({ actions, className }: { actions: CatalogAction[]; className?: string }) {
+    const stacked = actions.some((action) => action.kind === 'agenda');
+
     return (
-        <CatalogCardActions className={className}>
+        <CatalogCardActions className={cn(stacked && 'flex-col items-start', className)}>
             {actions.map((action) => {
                 if (action.kind === 'info') {
                     const aria = action.name ? `Más información de ${action.name}` : 'Más información';
@@ -73,13 +76,24 @@ function CatalogActionButtons({ actions, className }: { actions: CatalogAction[]
                     );
                 }
 
+                if (action.kind === 'agenda') {
+                    const aria = action.name ? `Ver agenda de ${action.name}` : 'Ver agenda';
+
+                    return (
+                        <Btn key={`agenda-${action.href}`} size="sm" asChild>
+                            <Link href={action.href} aria-label={aria} title={aria}>
+                                <CalendarDays className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Ver agenda
+                            </Link>
+                        </Btn>
+                    );
+                }
+
                 if (action.kind === 'assign') {
                     return (
-                        <Btn key={`assign-${action.href}`} size="sm" asChild>
-                            <Link href={action.href}>
-                                <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Asignar turno
-                            </Link>
+                        <Btn key="assign" type="button" size="sm" onClick={action.onClick}>
+                            <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                            Asignar turno
                         </Btn>
                     );
                 }

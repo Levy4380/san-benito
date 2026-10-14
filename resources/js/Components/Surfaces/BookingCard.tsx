@@ -86,7 +86,7 @@ export function BookingCardFields({ appointment, className }: { appointment: App
             <BookingCardField label="Hora" value={`${wallTime(appointment.starts_at)} — ${wallTime(appointment.ends_at)}`} mono />
             {showDoctor ? <BookingCardField label="Doctor" value={appointment.doctor?.user.name} /> : null}
             <BookingCardField label="Especialidad" value={appointment.specialty?.name} />
-            {showPatient ? <BookingCardField label="Paciente" value={appointment.patient?.user.name} /> : null}
+            {showPatient ? <BookingCardField label="Paciente" value={appointment.patient?.name} /> : null}
         </dl>
     );
 }

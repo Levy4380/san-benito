@@ -1,6 +1,7 @@
 import { Btn } from '@/Components/Form/Btn';
+import { cn } from '@/lib/utils';
 import { Check, Trash2, Undo2, X } from 'lucide-react';
-import { FormEvent, ReactNode, useCallback, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 type ConfirmOptions = {
     title: string;
@@ -17,14 +18,27 @@ type ConfirmDialogProps = {
     message: ReactNode;
     children: ReactNode;
     onDismiss: () => void;
+    className?: string;
 };
 
-export function ConfirmDialog({ title, message, children, onDismiss }: ConfirmDialogProps) {
+/** Open dialogs, innermost last: only the top one reacts to Escape. */
+const openDialogs: symbol[] = [];
+
+export function ConfirmDialog({ title, message, children, onDismiss, className }: ConfirmDialogProps) {
+    const dismissRef = useRef(onDismiss);
+
     useEffect(() => {
+        dismissRef.current = onDismiss;
+    });
+
+    useEffect(() => {
+        const id = Symbol('dialog');
+        openDialogs.push(id);
+
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
+            if (event.key === 'Escape' && openDialogs[openDialogs.length - 1] === id) {
                 event.preventDefault();
-                onDismiss();
+                dismissRef.current();
             }
         };
 
@@ -32,16 +46,22 @@ export function ConfirmDialog({ title, message, children, onDismiss }: ConfirmDi
         document.addEventListener('keydown', onKey);
 
         return () => {
-            document.documentElement.classList.remove('confirm-open');
+            openDialogs.splice(openDialogs.indexOf(id), 1);
+            if (openDialogs.length === 0) {
+                document.documentElement.classList.remove('confirm-open');
+            }
             document.removeEventListener('keydown', onKey);
         };
-    }, [onDismiss]);
+    }, []);
 
     return (
         <div className="fixed inset-0 z-[200] grid place-items-center p-4 max-md:p-[var(--space-sm)]" role="presentation">
             <div className="absolute inset-0 bg-[oklch(22%_0.02_255/0.42)]" onClick={onDismiss} />
             <div
-                className="relative z-[1] grid w-[min(22rem,100%)] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg max-md:w-[min(22rem,calc(100vw-var(--space-sm)*2))] max-md:gap-[var(--space-xs)] max-md:p-[var(--space-sm)] max-md:rounded-[calc(var(--radius-card)+2px)]"
+                className={cn(
+                    'relative z-[1] grid w-[min(22rem,100%)] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg max-md:w-[min(22rem,calc(100vw-var(--space-sm)*2))] max-md:gap-[var(--space-xs)] max-md:p-[var(--space-sm)] max-md:rounded-[calc(var(--radius-card)+2px)]',
+                    className,
+                )}
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="confirm-modal-title"

@@ -37,7 +37,15 @@ class PatientController extends Controller
 
     public function store(StoreAdminPatientRequest $request, PatientService $patients): RedirectResponse
     {
-        $patients->register($request->validated());
+        $data = $request->validated();
+        $withAccount = (bool) $data['with_account'];
+        unset($data['with_account']);
+
+        if ($withAccount) {
+            $patients->register($data);
+        } else {
+            $patients->createWithoutAccount($data);
+        }
 
         return redirect()
             ->route('admin.patients.index')

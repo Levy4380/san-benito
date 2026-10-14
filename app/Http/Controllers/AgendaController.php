@@ -14,13 +14,7 @@ class AgendaController extends Controller
     {
         $doctor = $doctors->forUser($request->user());
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
-        $patientId = $request->filled('patient_id') ? $request->integer('patient_id') : null;
 
-        return Inertia::render('Doctor/Agenda', $agenda->pageData(
-            $doctor,
-            $date,
-            $patientId,
-            $request->input('panel'),
-        ));
+        return Inertia::render('Doctor/Agenda', $agenda->pageData($doctor, $date, $request->input('panel')));
     }
 }

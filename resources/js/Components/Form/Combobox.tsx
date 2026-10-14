@@ -316,6 +316,7 @@ export default function Combobox(props: ComboboxProps) {
 
         if (event.key === 'Escape') {
             event.preventDefault();
+            event.stopPropagation();
             closePanel(true);
         }
     };
@@ -412,7 +413,7 @@ export default function Combobox(props: ComboboxProps) {
                 ? createPortal(
                       <div
                           ref={panelRef}
-                          className="border-rule bg-paper fixed z-[110] flex flex-col overflow-hidden rounded-lg border p-[0.35rem] shadow-md"
+                          className="border-rule bg-paper fixed z-[210] flex flex-col overflow-hidden rounded-lg border p-[0.35rem] shadow-md"
                           style={{ top: box.top, left: box.left, width: box.width, maxHeight: box.maxHeight }}
                       >
                           <label className="sr-only" htmlFor={searchId}>

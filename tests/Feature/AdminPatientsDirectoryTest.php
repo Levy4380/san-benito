@@ -71,6 +71,7 @@ class AdminPatientsDirectoryTest extends TestCase
 
         $this->actingAs($super)
             ->post('/admin/patients', [
+                'with_account' => true,
                 'name' => 'Nora Paciente',
                 'email' => 'nora.admin@example.com',
                 'password' => 'password',
@@ -88,6 +89,9 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->assertTrue($user->hasRole('patient'));
         $this->assertNotNull($user->patient);
         $this->assertSame('40111222', $user->patient->dni);
+        $this->assertSame('Nora Paciente', $user->patient->name);
+        $this->assertSame('nora.admin@example.com', $user->patient->email);
+        $this->assertSame('1144445555', $user->patient->phone);
         $this->assertSame('OSDE', $user->patient->health_insurance);
         $this->assertDatabaseHas('patient_health_insurance', [
             'patient_id' => $user->patient->id,
@@ -136,7 +140,7 @@ class AdminPatientsDirectoryTest extends TestCase
             ->assertDontSee('Asignar turno')
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/UserPatient')
-                ->where('patient.user.name', 'Luis Paciente')
+                ->where('patient.name', 'Luis Paciente')
                 ->where('patient.dni', '33999888'));
 
         $this->actingAs($super)->get('/admin/patients/999999')->assertNotFound();

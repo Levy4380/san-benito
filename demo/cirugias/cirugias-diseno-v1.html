@@ -1,0 +1,2988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cirugías · San Benito</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+/* Variables: mismo bloque que resources/css/tokens.css, más los tonos de día de app.css. */
+
+:root {
+    --color-paper: oklch(99% 0.006 255);
+    --color-paper-2: oklch(96.5% 0.01 255);
+    --color-paper-3: oklch(93.5% 0.014 255);
+    --color-ink: oklch(22% 0.02 255);
+    --color-ink-2: oklch(48% 0.016 255);
+    --color-rule: oklch(88% 0.012 255);
+    --color-accent: oklch(47% 0.16 255);
+    --color-accent-ink: oklch(99% 0.004 255);
+    --color-accent-soft: oklch(92% 0.045 255);
+    --color-focus: oklch(52% 0.18 255);
+    --color-danger: oklch(52% 0.18 25);
+    --color-day: oklch(90% 0.008 260);
+    --color-day-ink: oklch(55% 0.02 260);
+    --color-day-has: oklch(88% 0.06 250);
+    --color-day-has-ink: oklch(32% 0.08 250);
+    --color-day-full: oklch(88% 0.12 55);
+    --color-day-full-ink: oklch(35% 0.1 45);
+    --color-day-ring: oklch(100% 0 0 / 0.35);
+    --font-display: "Inter Tight", "Segoe UI", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    --space-3xs: 0.25rem;
+    --space-2xs: 0.5rem;
+    --space-xs: 0.75rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 3rem;
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-md: 1rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+    --text-display: clamp(2rem, 3.5vw, 3rem);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-short: 180ms;
+    --radius-card: 8px;
+    --radius-input: 6px;
+    --rule-hair: 1px solid var(--color-rule);
+    --sidebar-w: 16.75rem;
+    --brand-logo-size: 3.5rem;
+    --mobile-header-h: 3rem;
+    --app-frame: 0.45rem;
+    --app-radius: 0.85rem;
+    --shadow-color: oklch(22% 0.02 255 / 0.14);
+    --shadow-sm: 0 1px 2px var(--shadow-color);
+    --shadow-md: 0 6px 18px var(--shadow-color);
+    --shadow-lg: 0 10px 28px var(--shadow-color);
+    --btn-pad-x: 0.85rem;
+    --focus-ring: 2px solid var(--color-focus);
+    --control-h: 2.75rem;
+    --control-h-sm: 2.25rem;
+    --page-header-h: 5.75rem;
+    --page-header-title-h: calc(var(--text-xl) * 1.25);
+    --page-header-sub-h: 2.35rem;
+}
+
+@media (max-width: 767px) {
+    :root {
+        --text-display: 1.45rem;
+        --page-header-h: auto;
+        --page-header-title-h: auto;
+        --page-header-sub-h: auto;
+        --control-h: 2.35rem;
+        --control-h-sm: 1.95rem;
+        --btn-pad-x: 0.7rem;
+        --mobile-header-h: 2.75rem;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    overflow: hidden;
+    padding: var(--app-frame);
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+.brand-name,
+.card-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.shell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: var(--app-radius);
+    background: var(--color-paper-2);
+}
+
+.frame {
+    display: grid;
+    flex: 1;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: 0;
+}
+
+.topbar {
+    display: none;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    min-height: 0;
+    padding: var(--space-md);
+    background: transparent;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: max-content;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+
+.brand img {
+    width: var(--brand-logo-size);
+    height: var(--brand-logo-size);
+    border-radius: 50%;
+    background: #fff;
+    object-fit: contain;
+    box-shadow: 0 1px 4px oklch(22% 0.02 255 / 0.14);
+}
+
+.brand-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    max-width: 11.5rem;
+    line-height: 1.12;
+}
+
+.brand-kicker {
+    color: var(--color-ink-2);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.brand-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-lg);
+    min-height: 0;
+}
+
+.nav {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: var(--control-h-sm);
+    padding: 0.55rem 0.65rem;
+    border: 0;
+    border-radius: var(--radius-input);
+    background: transparent;
+    color: var(--color-ink-2);
+    text-align: left;
+}
+
+.nav-btn:hover {
+    background: var(--color-paper);
+    color: var(--color-ink);
+}
+
+.nav-btn.is-active {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+}
+
+.nav-group {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.nav-parent.is-current {
+    color: var(--color-ink);
+    font-weight: 600;
+}
+
+.nav-label {
+    flex: 1;
+}
+
+.nav-caret {
+    transition: transform 0.15s ease;
+}
+
+.nav-parent[aria-expanded="false"] .nav-caret {
+    transform: rotate(-90deg);
+}
+
+.nav-sub {
+    display: grid;
+    gap: 0.15rem;
+    margin-left: 1.05rem;
+    padding-left: 0.55rem;
+    border-left: var(--rule-hair);
+}
+
+.nav-child {
+    min-height: 2rem;
+    padding: 0.4rem 0.6rem;
+    font-size: var(--text-sm);
+}
+
+.nav-count {
+    min-width: 1.5rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: var(--color-paper);
+    color: var(--color-ink-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.nav-child.is-active .nav-count {
+    background: oklch(100% 0 0 / 0.22);
+    color: var(--color-accent-ink);
+}
+
+.sidebar-foot {
+    margin-top: auto;
+    padding-top: var(--space-md);
+    border-top: var(--rule-hair);
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+}
+
+.sidebar-foot strong {
+    display: block;
+    margin-bottom: 0.15rem;
+    overflow: hidden;
+    color: var(--color-ink);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-foot > span {
+    display: block;
+}
+
+.sidebar-user {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+main {
+    min-width: 0;
+    min-height: 0;
+    margin: var(--app-frame);
+    padding: var(--space-lg) var(--space-xl);
+    overflow: auto;
+    border-radius: var(--app-radius);
+    background: var(--color-paper);
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    height: var(--page-header-h);
+    min-height: var(--page-header-h);
+    max-height: var(--page-header-h);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+}
+
+.page-header-copy {
+    display: grid;
+    flex: 1;
+    grid-template-rows: var(--page-header-title-h) var(--page-header-sub-h);
+    align-content: center;
+    min-width: 0;
+    row-gap: 0.2rem;
+}
+
+.page-header h1,
+.back-link {
+    display: flex;
+    align-items: center;
+    height: var(--page-header-title-h);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+}
+
+.page-header p {
+    display: flex;
+    align-items: center;
+    height: var(--page-header-sub-h);
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+    line-height: 1.35;
+}
+
+.header-actions {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.back-link {
+    gap: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink-2);
+    font-family: var(--font-display);
+}
+
+.back-link:hover {
+    color: var(--color-accent);
+}
+
+.icon-chevron {
+    width: 1.05em;
+    height: 1.05em;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: var(--control-h);
+    padding: 0 var(--btn-pad-x);
+    border: 1px solid transparent;
+    border-radius: var(--radius-input);
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:hover {
+    filter: brightness(1.05);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    filter: none;
+}
+
+.btn-outline {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border-color: var(--color-rule);
+    box-shadow: none;
+}
+
+.btn-outline:hover {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    border-color: transparent;
+    filter: none;
+}
+
+.btn-sm {
+    height: var(--control-h-sm);
+    padding-inline: 0.65rem;
+    font-size: var(--text-xs);
+    box-shadow: none;
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: 0.75rem;
+}
+
+.btn-icon {
+    width: var(--control-h-sm);
+    height: var(--control-h-sm);
+    padding: 0;
+}
+
+.icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon-lg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.stage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    min-height: 16rem;
+    padding: var(--space-sm);
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+}
+
+.filter-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+    gap: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    border-bottom: var(--rule-hair);
+}
+
+.filter-panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.filter-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: var(--space-sm);
+}
+
+.filter-panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.card-copy {
+    display: grid;
+    justify-items: start;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-input);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.status-badge::before {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+}
+
+.status-pending_approval {
+    background: oklch(88% 0.12 55);
+    color: oklch(35% 0.1 45);
+}
+
+.status-to_schedule {
+    background: oklch(88% 0.06 250);
+    color: oklch(32% 0.08 250);
+}
+
+.status-scheduled {
+    background: oklch(90% 0.08 150);
+    color: oklch(36% 0.1 150);
+}
+
+.modal-dialog.modal-dialog-wide {
+    width: min(34rem, 100%);
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+}
+
+.detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2xs);
+}
+
+.detail-head .status-badge {
+    margin-top: 0;
+}
+
+.detail-body {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.detail-section {
+    display: grid;
+    gap: 0.35rem;
+    padding-top: var(--space-xs);
+    border-top: var(--rule-hair);
+}
+
+.detail-section h3 {
+    color: var(--color-ink-2);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.detail-section dl {
+    display: grid;
+    grid-template-columns: 8rem minmax(0, 1fr);
+    gap: 0.3rem var(--space-sm);
+    margin: 0;
+    font-size: var(--text-sm);
+}
+
+.detail-section dt {
+    color: var(--color-ink-2);
+}
+
+.detail-section dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.detail-note {
+    font-size: var(--text-sm);
+    white-space: pre-wrap;
+}
+
+.field {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.field > span,
+.hint {
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.hint {
+    font-weight: 400;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    height: var(--control-h);
+    padding: 0 0.75rem;
+    border: var(--rule-hair);
+    border-radius: var(--radius-input);
+    background: var(--color-paper);
+    font-size: var(--text-sm);
+}
+
+textarea {
+    height: auto;
+    min-height: 6.5rem;
+    padding: 0.65rem 0.75rem;
+    resize: vertical;
+}
+
+.time24 select {
+    width: auto;
+    min-width: 5rem;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.error {
+    color: var(--color-danger);
+    font-size: var(--text-sm);
+}
+
+.list {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+}
+
+.list-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+    color: var(--color-ink-2);
+    font-size: var(--text-xs);
+    font-weight: 600;
+}
+
+.list-divider::after {
+    content: '';
+    flex: 1;
+    border-top: var(--rule-hair);
+}
+
+.empty {
+    padding: var(--space-sm) 0;
+    color: var(--color-ink-2);
+}
+
+.card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.7rem;
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper-2);
+}
+
+.card-name {
+    font-size: var(--text-sm);
+}
+
+.card-meta,
+.card-note,
+.status {
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+}
+
+.card-time {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.card-actions {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pick-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.pick {
+    display: flex;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+    text-align: left;
+}
+
+.pick:hover,
+.pick.is-selected {
+    border-color: var(--color-accent);
+}
+
+.pick.is-selected {
+    background: var(--color-accent-soft);
+}
+
+.pick strong {
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+.pick span {
+    display: block;
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+}
+
+.picked {
+    font-size: var(--text-sm);
+}
+
+.form-grid {
+    max-width: 36rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.agenda {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-sm);
+    min-height: 32rem;
+}
+
+.cal,
+.panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--space-sm);
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+}
+
+.cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: var(--space-2xs);
+}
+
+.cal-head h2 {
+    flex: 1;
+    font-size: var(--text-md);
+    line-height: 1.2;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.cal-grid {
+    display: grid;
+    flex: 1;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: auto repeat(6, minmax(2.1rem, 1fr));
+    gap: 0.28rem;
+}
+
+.weekday {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-ink-2);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--radius-input);
+    background: var(--color-day);
+    color: var(--color-day-ink);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.day.tone-has {
+    background: var(--color-day-has);
+    color: var(--color-day-has-ink);
+}
+
+.day.tone-full {
+    background: var(--color-day-full);
+    color: var(--color-day-full-ink);
+    font-weight: 600;
+}
+
+.day.is-selected {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    box-shadow: inset 0 0 0 2px var(--color-day-ring);
+}
+
+.day.is-muted {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.35rem;
+    color: var(--color-ink-2);
+    font-size: 0.65rem;
+}
+
+.swatch {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-right: 0.25rem;
+    border-radius: 2px;
+    background: var(--color-day);
+}
+
+.swatch-has {
+    background: var(--color-day-has);
+}
+
+.swatch-full {
+    background: var(--color-day-full);
+}
+
+.day-back {
+    display: none;
+    align-self: flex-start;
+    margin-bottom: var(--space-sm);
+}
+
+.panel h2 {
+    font-size: var(--text-md);
+    line-height: 1.3;
+}
+
+.panel .hint {
+    margin: 0.25rem 0 var(--space-sm);
+}
+
+#calendar-subtitle strong {
+    margin-right: 0.25rem;
+    color: var(--color-ink);
+    font-weight: 600;
+}
+
+.panel:has(.schedule-day) {
+    overflow: hidden;
+}
+
+.schedule-day {
+    display: grid;
+    grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+    gap: var(--space-sm);
+    flex: 1;
+    min-height: 0;
+}
+
+.schedule-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.schedule-controls .time-row {
+    display: grid;
+    gap: var(--space-xs);
+}
+
+.schedule-status {
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius-input);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.schedule-status.is-ok {
+    background: oklch(90% 0.08 150);
+    color: oklch(36% 0.1 150);
+}
+
+.schedule-status.is-bad {
+    background: oklch(52% 0.18 25 / 0.12);
+    color: var(--color-danger);
+}
+
+.gap-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.gap-chip {
+    height: var(--control-h-sm);
+    padding: 0 0.6rem;
+    border: 1px solid oklch(75% 0.08 150);
+    border-radius: var(--radius-input);
+    background: var(--color-paper);
+    color: oklch(36% 0.1 150);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.gap-chip:hover {
+    background: oklch(90% 0.08 150);
+}
+
+.schedule-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    margin-top: auto;
+    padding-top: var(--space-sm);
+    border-top: var(--rule-hair);
+}
+
+.timeline-wrap {
+    min-height: 0;
+    max-height: 34rem;
+    overflow-y: auto;
+    padding: 0.5rem 0.25rem 0.5rem 0;
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+}
+
+.timeline {
+    position: relative;
+    height: calc(var(--hours) * 2.4rem);
+    margin: 0.4rem 0;
+}
+
+.timeline.is-pickable {
+    cursor: crosshair;
+}
+
+.tl-hour {
+    position: absolute;
+    right: 0;
+    left: 3.1rem;
+    border-top: 1px dashed var(--color-rule);
+}
+
+.tl-hour span {
+    position: absolute;
+    top: -0.5rem;
+    left: -3rem;
+    color: var(--color-ink-2);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
+.tl-past {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 3.1rem;
+    background: repeating-linear-gradient(-45deg, oklch(93.5% 0.014 255 / 0.7) 0 6px, transparent 6px 12px);
+    pointer-events: none;
+}
+
+.tl-block {
+    position: absolute;
+    right: 0.35rem;
+    left: 3.35rem;
+    min-height: 1.1rem;
+    overflow: hidden;
+    padding: 0.2rem 0.45rem;
+    border-radius: var(--radius-input);
+    font-size: var(--text-xs);
+    line-height: 1.25;
+}
+
+.tl-busy {
+    border: 1px solid oklch(75% 0.08 250);
+    background: oklch(88% 0.06 250);
+    color: oklch(32% 0.08 250);
+    font: inherit;
+    font-size: var(--text-xs);
+    text-align: left;
+    cursor: default;
+}
+
+button.tl-busy {
+    cursor: pointer;
+}
+
+button.tl-busy:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 1px 4px oklch(30% 0.05 255 / 0.18);
+}
+
+button.tl-busy:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+}
+
+.tl-busy.is-done {
+    border-color: var(--color-rule);
+    background: oklch(93.5% 0.014 255);
+    color: var(--color-ink-2);
+}
+
+.tl-preview {
+    z-index: 2;
+    border: 2px solid;
+    pointer-events: none;
+}
+
+.tl-preview.is-ok {
+    border-color: oklch(55% 0.13 150);
+    background: oklch(90% 0.08 150 / 0.9);
+    color: oklch(30% 0.1 150);
+}
+
+.tl-preview.is-bad {
+    border-color: var(--color-danger);
+    background: oklch(52% 0.18 25 / 0.16);
+    color: var(--color-danger);
+}
+
+.time-row {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.time24 {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: var(--control-h);
+}
+
+.time-sep {
+    color: var(--color-ink-2);
+    font-family: var(--font-mono);
+    font-weight: 600;
+}
+
+.toasts {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.45rem;
+    width: min(22rem, calc(100vw - 1.5rem));
+    pointer-events: none;
+}
+
+.toast {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-card);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    line-height: 1.35;
+    box-shadow: var(--shadow-lg);
+    animation: toast-in var(--dur-short) var(--ease-out);
+}
+
+.toast-ok {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+}
+
+.toast-warn {
+    background: var(--color-danger);
+    color: #fff;
+}
+
+.toast-info {
+    background: var(--color-ink);
+    color: var(--color-accent-ink);
+}
+
+@keyframes toast-in {
+    from {
+        transform: translateX(1rem);
+        opacity: 0;
+    }
+    to {
+        transform: none;
+        opacity: 1;
+    }
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: oklch(22% 0.02 255 / 0.42);
+}
+
+.modal-dialog {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-sm);
+    width: min(22rem, 100%);
+    padding: var(--space-md);
+    border: var(--rule-hair);
+    border-radius: var(--radius-card);
+    background: var(--color-paper);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-dialog h2 {
+    font-size: var(--text-md);
+    line-height: 1.3;
+}
+
+.modal-dialog > p {
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+    line-height: 1.45;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+}
+
+.modal-actions .btn {
+    min-width: 6.5rem;
+}
+
+:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+    .schedule-day {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-controls .time-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .schedule-actions {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 1199px) {
+    .topbar {
+        position: relative;
+        z-index: 60;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.35rem;
+        height: var(--mobile-header-h);
+        min-height: var(--mobile-header-h);
+        padding: 0 var(--space-2xs);
+        border-radius: var(--app-radius);
+        background: var(--color-paper);
+    }
+
+    .topbar-brand {
+        overflow: hidden;
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .icon-hit {
+        display: grid;
+        place-items: center;
+        width: var(--control-h-sm);
+        height: var(--control-h-sm);
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-input);
+        background: transparent;
+        color: var(--color-ink);
+    }
+
+    .avatar {
+        display: grid;
+        place-items: center;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 50%;
+        background: var(--color-accent);
+        color: var(--color-accent-ink);
+        font-size: 0.62rem;
+        font-weight: 600;
+    }
+
+    .burger {
+        position: relative;
+        display: block;
+        width: 0.85rem;
+        height: 1.5px;
+        background: currentColor;
+    }
+
+    .burger::before,
+    .burger::after {
+        position: absolute;
+        left: 0;
+        width: 0.85rem;
+        height: 1.5px;
+        background: currentColor;
+        content: "";
+    }
+
+    .burger::before {
+        top: -3.5px;
+    }
+
+    .burger::after {
+        top: 3.5px;
+    }
+
+    .topbar [aria-expanded="true"] .burger {
+        background: transparent;
+    }
+
+    .topbar [aria-expanded="true"] .burger::before {
+        top: 0;
+        transform: rotate(45deg);
+    }
+
+    .topbar [aria-expanded="true"] .burger::after {
+        top: 0;
+        transform: rotate(-45deg);
+    }
+
+    .frame {
+        display: block;
+        position: relative;
+    }
+
+    .sidebar {
+        position: absolute;
+        inset: 0;
+        z-index: 56;
+        display: none;
+        overflow: auto;
+        border-radius: var(--app-radius);
+        background: var(--color-paper);
+        padding-top: var(--space-sm);
+    }
+
+    .sidebar.is-open {
+        display: flex;
+    }
+
+    .brand {
+        display: none;
+    }
+
+    .sidebar-foot-desktop {
+        display: none;
+    }
+
+    .nav-btn {
+        min-height: var(--control-h);
+        padding: 0.75rem 0.85rem;
+        font-size: var(--text-md);
+    }
+
+    main {
+        margin: var(--space-2xs) 0 0;
+        padding: var(--space-sm);
+    }
+
+    .page-header {
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        flex-wrap: wrap;
+        margin-bottom: var(--space-sm);
+        overflow: visible;
+    }
+
+    .page-header-copy {
+        grid-template-rows: auto auto;
+    }
+
+    .page-header h1,
+    .back-link,
+    .page-header p {
+        height: auto;
+    }
+
+    .page-header h1,
+    .back-link {
+        font-size: 1.35rem;
+    }
+
+    .toasts {
+        top: calc(var(--app-frame) + var(--mobile-header-h) + var(--space-2xs) + env(safe-area-inset-top, 0px));
+        right: 0.45rem;
+        width: min(20rem, calc(100vw - 0.9rem));
+    }
+}
+
+@media (max-width: 767px) {
+    main {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .header-actions .btn {
+        height: var(--control-h-sm);
+    }
+
+    .filter-band,
+    .filter-panel-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-section dl {
+        grid-template-columns: 1fr;
+        gap: 0.1rem;
+    }
+
+    .detail-section dd {
+        margin-bottom: 0.35rem;
+    }
+
+    .agenda {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .agenda.is-day .cal {
+        display: none;
+    }
+
+    .agenda:not(.is-day) .panel {
+        display: none;
+    }
+
+    .cal {
+        aspect-ratio: 1;
+        width: min(100%, 38dvh);
+        max-height: 38dvh;
+        margin-inline: auto;
+        border-radius: calc(var(--radius-card) + 2px);
+    }
+
+    .panel,
+    .card,
+    .stage {
+        border-radius: calc(var(--radius-card) + 2px);
+    }
+
+    .day-back {
+        display: inline-flex;
+    }
+
+    .card {
+        padding: 0.65rem 0.9rem;
+    }
+
+    .btn {
+        font-size: var(--text-xs);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        animation: none;
+    }
+}
+
+</style>
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <button type="button" class="icon-hit" id="nav-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir menú">
+                <span class="burger" aria-hidden="true"></span>
+            </button>
+            <span class="topbar-brand">San Benito</span>
+            <button type="button" class="icon-hit" id="user-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir sesión">
+                <span class="avatar" aria-hidden="true">SE</span>
+            </button>
+        </header>
+
+        <div class="frame">
+            <aside class="sidebar" id="sidebar" aria-label="Navegación" data-open="false">
+                <button type="button" class="brand" id="brand-home">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHAAAABwCAIAAABJgmMcAAA970lEQVR42tV9dXgVR/f/md29N+7EcQ/B3YtDCxUKhbZQ3IuVosUKFKcKxaFYcXcJBAsE1wiBGMTdru3uzPn9MTeXFKKU932/v3l4eJLN7OzMZ47PzBlCKQUAAoAAhBBEJABACCJCyYW/V+D3/Bff/EOBggiMMQCQJNH8RUJUlb2MSw99Fh/yLCH8RWL0y5TU1JysbJPRaDLJslFGhmBjJVpZaaysrOztRFcnq4oVvGtV8/av5V3Xz7dGVU9ray1vChEpZQxRFAghpDRDIEAQSjNeyxihiPERYgb0nwgWA0fxdUgRM2EZJyFEkkQ+coNRuf8o9tK1sKDbz56/SMzTmezsrL29XMr7ulbydfH1cvHwcHJ2sLazs7LSagghikKNJjk3z5Scmp2UkvkyPifmZWp8QnpurkGjlSqUd23ZpHqndnVaNavu7GSbP08UEUVRIKUlkX9VCMkHtPSQle0DAEAIY8gY46MihKSm5R4/++DQiTv3HsciEr+a3q2bVW3VtFo9v/IVypezwF1i44gIhABiWnpuWERi8N3n14IjHoUm6vQm/5run/ds1vfTFuV9XDiOikpFgQiCUFa6KdtgAYoD9N8XRGQMOWvLinr6wpN12y7fvB1WzsXuo66Nevds3KJpdXs7awurWqSBKAoqZYAIZskAAAQRVZUWaBwEwUzv5iERoij00dOXx87cPXHuSUxcRt1anqOHdOr7SXMbaw0iqpQJBARC/nO0WipAyzSTfKIYAmNMFEVBIGnpuas3X9y0I1CWlb6fNh8xoH3jBpUJESytWiQpY0wQBL3edOFyaOcP/OztrAFg9cbze4/cEQQY1K/1yMEdOeIAIAhCVrYuPSOvaiUPlTJJEhhDQoggmFsLj4j/a/fVvcfuG43yoC9aThn3obeXM2NIKRUEQSDvkzzzx06AvtfCKKWUyrLChVdySva303dY+wz3bz1zx95rer0RERljsqwYDCZFUVWVJiVlHjl1d9y0bV+NWBv2LA4RE5My3XyHPHwchYi/rTvvVmnUxashZwIeOVcYtfXvIESUZUWWFUTcsvNy4w9mICIi7j8SFB4Rh4iKolLKVFVljCGiotAjJ+807/qjte/IYRO3xMWnc0qXZeX9DpyPHYqvVKbmGGOKoiqKioh5OuOMBQe0XsObdZ538cpTjqOqUj7I/F9VRGzc6cfaLaat3XK+94A/mrefjYhUpdUaTzl1/iEi1ms9688tAfyVZb+fatl5PoeMAzpl9q5PvlqFiNk5BlvXgd+M+BMRn4a+3HvwGiJSSvmH+EeD777o+OlSjdfwSTN3ZWfreDuKorLSj7NEHBgTiiHgMnEEAqgq5UJt1/4g7zqTjpy6c3L3pNsBCzq2q0MpkxVVFIW7D6KGTNjy1ci1t+9FiaIIAL4ezj27NR47rGvrFpUFKwIAgig4uzhHv0wDAKOsuro48k+4l7PT6XVcRPAnYRGJtWr6AsCNW89kQbjzMAoAjh6/s3nLRQA4feHRui0BiGaR0qxR1UtHZ145NuNq8DPfBlO37LosSaIgCKrK3gezAwAgolDoH8raFkOklGk0UmxcRqvuC0d+99fPC/o9u7WsS4e6XI0gopVWc/DYnW69l1Wr5O7u5tC220/nLj4GgG4da69ef6Ztz0XTpu8c9EVr3qaPh+2LyDgAaNGo6rr1x/nDzVsut27mBwCMMUEUACA+Ia1WNXcAOHT89qD+rb293C5dDQ2+97znx80AwMnRdteB636tf1i06lhCYiYimmS1ZbPq9wMXblw1cOqPB1t0WxwVnazRSJQyswH+roUTHyH/WoZyNucS88/NF8B5UN8hv2dk5CCiyaQwxlTKTp9/nJGZh4j+zaZv3n6Z8+/U2bsbtJyOiEG3ntmXH5qQmHHxyhOt6zdHT91DxLGTNn/yxXJEjE9Ia9FlTr32c/1aTW3fa3F6Ri5nVUTMytK5+Yy6eesZItZo/P35S48WrTjeq9/KJu1nPwl9yb9y6Phdr2pj+o9YO2TcRi46Lf/rdKbB49aBy6A/Ngbwh4qi/nvuh7KKyzcKl2WZWbouny3Tug86dvpuQRl372FM9z5L2n60JCNTh4iV6o4/dOIWl2sPHsd61vg2KyvPaFTKVRgTEPgUEX9ee/6rEX8i4uOQV0G3niOioqqqSm/fi7z7IJJSyofNAc3IzJu39FBeniEyKtmjxricHP29B9Gg6deq63wL6C06zp+9cD8i5uToEfH39efmLj3C6GtYA66E2vuO6PLZ8uwcPVd370hYbwD6bu+bZAURb92PdKowsl2PhWnpOYhoMJgQWU6O4ZvRaxwrjPGpPCItI5vTyzcjN7TrPJ//vP3vy1XqjFMpRcQlPx+58yCKD5LbADRfn+BbhT9kjHH+UCnNztE/fhpNVUop86k9btLM7bzm7XuRTt7fxL5K5b9GxaRUqDWmScc5DdrPPXH2oYUasrJ1XT5b7lJ57P1HMYho+hfanzEG70yeZsNl1xWw+XLukgMcDosej0/IWLj8cHpGrn/TaQuXH0FEZJiQlFGp7oQmHecPGb/ZpfLw/YeDENFokillFl1s+T8jMy8yOvnOg+gLgU+Onrpz8PjtY6fvnA98Enz3xYuoJE5xBd9SFJUyFhWdGBefxhH8uM+SPl+vQkSDQUbELwauadzqB0Q8FxjS9sOf4hMyEFGnM8qyiog/Lj8CDgP2Hg7mwuqdMSWUMgAsvelOCDAGDFEjiTMX7F/+y7Hj+7//uHtjWVa1WikpOedlXHrzJlUQkTKUROHQ8bsjx21+9nCFezlHAMzMMmzbfTkn1zDgi3bVq3qoKrX4mi/j0oPvRt669yLsWWJicqZObxBFSRQFKyvBxtpKIIiMGWU0GGWqUiQaOxvBy8Ohvn+Vlk2rN29cxdvLhbdDVUoZ02o1cxfv69G5fpuWfgBw+XrYgGF/1GtYNTdP2fTr4Dq1fBVF1WgkrjAVlWo10rEz9z/r//PynwZMn/iRrKiSKJQOkn/iQyktA5oADBERJEkcOm7ToWPBNy8t8K9V3iQrAiEajTRq0rZNa45PmPHFinlfWFtLRqNiba1p321exQoeu7aMVxRVFAWLQ00IUVQaFBxx5NS968ERmdl5nu7Odf18G/hXqFPLp1IFd/dyjna2WlEULb4p96Z0OjklLTsmNiXseeL9x7FPQl9lZBs8y9l37VD/815N6vtXsIRCGGOEEEEQ/BpO7tmz6arFA3/fEPAyNvHnJd8AwNmAJ/uPBbVoUmvENx0YoxqNdO9RdOvOC74b/+GyH/vz3pYZ0TLRs6qq3Brv/fVvPjXHJiRnmT0TlZpMCiIuWnGgR9+lwyfvqNPqh6CbYZz1gm4979l/lSIrqkplxezAhEUkTJq1o0azaTWbTR8+YePRU3dT07Pf4GKzrMxXRIqiWvwfy//8h4TEjL8PBH0xdHXlhlMbdZizcvXJ9Awdj2/JiqooyvLfT9ZoNn3xz8cs6mju4kMa9+ETZ2xt89GSPoNXc05HxOdRSY6+oybP2v1uOqq0gHJ3gqvOT/qtql5/SmY27zFNz8jNyTVQlSJi8J3IJh3mP3ue6FFxGNj3HT99p8FgooyZjRLGEPFKUHjXz5d6+0/+auTagMBHXIQxxhCZqqomkyLLisLBU4uaV6qqqqIosqyY8t1c3nhunnH3geude6/wrff9iElbI6OTLQhGRie167lo1KQtiHj7fpSt29d3H0TyKa/XeOqBw8HcwUPEmFdpLuVHTpu7p0yYWlzP0uokjmb/IaurN5iSnavjEh0Rv5u5u/PHS7nLKCtqvVazXKuM2HMo+EnoqzFTtmZk5FLK+JCCbkW0+fAn37qTf1x+OCUly6KsOYhF4lc61uEOvoVmw57FD/52U7nqY4d8u5nrH4Yoy2piUiYizl2475OvfkbErX9fiYtPW7jq2JFT9zj03HSJik1x9Bn908rjZoP6vVMo1+nffr/dp8a3aRk5nNN511VKG7eZ+eXQP/lsf9p/+dhJGy0VOJSv4tM/G/i7W7Uxy347WTBEoijvM0Jh6aqlby/j0r8Zu8Gl2tgFy49wVuB8vfvAjTpNpiDizn1Xffwnh0ck8M5fuhr27EUi//lpWJxNucF/7brC6bSUmJYAKA958E6s/P2Ug+fQmHyzLjwivmvvZTMXHjx78XFCUqZfqznT5u5GxLVbLnG3RK83caL+bf05+4qjR07anJmls0R63p0eZfkf/4qYEu5cUEoR8dHT2GZd5ldt9P2N2xHc0kTEoeM3N+8yd8DodRXrTomITELEQ8eCwKZ/vbZzUlKz+HwEXH6idR167WZE6Xm/hGgTpyNEPH76nsZ5wK17LxDRaJQRMT4ps3KtcbYuQ1p9uKhW8+8btJkB0H3l6jOImJNr4FAmJGa27rGoepOpdx9Evw6alQlJWaYmkxk7k4mpFoGLjK8EIFJFoUVMj6qoXA4g4totATY+I2ctNJvMyNid+y9qNvo+4PITRNy2Jwi0X1wJevrznydbdfuRMTMtb9wW6FphdEJSJiIWTwQ85AbF/5nj8jwq2c590K691yxGrxnTxKxKdb9d+fvRnFzDzn3Xvhm7ac3mQAviZy8+tq8wavz0HZxMOFWWknEYY1RRaL62YfkgUr0+7/CxzL92Zu3ck71rT+7R46bIKK7OzG8VTa2IGPMytV7bH1p0XZCekcdtgMysPERc/usxZ99BddvO3XPoNiJWqjXh2PHbiKg3mBBx5IQtTdvP59NQPKC0NCyvUurXaMrk6dsQUZZVo1HmnePC8XFIjK3niA1/Bb52HBUVEZf8ckzjMfjoqbv8LS7UykCYisIQmcmUe+JUyrQf4r4ZnjhwSNLMOXH9B4WAFE6sQsDqKViFglW4rWvy2Ak0T8cQi6d9C6mOnrKtXI0JD5/EctmVmJzt12LO7XvPX7xIdvIe7ddmTpWGE+MT0jkRcJJq0m7e+O+3lUaYAntLy7P8/zlwI8dvbN5+lgXBzwet9ms1a96SA8+jknn/rgc/q9F4amJSpoVyh4xb51lz7PMXiZyiyywtFQURdVevxTZq8aprr9SFSzK278reuTt9zbqYZq1DAZ4Sm1DQhhPbMHv3UEevJwCJI8cg5/1iiUNRVK6a1m4J0HgMDbgSykWqXi8j4unzjxq1mxVwJTT2ZSoimkyyJcgSFZvi7DP89PmHRQnTEoIjjFJZMYtOJ68hMS9TeUOI+NHnK1t1nj9swgYv/++adp6/YvXp+IR0vUG2BPE+/nJVvTYzsnN07xi8URRE1F+6HOlTJefUWUTkopyHiJSEhKTxk+OGjE4ZOTam04dhju5hRBPq4PnM1sUUEcFKwpRSqub7ICfPP9R6Dj9w9BbXn4jY87Nl303fVtCASU3NSk3LppQi4tadlyvU/DYn14CFsUIJgHJosnMNvtXHbN5+ERH1eiOfscdPY6o1mBIbl9Gy05y+Q9e07rHwzIUHFtX5Uf+fW3aerSgK12bvEnZhjCpKZMPmeafOICI1mQpVSlywyrGx8f2/CRNsw8A65/hJTqRm2cK12Vv4muNkJhkRA6+FWLkPO3LyPuf9/UduhYS9QsQXUckbt1/u9eVKH/+JbXv8ZCGmXn1XDB61rnhCKRxQ/v6wsRu6f7rYYrshY5yjZy84CNov5i87wj0liyXQd9AfzTvO5suKivJOVpGsIGLeyVPxPXqZ0SyEwPINpnw3NPnLgSEAWfsPMkQlK5vKpoJuKVVVKstvf4pjeulqiI3HsEtXQzmmj57ENuw419pzVI36kw6dvNm0/eyxk7daAI1LyHCvNPrilVCzw11KQLnUuHbzmWv5YZExyYhoMsq/rDu39e+r/KuZWbleVcYePnGPK3Tes/Hfb/drMtUkKzyS9m4hQYbIFCWyYcvo6rVpbq4ZjqKLajQiov560DOwjmncMrbHJy87dY/p1CO6S8+EfgNSFyzW37rDZQUPTb9Bqrznh47fdvIZERYRj4jJKVmnLzy6eOVpl95LN2wLrNN0ik5n4IDyyr+uOVu/xQxOScUBWnD8nN9bfDBn/uL9HMGBo9d7+3+370hwZlbe1RthiPjLmjMjJ2ywSJ81G857VxuXmp5TzNSVXFSVIlKjMbZpq/Cq/mpGZomAUlVFRMOz509Am/zTcqrTmRISjXHxhpDQnGMnkmfMfvVB19h2nTK27+SC+G1S5TCt+uNkFf+JeXoTt0kQccNfgQBdAi4/tZAnlySI2Kj1D3+sv/A241vsUFbwETd6/t4XVNV/ok5vQsSTZx+06vQDIl68GuZSbSy4Dp6z+CAi5uUZ8j30Z45ew3i4+98vdjNENSdHzcxkRVPBazwNBkTMPnjkKUDmlq2IyLi9ZTH7Gcu7dj36w09i2nc2PHmKiIVhqiDi4NHre/ZdiYg6vRERPxvwy8BR6zmORqMybPzGJb8c4+R1+vyjKnUm5eYZC9VOb1Ioo5Qh1mkydcv2S/z9DZsDajeeuuS342A34PDJu7fvR1XzH6/ICqUMGcvVGSv5Tdi8/RL+u0B3AZAoY6wowWchTK5wEFFNTomq3/wJQOau3Waxy1cO8pUYl7OZu/dFVqmVs2cfx5S9xZQMWYPWc1b+fpKPevmvR15EJiLi5h2XXKuNa9h+zu17zy3qpMvHyxcsPVwoAf0DUC49N20LbNCSG54qIup0hq9Hb6rdcsaVoFBEXLDs8OcDfkXz2hF+OfiP/oN+f29o8s4UWDUqvAKlnPp0l69G120aJtqFWjvr794v3BSVZSrLiChHRkXVqpfx57qCdFpw4KHhcZ5Vxj4JjeOY3n8U07bX8nI1x+/Ye9nSH17zyvXwqv6TsrkJVZAWGQNGGStgzCNiveYzd+y+aoGf5QffTl945Os/oVqT6VExKfyTh4/fqeI/KSdXn+/7/XvyVBmikpKaOGx07sGjhchQVWWIppdxyTPnxrTuGCbahNo4hxCbmPadixcRqsmEiEpySnTNutn7DrzN+5z0Vv1xumWH2Xx0u/ZedfEalJmtR0SZ7zEpgH7Xj5cu//XEG0TKF+nMhMDr7T8c7Nf4e2YhD0Z50BcR7z2MXrP5QlJyBiIyyvRGuXq9iYeP334votNCTYioO3vuEcCrXp8iIjUaXxOqqlKDARETvx70GOCJxiHM2TvUyumZlYP+5q0SPSVqkhHR8DQkqpqf/PwFvjVbnCPbdJ7729pzHNPuvVf+tu7sGwPkQJ258KhOkxmKag4gvG3YM1VREbHDh4tX/nayUIzM4QnKuGacMW9vr77L3yea+V+hqpr91/aoOg1N0THcU6L566KcxV40bBwCmhBb18dAnrv55J46WzKaHDKTCREz12541aPn24BypG7djaxSZ2JSShYiXrsR1qDlTKNRecNO4izb7IN5O/Zce83KrACgfHIePnlZ0W9ialrO26Eqlh8V51+NfZVWyW98aHj8v7KTiiqKgogZazfE1qijuxCgGo0MkSqq6VVcztbtL9t1if6kX6R/4wjfqgnfTjbFxJYSzYKNv+raI2f/wbcZn1tIQ8dsmDhtF7eyY1+lvR3Z4dXWbrrQvvviNxAglDJCQFWpRiNNnLYjM1u3c+PYYhb8+B6mMRM3I8CGP0aUbWmQ7zkuTVFUwUqbd+pM5rKVSBna2oEiE1mWKlVyHj7Epmsnmp0NiJKzMzJERkEodR8YEyRJfyEgY/nK8gHnLLtN8zuIoijGvkrr0nPx+ROzqlTyoIwJb20nRwRRFDKzdE3bzTm857sGdStSSs0b+jn7c5hrNpxyIfBxMUTHCTn2VVpV/wkvopJKjLkWpAtKafHB4Ldf4XQhv3ypu3PPEPZM1em4aOONmDVvMdZVUUVVEfFllx55FwPfoG5LjG3899vGTNqK5n0YhRRebeCItVNm7Soo9wQAZAwB4MKlJ4IAnT+oi4iCUAgdEQBe84+1Z9q18atWxVNR1NJshgdEIklgMilx8YQQQkpHTYKAqgqIUoUKtk0aWdWuSWxsmKIwVQVCBFE0Pn9hfBJCJKm0tGnpDmUAYPdRD92hw2Z6s/wJQBAEAJg0rvulKyFJKVlWWk2hhx34wAd+2ebcxScAIEkifyhwOgeAA8fudO5Yj5+cKLwfABqNpNObzpx/Mn5MdyiwT7MEFhNFfcClxH4D0mfOSRoySklMIoIApTmTIYpACHJ7jlLOaUAIEcX0hUvSJk/LWvhT+tjxyEp1yOE1FqIAAHbdusqh4QhAxH9MCSGgKGr1ql4N6lb4a8dVAHhDLORPN0HEzh/UZQBXb4QTQji1CRxdRAy++6L3x82KgYlSBgCHj93xcLdr2qgq315bEjGgIElyYnLm0hXlVi3z3vWXdZeO6T/MJlCmXfsEBMEsfCkTRFF/9rzhwSOfU0e8D+5VgeStXcc3Zpa+QYaoqV2LMSpHPCcCeWN2OQIjh3Y+fOwWABS6J4cAqCqVJKFNixrHTj0AAC6OzBv97z+MpRTbtKjBsS/0ff6ZfYdvfdGnNeTTdQmFMQAwXL1i1ba1Va2a1GBwGTwQVVV++UqQxFIR6ZszxADAcPGSy+Cv+aEHlxFDDXfvmXEvfVGpIIqSp6cc/gwAgP2jJ4JAGGNdO9UFgMvXwoggMPZmVzEfkI+6Nbh2IwwAuHI2bzMKuBJSu6aPtbVWUdRC0WQIkiQmJmVFxST37tWkKNzfpgUAEJ2cWEoyAIg2NjQ3VzQaBAd7LCsEBQoloBiN5o7pDUQUAaBs04MMAAQPTyX2VT4+//wEZQDQqWO9A0dvQRHUwwFt16pWRmZeVEwK37NlJuag4PB2rWoU+fV8OXLu0tPKlb28vVxUlf5DMhSGDCEECEHG7Ht0R8Yy1qyVY2Myps/Wtu8kubigorwLhQoCANh175739x6mKACQtXm7bZeuRXai2CK6OLPs7EIng4+u98fNgu9FAZp1zj8qAHBzs5ybQ8XybkHBEQDAGAqSJDLGXkQntW5eHUrSMwGBT7p28CtkxgpDBhkSUaRpaaaQELshQ+Rbt5IGDhXc3ay7dzI+egKybKasN1/Dt4ZXoEuCwBTFvnNHm/p1o32rRPlWpQJxGNAfKYWy75QjWg2qShETRxCxeZMqAhHuPYqx6Jw3RswQAaBp46rXgyP4Q4EQEhmdKivo71cBAIQiAJUkkTGMiEzq2L5OibgDcOUuGG7deTVwRNbaDbk7/pYqVbVp215kLPv3PzPXrEsYNExNTHxT3TNGBIEIAvxDsf6jgqDRZK5ea3gR6zx5ovOEsVoH2+Sx4zkLl76Y4TAYwdrmzTnLL6pKBUHw9/O9dDUUiuB6LvZaNqsREh4HAKJAJAB4GvbK3c3RydGWe02FfB5REITwiAQArOtXHoowVN8uug0bPebNsmvbCikzUxCiE2VEErM3b8ldt8F14Y/IGOSTqiBJanIKaDSiqwu8rQgoFTQa3cnT+nMB3scOiKKIlBJRTP1hTurcHz2WLmaKAoVS/VuFAAEAmpFpXbVKEXiaS/vWtU5feFhkO4QAQIO6FdPS83Jy9Y4OtgIAhDxLqFLZHYowuCDfnn/0NNbHy1mSREUtyUDh1lLsS0aZbdtWSCkyhqqKqoqU8qm2++Rjw4tIpqpEkggAIBJByFr5a+qE7xIGj9Dv3fcmnSISjYbm5KT/srrcrytEUWQmE1MppbTckp/UsHBD0A1BowFWOlIVCABgcoq2ciUOTFFgtWhSNS4+kzH2thiF/EOVlSuW01ppo2JSgduhLyKTalb3LHoyzQzyJORVzRrepeouYwCgv3xV06A+y87JO31e0Ehmc1IQQBSyd+8TPTxEV1fj3fuEEFSpIIrGoJumh4899//ts3V9xs7dckISkaTXAoExApA9f6HzV18ITs5pAwYDgGilzZo113DytNuK5emLlqKqltKpJ5LEjCaWka6tVbMoe4NLv+pVPREx9lV6UQfEKWWiKLiXs3selWwGND4hs3oVjyKpLZ8hImNTa5cSUEIAwHQz2LZXz5ytW/N2bLOgDABEEHKWLDY+eGTbqaMpMBAAkFEAkKMiNX7VBQDJ3V3ydFdjokn+jHLRqTsXIL9KcBw5LHnYqIzb93mDclJK8oixopeHdYf2GQsXC4IAlJZgkDFGAOSnIUSrkSqUR8oKr09AVamVlcbF1eFFdAoUYZhxlL29nCNjUsyAZufpy/u4QdGqhkvMtAxdtSqeUKJGQiSSpKakYF6edc3qOfsPEWe3f/YTVEGbvWevfedOckgIAhBJgwB2H3+sPI/UB93I2XtAkqxsW7dilAIhCEBEkRmNOSt/cfl1Rdq8RbYN6zt/2Jlm5wAAeLo7T/suZfho1+nfGx8+Mt6+I2g0JXhNiACgv3DRqn59AgBULbQWyQfLx8s5KjoZivVlKvq6vYpLBwDBaFSMRtWjnD0UbWgLoqCqVKcz+ni5QIn2OEMCIF+7btuwvin2JVKmLV+Arglhiqzx9xciwomtDdrZGZ+ECJKIOp384KFUs1bcgKFZS1dIDevnnruAJpkIAlBKCEmdOc+6T28WGZX3MNTxu4kYHyc4OgCAdV6ObdvW2pYtc5YudVu2OHXOAgAoQTUJAgAYLl+x/ewTy6/FFG9Px7jENCjWdfDxck1KyQYAITfPoFJwdLQrej6BAMnTmRijzk62UHJBANBfv2nVqZP+9Fm7Th3/gT8hKCvWvl5CjRq6m7es2rQ1BFwEgMwFi7P/2kEcHcrNmub87WhQ1ey/92XMW0AAiEZjuB4Eaal2n/bKmLug0r6tWes2Ss1bi7a2AKDt1y/tl9/LfT/JcPehkpRi/1G3zBWrhGJcex6suXqdqYpNuzaMsaIAtaDn4e6clm4AKM4Y8HB3zM3TA4CgN8iCALY2VlDEGzy7iU5nBCLa2VlD8Q0DEI2G6vWm5GSxvC999MimSyclV1egORQEAWSjpmOn3OMnHNq0pM+fKalpckyM944tLuPHuowa7jByuPOEceV3bFYS4gwhoQQgc/0Gx7Ej0mbMs581A2XZdPmK8/gxCMAUxa7jB5KVVn/+fLntf2UtXmrbvZvh1i01PYNoNIXHXxABIGftOocv+/N4cIkE4uZil5NrLGrYnF8d7a1MJgUABEVRBYIajQhF8jIBAKNJFQSi1fAjQ8V9HikVbG1tK5VP+nqQ2LiptlZNlpxk/jICIYTp9KbEFIce3bSyKXXsRE2bDsbTp23bt83ZtkN+/oIn5FHj4nU7dmg7dsw5dgIAHHp+mDp1lm2zxk4fdUuZu9Cu7+einS0qCu+x06QJ6avXaRzty/04J3nMt5rafqKbKzJWCACUCRqNPvCK/DLOafhQxuOBJRUba41JNhZDQgBgY6OVVQYAEmMMoPh4Ij9BhYJASh8QcfxhlnX4M6sG9QWtVtBIOXv2OXzVH2WFiELG0lXWzVoIguA0f54aFW3VrEnS8DF2/fokDxpUMfASABBBQAIJ02Z679xuuBXMVNX+yy+tO3fReLibwp8pz194/LycKSqPjTKTybpJY21538wdu1wGDfQ5vF+wty+ybwJBgLQf5rrMmkEEgopaGodVkgRaknkriuaIlEAI4flR8qErEiUe7ysZUABkjNjaWTdrCoKAAK6//pz79141JlbQanKPHseMdLfpk5mqCk6O1s2amG4Ga3182MtY0d7BEn4nkkbj7KqEhgpVa+jOBRBCJGcnAMhavd5l5DBBIxGeYgeAaDQA4DJjmnLyJDOaRDc3kCQsdPyqKohi2sQp2po1HT7pyRSlRDTNaQUYCiW52sjMIQhJq5UQkEersIiwEQBotRIDoqpoZVW6IBEBbmajLEtOTrYtmhpv39FUrmQMvmXz8UcAZlmGAGg0ynduCWnVbTt2ohkZWv4wJ8emXRtTZBSGv7D2rwMAoNEoKSmmK1cYVXNPntbWquE2bQoIQtaBI4ZTpyT3croHT+2vXbft2rmgL2sZACqqYKXN3vyX4fqt8sGBiAhCyczOByorVFPSQouiqtzjk6yttFQleoPs7GRbJKQAtjZaplK9wWRlZVeiGDUXrj0JAQCmsaYmBQAIAvDOEQKCgIxpO3awS0u3btnCEHAxZ89+m5YtCIDu1FmpWnXnUcP0AYG2n/TkzCG6uXmfPa6mpBFHx9xp35sed9E0bJi15S+P+bMlJyfHMaM1Fcq/KRb56VSVClbavAOHM5b/4nvxDNFqS+9TAUCezmRra1006ggAer1ipREBQHKwt5EkkpOr9/FyLpzUCACAna0VAZaba3BxtisG9yJnOX/Zh6oU+bv5ZC4w5tj3c2RMGjpYP3CQ4fYdqyZNDIHXPHduFpwc7fv1eS1nCJF8fSUvLyJJueUrqXqjhjG7ck42TRsTrdYsj95gH5USQSBW2qw/12evXu975pi2YvnSx1B4Sc3IdXGyhqI8JQAAyMoxWFlrAUCwtdVqrcT0jFwo2nBljNnYaLVa6+S04qoVXgiHAvmnBYJmyigwI0xVmaoKAGLNWqa4BDToNc42gpMjKiqq/3BjkDEuH5lJEUSBEKKqyPeJ81U8YqEalQKioNGgwZA8dFTOngO+l89rqlctE5p8oCkp2e5ujlCsR5OSmuPs5ADc9XSws0lIyoSiXSvKEABcnG1exqUBlG41qcBsAABBc7I+URLNCziU8n/ILUHepkoFSSSiqKjIKDOPiDJLZUDkrwsCEoEgQxX5ZCEHEVUKAEQQBK2GAORs3xnbqoPg7V3hynnRoxyqKpRl2ZkDmJiSW7GCe5GgIwBAUkq2t6cLAEgA4O3pFBObXuxMIQD4ers8j0wqA5SUElHk5ICE8BiwYpI1PCWeJBWM2HOprNFIIt/zoqIoCijw5HmkQEcwv76omlQtAS0oRCOR/GVRHhtToqLzDh/VHT0heHt5795uXc+fcUov5fJ1fuFr9Kmp2VUreUARQQz+LC4xs1mjKmZAq1Ty4KGn4j/lX9P73qPoUnUEEQAEjQYVxfjgoRrxPO/cRfeflwKAdf16up07RSutmpsHRCDEDAECCjY2OVeuu3fpItrb2xiyc7ZuA9dyhOXHR16PkiClppAwJ28vQRCowZS1fpOmahWanqGmpdPoGDU6mhoM2vr1yq35zaZRA76tGQTxHVIoiaKQk2vI1emrVCpXNKAEAJKS0qtUbGoG1L+W9+bbz6Ho9Q9zXLpexYPH70D+emkRhQCjfGEj88/1eQeOgKuLbY1qbnNmWDdpRCl1HDKIiKL+wkUqSoBICBAiICISEFTVadQIm1bNAcBx0cKsXXuZIIkkf3GD6zICQAgzmlx+mKGtVgUBnBcv1m/boURGoySKzs7WLZppRw3T+tUWNBpENBNmWVTQa6pgCAK8iEq20Wo8PZxYEcsZkiSoKk3P0FWv4mkGtE7t8onJ2TxpSFG7JADAv3b57BxDYlKWt5cz3xtVSPOMCpIkv3yVOmy06OPjvnGNdc0anFGRMUIIMnT4ZoAl30UBms5P0MgYAGgaNPBo2BALy3v5Rk2benVsf1lufshdFEL44XFzPLtUxWzC/2MoiCLA3QdRnDwpY29TEiICCLGv0lVKK1csB1wp1azuzRC5fERWON+rKnV1tS9XzuHW3RdQlF5iSCRJiYlN6NXHbthgrx2brapXY5QyRUHLqgkBVFUmy6goTFGYrDBZobJsfpiv05FSKsuoqPyvVJZ5TSYrTDHX/2dNhcoyyjJT8w0DSSrDljzAN1P15v9w8/aLls2KXmBHAIAnIXFuro729jYqpYKqUlsbbQVv1+C7kZC/LloYVggArZvVCLgcCkVZTqKAipI0YJjb/B+cv+7PTCZkDAgBSfqHkyeKIEkgSSCKIIkgicT8s/SaNwWBSJLlr5afX//6Zk1eRwJRLAuOxQEsSSKl7HlkYrtWtaCIjR2csG4/iPKv7QsAjKLZpW/euPK1G8+K+QAXrz261L9zPwoKFaOUCoRkLVpi3aq5Q5/PqMkEGs17Gdv/pPAdSnfuR2k1ol8tX55d5+1q/OHDx9GtmvFdDSBw4Du293/wOBoApCLktyAQRNaqeXXGWNCtCOGN7T6IRKNR09INN4Jdf5iGAO+wy/D/VOGkd/LMg1bNawKASguPNkmSqNObEpKy+DYRQSBmQFs1r67XK4+eviQCYUWKUQYAHdv57T3w1nYfxgiA7tx5ya+W6OqKsvLO+5b+jxTOgkE3w/iORLEwfudA3bkfbWtrU72qlzlHFAAoimpvZ12vToUTZx5CEQqH5AuRAf3aXLkWotObeFouc0EAAOPDR9bNmppr//9cGENBEAKvhmm1Vk0bVeHJzd+uxoE6G/CoecNKkL+/7LWM6/1x09PnH0DR2+r4XtwG9Sr6eLvsOxhsaeI1glnZoqcXr/q/xuRfFY7U9r8vf9arMRS9/4NT8dXrob16NOT4cAol/A8ff9goJTX3SWicKIpv63o0e3UIACOHdti6IwDehl4gAO8hW+z/Gk3QaKQXUUnhz5IGfNkWAMTCVCun4jv3ow1G2qFdHQDz9iSBr38oiursZNu8SdVde4MAoFAxigCiIDDG+nzaQlXZ0ZN3RVE0zx4PVnt5qjGxll//Py18RGvWn+/SqY6jg42iqIVKME7F+w8Ht21ZQ5JERaG8lnmPPZcRQwd+cPz0fVWlWqlwXW85tzB+7Eerfj8NFveWEACwatbUGHyr5C5TiiqPGzFU1dLuRvqvFETUaKSYl6mXr4VOHPchFC0ANZKoqDTg4uMB/dtYcDBvuOW53xljXTv621hJh4/fBUKKIlJBIJSygf3bUKpu23VFFEVKGYgiAth266q+eiU/f040mqK2rfAYpaiRiCgSURQ1GiJJwNj/BaK2kMui5cd6f9Lco5xjUcdcGEMg5Pip+3Z2Ni2bVaeUCQKP4BQ4BcI1zOAB7dasPwPF6hVe/6d5/ZauPK7Ty3wJGhVV0GrtvuibOnd+4evdyLP2CzlHj8ePGJf4ef+Ufl8lTfjOdDNYKLgp7H9XKEONRgq+8+L+g6jp3/UCwOLPtG3eFvhVv5ZQUGuRf6a7RMQ8nbGa/6TAqyHFnznkx576D/pj/PfbX5/tVlVEfNW7X9riZeaj60p+HhdVZYhyUnJCz88S+n6Vef6SEh9vio7O2n84oVP31AmT39Np5n9V+LG2tl0X7Np3vZgzrLzanftRfo2n5+aZk+Sw/IwO/5gBRVHtbK0GftV26Uqe6bxIquGR19W/DDl++sGVoHCtVqKMASGI4PP3Nt2ly6nzFgpaLRFFRARVBSKgXp/S90vtp596H9htZa1N2bAtc98h2wb+3hfPAmPJw0cLggDsf0OnBEBVmSiKi1cec3KyHdCvjaoWfuTSIhZ+W3Om9yeN7e2sudZCC160wLUL/JBtVra+Uu0J/HqEoojUcoRv9/6g6vW/1xtMyI+XqipjTDUYEoaNetn1I931IB7fRcSU76alzV+EiDFdPg4FeEyEJyCEgZg8YzYixn/WJ3cvT7fw/vM1llj4ieB7D6Mr+U18Zb7borjDmSFhcdXrT05KyS5Yk1FKKXud0aFg6sClq462yb8koihALZgOGr2h94Df83mE8fwziJhz4nRc915xPXtnrvg55+Tp+K4fqaqaPH7yU4BQR+9wB/cwR48Qe49QgLwTp4yPH8d/2rts54rfU1FVyigzyYp/s+kFj2sXOmo+5C8H/zF9zt8Fa1qI0kzVPByIiKIoIOL3k3qlpuXs2nudh7DepnxeXxQFxthf60ZGRqcsWnFco5EUVeWnaZiq2vf60OfMcdf5s0EUM5atJJUqEcDM/Yc11s5ElalKQVFFARhYZWzYZFWvHiiKkpJC/usKijFGBNJ/yJrWLWt+82Xb4k5iM9RopJu3n9+5Hzlr6mdQwKiyxFMLubqCUqaRxJ/m95+76KBOb9JoxGIGiIgCIacOTFmz8fy+w7estBpFpeZNDIqKjFk3bug8ZZL7zKmisyPLyZUMOgoC4R4FAKNMICJLS0cAZmWLOv1/02nlolOjkWYu2J+ckrXxj+GU0hJPq8+cu2f86O7OTraFGlVvxfQBBIGoKv2idwu/Wj4z5uwBIJSxosbJvazyPq4n9n83auKWwOvhWq3GfPxWFPjRVwAARyeWkio4O6uOTiJTIf+KKEEUEBXB1xcAJJNRcHH+bxKnrFKtVvpjw7n9R26eOTS9eOgpZZIkbt4WmJunn/zth4yywqGntJAkzFw7RcemlKs4+mrQs+JNKItkOXPhkX35UdeDIxDR9PqYuUoRmUGf0LmrKTsnbf7CpwAhDp7hjh7hjh4hNq5PAPKuXNdfu5705Tf/TaVkNMmIuGn7JY/q43i2xKLyF7N8QFLScirWnnglKLxQQIrLH2rBaM3G89UbTDHJKk9/XgymPNHL4RO3bX2GBV4LsxinjJpTs6QuXp4yeiwixg4cHg5CCIGnABGCdeovqxniqw7d9G+lA/gPFUuCxvVbA9yqfRseEV985hSLru795c9jJm1BRNlUFPSsuISsvJUPP18xcOT60iRr4b08G/DIrvyoPYfMd0BYstoiYuLnXyRMm4mIxtCw1D83ZmzbpSYnMVWJ6/V56ryf/gvkac6coqiIuGjlUa9a4yNeJJaAZj4Om7cH1mwwmSf3K9SmYpa7QN6eEMtMImJaRq5X1W8377iMJSUgt9Dp3QeR5aqPW7D8KCIqqpqfNIapBlPKxO9edeme8sdaw+XLuvMXkhcte9WuS8aaDf8d2pRlhTKGiEO+3Viz6feJyZlYUtJabqJGRCaVqzQq6FZEMZKBF/NdIEUJY56y5cr18J59Vl4PmN+wXsVirAquuFTKNBopKSX7w36rvD2c92391sHeWlFUgQABECRJHxKqP31OSE9hIAjVazh80lPj4c7Ksr+wrMV8hRZDrUZKTsnu+dWv5dzsj+6YZG0tqSorZlu2OekMERq0mtn/85Zzpn8my4okFbttgtFipofS/Dt+fv3zrE/NSemZOkRUi8hmaUmwZOGgsVO3+9adciHwCfIU4SZZleU3bp14x0QsZSRMzm2Hjt9xqz5+3rLDnNuMRrn4wfOxfzl0Dc8zWJoMVaW6GMCcn3XcxkZt5vCMaEV5ZmYXtsANUCfPPShfd9KQbzdnZevNEsBooib5dera/2RYxJJoKjUtp8/gPyrWn3L5ehjm55EtxsW0ZBf9aeXRqvUmc9+6NCmASuYywq8tVemWP0e6uNh9+PkqQRD47sG3WcUcMFVZxIskWVYAoGe3hqE3l0kaoW7bH9ZuDiAAGistiiIlAoiSOSnL++ZxRKCU8cUMQsiv6876t/6hnKtDWPCSD9rUBoC4hKzNO69cvh4uFrZsTgAUlWm1mj0Hb6xafebC8Vk21lq1qN1HbxRKWYlczw0xfvNLg1Yzvxi0mhtiqlrIm4qifvz1r+61xjfuOP/6zWeYn9D07sOo9r1+qtd2zq7911VqzvrGKeh9kqSiWNKrqyrdse9GrRYz2vdacu9hFOYnq9yx74aX34SufVbaVxrT+5tf+Q04rwfLzKr1QuBTG4/B126Glz4dHSvLbTXmazjzdMaajacOGLEuH9PXcCiqioiPn8RYO32VmJx5+MQ9r+rjeBI5fuEfIp4JeNz2o58atJ/9+4bzWVk6izDlV6O8230Wb9+skpmV9/uGgDqtZzXr/OOJs/cx/1ZRRIyMTi5XeQz3PhKSM90qjpyz6AAWSEXJ0bx6I8LKffCx0/cQ0VSW7NxvAlqcVcTMNkR2jr5G46n9hq7lMshCYoiYkJRpMJhadp07eNwmRGzYdtaFi495n/i7fMCXroV+9s1v/m3mDJ+wJeDyE9PrG4D43i/FJCuyrLy+Bkg1X+XEP8dvTuB1aIHb60yyeuHy08HjNlZvOqPHFyvOBz7Nv6cBs7J1wXciEfGvnVfrtp2D+Vft/LX7asW6k/ms0nz3KfB6mLbcoH3vdJ1aGS6ostwty+m0Xusfun62gmdNlPNvMuzQc/Gm7QGKytyqjF+w7KAiq9k5OnNO+LTsqzdC8y97ZYgYFZOyaOWRdj2XNOowe+iEv3YduBEZncyv2Cz0er83imUComJSdu4PGjRuU/12c5t1+XHO4v3PI5O4SEFEk9F08Pjd2i1mDhy9HhGDgiNsvUdGxZqviAm4Eupbe7xskhHNOdCPn7knuQ85eOxWWdHktFi2K9QAgBDCj9wrKu3eZ2V6hv7KyZkuznYGo2xjrR0yem1mhv7Ygaknzj4cNHR1fOQaW1sbZGgwyj36rLp29s7N2ytbNqthMin8jlp+oCwsIuFMwNPrt8Lj4zM1Wo2vt0OVyl7VKnuW93Yq5+rg6GhjpZVEUaAqMyk0K1uXmpYbn5j9IjohMjo1ISVPVVUvD/v2rWr16FS/rp8vv3KNMRRFYd+hm8vWnH94+cHk6Z//unwQ3wPbo/eK6JjEU4d/sLaWPuqzslsn/1U/DeD937j98oQZO47vntS9UwNZViWp7IlhijfsC3/HvLuRiKIwdPymY6cfXD4+q37dCoyxnFzjJwP/RFTTU9O8vd0vHp3JGJpktW3XeV6ejnFp8q+L+nRqV5dSigiJSVke7o6SJPIgLCHEaFKeRSSEPouPiEqNeZmanpmtNzBZlgEZIgUiIYiSgA4ONi7O9hW8Hf1qlff3K1+jiqe9vflOdT7ZUdEpF6+GjBzc8be1Z2rVLB8ZlfTrunMRd1cIAhAiZGblDpmw/XpwmJ2N0P/zDsvmfsbHMnX+3o3br1w5PqNR/cqyrGokoayhL746+S4lP+20ioi/rjsruA/dtONKvuJWt++9tuKPY2np2YiYnaOr1Whqm45zDSa5csPJj0LMV5okJGZZ+w7/6+9ARMzN02dm5lpEgZnfzZf7oKJQk0kxmRR+SUtBp6CA9FQQ8cGjmDPnHyDinXuR1i6DLVdNGYyKZ9UJ67e8zpWOiIlJGWlpObxCbq6h02fLa7WYya/5ecc7Isqk5YsSGXwkQbcinKuN7z1odZ7OZHZ+KEPEhOSsavUmNWk/64NPlnTt+7Nnne+iY835m/cfCQb4pM/AXxHx6On7zTvP5QJRUVRZUU2yIucbBhYECzpXeTojv7knMjpp5R8nklOyEfGPP8/VaTyNv9Kkw4+zF+1DxLw8AyIuXnmoiv8EPlFcs2H+9d4377xwrzm+/7A1fEa5tfDOsAjvvFWOs4MkCoqitm5eI/reMoOJVm4880LgY0uKx5wc/aBvOt8IWHh6z5T6fuUVFZ2dbPkKx+GTD1t2bRwWkUgpC7j40N3FEQAoQ0KIRhKzsgytPlratNPs1j1+GjJ+a3JKNiFEVdnUefvb9VzUotvCWi2mL/75OAC8epU+beKGbn1W5OmMvXo2Ss7S8+w0X/dtuvdQMADYWGsBYPyYj7IydNt3XuFSDhH5HqRZiw588PHSxbP77N3yLeRnZMF3XYMhpBS+fGlI1XJVzcbtl6x9Rgwevy0zM/e1njUpiBh49alXpSFck+r1Rp9aEwICnzTrNP/QsVutu/644a8AzL/EChFDw+LsfEYGXnsa/TKtRft5fQf8xlurWG3UjDk7ElOyk5IzDQYjImZl6ao1nVqz6fRqDabFJ6Q1aD97x56riPjyVZp9+XFXg8ItnsW5iw9Dw+Mw/0af2/cia7aY2ajDvOeRiVxo/JtbBl9TKJZRIxVKqqJIAEBR1JGDOkbeW5WYlFKp0fRNO64JxJzDBxFr1fBZsOAb/rFLV0INel3nDnU7tvX7aeWxtPSczh/UBfM+aQAAnUFmAol5lZmenuPm4+ZfrzL/q0dl3yyj8ODRi027rl658RwAnJxsPd2cxo3o9GXf5i27/KTVisF3XwBAhfJu7ZpW+HPdad5JSmmXDvVq1/QBgJxcw7CJWzt+umLkwHb3AxdUreKpKKokCv/SB+Yvv5+N2zzMJYqCoqieHg7nDkw7HfB0/Ixtv6w7u2pBv57dGiCip4fTyEEdFYUCQGxc6kc9GgPAR13rrVi4p1OvVtWqeFJKCSF8J2V2rkFW8NiZe1t3Xw0JjZ85oTv/kKen6/6jt9JSEwC0dWqW5w/btax+8tzTC4e/11qJ86dvQ52Ja/z5s/umpufkd48IgmA0Kb+tO7989al2LWuE31pS3seViyZJLLNCLwxRwoMIrzXMvy88JM55SlHp7xvOe9Se0LjTvBNn7uffzcG418R532iUqzScuGD5a+fPvH/iYFDVxt8hY4j445KD9Zp8x1XNJ1//Mm76dkTkUXf+obMXHrv5Ds/O1iHi2i0BIyas5wqtoG+m0xl//vOsb90pTTrNv3oj3OKSWbr9vhCQLGz7fkjVvJEXFJUKhEwc1XXEwPZ/brkwdvpOx5+OjhvSduAXbZycbBFREIisqJIkPri8hPOaWGAje062ISrs1fDvttnbkr/3P+jdsyF/7u1kvX/3NaNCoiNfMqru2jChvK9rw/oVhgz5gJ8rGDO0E0AnvpeAB8JfxWeu3nR+1/4gXx+3DT9/07NbQx43KUiY72v4hF82/Z5ae7NpzFeagiCYTOrfB2+s3nQhKd3UvUOtIf1btmlRW2NOCUP47YD5ByhAFMVX8RnXbj5PSEpPz8iqUslnUP82Wq0oCMLVGxGXroc4Odq5udi6u9m3b+1nZ6NVKRNFgYMoSQJncL3edObi0807L997FN28cdXpEz5s39qPazYAEAXyn1iv/g8CaimIwBgTRZ4jhNx9GLtuy/kLlx9rrO07tqvTu0f9ti1qcJqF/Nx8lDFCiFjgkm9uQgCA5fJv8+lERN6spWZqWu7Fq6GHT90PvvPCzs6qT6/GIwd9UKmCe74xi+9yIXeZMC0e0DK5+cXiCpQxQRAEgXAXM/D6s/1HbwfdfqY3qNUqebZoWqVlkyr161SoWN5Nq5UQS0j8bUHQYJCjX6Y+eBwbdCfy3sPYuIRUN1eHLh/49/+sWbNGVTn6qkoJgPCfhNICVCGAFgSRmE8BYymbK+YhMaceRkSUJJHvomaMhUUkBl5/FnTrWfiLxKwck5WVxs3FxsfT2dfbxdvT2dXFxsHexsbKiu9nMRjl3DxDeqYuMTkzLiErITknI0tHVdXV2aZ+nYoftK7dvnXNKpU8MP8mepUyUXh9iPztHsJ7ohhLU/9xli+8IFDGEEGSzCwMZobNCX+eGBYR/yIq+WV8Rkpqdka2zmRSVYaMUkKIViPZ2WqdnWw8yjlWreRRo5pP7RreNat5OjvZWRrhSvuNLFPvzGplffH/ATlVJcytrUTlAAAAAElFTkSuQmCC" width="56" height="56" alt="">
+                    <span class="brand-lines">
+                        <span class="brand-kicker">Sanatorio integral</span>
+                        <span class="brand-name">San Benito</span>
+                    </span>
+                </button>
+
+                <div class="sidebar-nav" id="sidebar-nav-panel">
+                    <nav class="nav" aria-label="Secciones">
+                        <div class="nav-group" data-permission="surgeries.catalog.view">
+                            <button type="button" class="nav-btn nav-parent is-current" id="nav-surgeries" aria-expanded="true" aria-controls="nav-surgeries-links">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                                <span class="nav-label">Cirugías</span>
+                                <svg class="icon nav-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                            <div class="nav-sub" id="nav-surgeries-links">
+                                <button type="button" class="nav-btn nav-child" data-section="pending">
+                                    <span class="nav-label">Pendientes</span>
+                                    <span class="nav-count" data-count="pending"></span>
+                                </button>
+                                <button type="button" class="nav-btn nav-child" data-section="approved">
+                                    <span class="nav-label">Aprobadas</span>
+                                    <span class="nav-count" data-count="approved"></span>
+                                </button>
+                                <button type="button" class="nav-btn nav-child" data-section="history">
+                                    <span class="nav-label">Historial</span>
+                                    <span class="nav-count" data-count="history"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+                    <div class="sidebar-foot sidebar-foot-desktop">
+                        <strong>Secretaria</strong>
+                        <span>Admin</span>
+                        <button type="button" class="btn btn-outline btn-sm btn-block" id="logout-desktop">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                            Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-user" id="sidebar-user-panel" hidden>
+                    <div class="sidebar-foot">
+                        <strong>Secretaria</strong>
+                        <span>Admin</span>
+                        <button type="button" class="btn btn-outline btn-sm btn-block" id="logout-mobile">
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                            Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <main id="main">
+                <section id="view-list" data-view="list">
+                    <header class="page-header">
+                        <div class="page-header-copy">
+                            <h1 id="list-title">Cirugías</h1>
+                            <p id="list-subtitle"></p>
+                        </div>
+                        <div class="header-actions">
+                            <button type="button" class="btn btn-outline" id="open-calendar" data-permission="surgeries.catalog.view">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                Calendario
+                            </button>
+                            <button type="button" class="btn" id="open-create" data-permission="surgeries.create">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                Solicitar cirugía
+                            </button>
+                        </div>
+                    </header>
+                    <div class="stage">
+                        <form class="filter-band" id="filter-form">
+                            <label class="field" for="filter-q">
+                                <span>Paciente</span>
+                                <input id="filter-q" name="q" type="search" autocomplete="off" placeholder="Nombre o DNI">
+                            </label>
+                            <button type="submit" class="btn">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                Buscar
+                            </button>
+                            <button type="button" class="btn btn-outline" id="open-filters">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+                                <span id="open-filters-label">Filtros</span>
+                            </button>
+                        </form>
+                        <div class="list" id="surgery-list"></div>
+                        <form class="filter-panel" id="filter-panel" hidden>
+                            <div class="filter-panel-grid">
+                                <label class="field" for="filter-status" id="filter-status-field">
+                                    <span>Estado</span>
+                                    <select id="filter-status" name="status">
+                                        <option value="">Todos</option>
+                                        <option value="to_schedule">A programar</option>
+                                        <option value="scheduled">Programada</option>
+                                    </select>
+                                </label>
+                                <label class="field" for="filter-specialty">
+                                    <span>Especialidad</span>
+                                    <select id="filter-specialty" name="specialty_id"></select>
+                                </label>
+                                <label class="field" for="filter-doctor">
+                                    <span>Doctor</span>
+                                    <select id="filter-doctor" name="doctor_id"></select>
+                                </label>
+                                <label class="field" for="filter-insurance">
+                                    <span>Obra social</span>
+                                    <select id="filter-insurance" name="health_insurance_id"></select>
+                                </label>
+                            </div>
+                            <div class="filter-panel-actions">
+                                <button type="submit" class="btn">Aplicar</button>
+                                <button type="button" class="btn btn-outline" id="filter-panel-back">Volver</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <section id="view-create" data-view="create" hidden>
+                    <header class="page-header">
+                        <div class="page-header-copy">
+                            <button type="button" class="back-link" id="create-back">
+                                <svg class="icon icon-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                                Cirugías
+                            </button>
+                            <h1 class="sr-only">Cirugías</h1>
+                            <p>Solicitar cirugía. Paciente, obra social, doctor y nota. Sin horario.</p>
+                        </div>
+                    </header>
+                    <form class="stage form-grid" id="create-form">
+                        <label class="field" for="patient-q">
+                            <span>Paciente</span>
+                            <input id="patient-q" name="q" type="search" autocomplete="off" placeholder="Nombre, DNI o correo">
+                        </label>
+                        <p class="hint" id="patient-hint">Mínimo 2 caracteres.</p>
+                        <div class="pick-list" id="patient-results"></div>
+                        <p class="picked" id="patient-picked" hidden></p>
+                        <label class="field" for="health-insurance-id">
+                            <span>Obra social</span>
+                            <select id="health-insurance-id" name="health_insurance_id"></select>
+                        </label>
+                        <label class="field" for="doctor-id">
+                            <span>Doctor</span>
+                            <select id="doctor-id" name="doctor_id"></select>
+                        </label>
+                        <label class="field" for="note">
+                            <span>Nota</span>
+                            <textarea id="note" name="note" rows="4" required></textarea>
+                        </label>
+                        <p class="error" id="create-error" hidden></p>
+                        <div class="form-actions">
+                            <button type="submit" class="btn" data-permission="surgeries.create">Solicitar cirugía</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section id="view-calendar" data-view="calendar" hidden>
+                    <header class="page-header">
+                        <div class="page-header-copy">
+                            <button type="button" class="back-link" id="calendar-back">
+                                <svg class="icon icon-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                                Cirugías
+                            </button>
+                            <h1 class="sr-only">Cirugías</h1>
+                            <p id="calendar-subtitle">Calendario de cirugías programadas.</p>
+                        </div>
+                    </header>
+                    <div class="agenda" id="agenda">
+                        <div class="cal" id="calendar-month"></div>
+                        <div class="panel" id="day-panel"></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+
+    <div class="modal" id="detail-modal" hidden>
+        <div class="modal-backdrop" id="detail-backdrop"></div>
+        <div class="modal-dialog modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+            <div class="detail-head">
+                <h2 id="detail-title"></h2>
+                <span id="detail-status"></span>
+            </div>
+            <div class="detail-body" id="detail-body"></div>
+            <div class="modal-actions" id="detail-actions"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal" hidden>
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-dialog" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+            <h2 id="modal-title"></h2>
+            <p id="modal-message"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" id="modal-cancel">Volver</button>
+                <button type="button" class="btn" id="modal-confirm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const permissions = [
+    'surgeries.catalog.view',
+    'surgeries.create',
+    'surgeries.approve',
+    'surgeries.schedule',
+];
+
+const healthInsurances = [
+    { id: 1, name: 'OSDE' },
+    { id: 2, name: 'Swiss Medical' },
+];
+
+const specialties = [
+    { id: 1, name: 'Clínica Médica' },
+    { id: 2, name: 'Pediatría' },
+    { id: 3, name: 'Cardiología' },
+];
+
+const patients = [
+    { id: 1, name: 'Paciente', dni: '40000001', email: 'paciente@test.test', health_insurance_id: 1 },
+    { id: 2, name: 'Juan Paciente', dni: '30111222', email: 'juan@sanbenito.test', health_insurance_id: 1 },
+    { id: 3, name: 'Laura Paciente', dni: '32333444', email: 'laura@sanbenito.test', health_insurance_id: 2 },
+    { id: 4, name: 'Carlos Ruiz', dni: '28555111', email: 'carlos.ruiz@sanbenito.test', health_insurance_id: 1 },
+    { id: 5, name: 'Sofía Díaz', dni: '35999000', email: 'sofia.diaz@sanbenito.test', health_insurance_id: 2 },
+    { id: 6, name: 'Martín Acosta', dni: '41222333', email: 'martin.acosta@sanbenito.test', health_insurance_id: null },
+    { id: 7, name: 'Valentina Ríos', dni: '45666777', email: 'valentina.rios@sanbenito.test', health_insurance_id: 1 },
+    { id: 8, name: 'Tomás Herrera', dni: '50111444', email: 'tomas.herrera@sanbenito.test', health_insurance_id: 2 },
+];
+
+const doctors = [
+    { id: 1, name: 'Doctor', specialty_ids: [1] },
+    { id: 2, name: 'Ana Pérez', specialty_ids: [1, 3] },
+    { id: 3, name: 'Luis Gómez', specialty_ids: [2] },
+    { id: 4, name: 'María López', specialty_ids: [3] },
+];
+
+const PARTICULAR = 'particular';
+
+const STATUS_LABEL = {
+    pending_approval: 'Pendiente de aprobación',
+    to_schedule: 'A programar',
+    scheduled: 'Programada',
+};
+
+const WEEKDAYS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+
+const EMPTY_FILTERS = { q: '', status: '', specialty_id: '', doctor_id: '', health_insurance_id: '' };
+
+const SECTIONS = {
+    pending: {
+        title: 'Pendientes',
+        subtitle: 'Cirugías solicitadas que esperan aprobación.',
+        matches: (surgery) => surgery.status === 'pending_approval',
+        sort: (left, right) => right.id - left.id,
+    },
+    approved: {
+        title: 'Aprobadas',
+        subtitle: 'A programar y programadas que todavía no terminaron.',
+        matches: (surgery) => surgery.status === 'to_schedule' || (surgery.status === 'scheduled' && surgery.ends_at > wallStamp(new Date())),
+        sort: (left, right) => {
+            if (left.status !== right.status) {
+                return left.status === 'to_schedule' ? -1 : 1;
+            }
+            return left.status === 'scheduled' ? left.starts_at.localeCompare(right.starts_at) : left.id - right.id;
+        },
+    },
+    history: {
+        title: 'Historial',
+        subtitle: 'Cirugías programadas que ya pasaron.',
+        matches: (surgery) => surgery.status === 'scheduled' && surgery.ends_at <= wallStamp(new Date()),
+        sort: (left, right) => right.starts_at.localeCompare(left.starts_at),
+    },
+};
+
+let section = 'pending';
+let navOpen = true;
+let applied = { ...EMPTY_FILTERS };
+let filtersOpen = false;
+let selectedPatientId = null;
+let view = 'list';
+let modalMode = null;
+let modalSurgeryId = null;
+let detailSurgeryId = null;
+let selectedDate = todayKey();
+let visibleMonth = `${selectedDate.slice(0, 7)}-01`;
+let mobileDayOpen = false;
+let scheduleTargetId = null;
+let scheduleStart = '09:00';
+let scheduleEnd = '10:00';
+
+const DAY_START_MIN = 7 * 60;
+const DAY_END_MIN = 21 * 60;
+
+function scheduled(patientId, doctorId, healthInsuranceId, note, slot) {
+    const day = addDays(todayKey(), slot[0]);
+
+    return {
+        patient_id: patientId,
+        doctor_id: doctorId,
+        health_insurance_id: healthInsuranceId,
+        note,
+        status: 'scheduled',
+        starts_at: `${day} ${slot[1]}:00`,
+        ends_at: `${day} ${slot[2]}:00`,
+    };
+}
+
+function pending(patientId, doctorId, healthInsuranceId, note) {
+    return { patient_id: patientId, doctor_id: doctorId, health_insurance_id: healthInsuranceId, note, status: 'pending_approval', starts_at: null, ends_at: null };
+}
+
+function toSchedule(patientId, doctorId, healthInsuranceId, note) {
+    return { patient_id: patientId, doctor_id: doctorId, health_insurance_id: healthInsuranceId, note, status: 'to_schedule', starts_at: null, ends_at: null };
+}
+
+const surgeries = [
+    pending(2, 2, 1, 'Se quiere operar la nariz.'),
+    pending(7, 1, 1, 'Hernia inguinal derecha. Pide turno antes de fin de mes.'),
+    pending(8, 3, 2, 'Amigdalectomía. Anginas a repetición durante el último año.'),
+    pending(6, 4, null, 'Evaluar cateterismo cardíaco por dolor de pecho al esfuerzo.'),
+    toSchedule(3, 3, 2, 'Quiere operarse la vesícula.'),
+    toSchedule(4, 2, 1, 'Colocación de marcapasos. Estudios prequirúrgicos completos.'),
+    toSchedule(5, 1, 2, 'Artroscopía de rodilla izquierda. Lesión de menisco.'),
+    scheduled(1, 4, null, 'Cirugía ya coordinada.', [-1, '09:00', '11:00']),
+    scheduled(4, 1, 1, 'Apendicectomía programada.', [-1, '12:00', '13:30']),
+    scheduled(5, 2, 2, 'Septoplastia.', [-1, '15:00', '17:00']),
+    scheduled(7, 4, 1, 'Angioplastia coronaria.', [-6, '09:00', '11:00']),
+    scheduled(2, 1, 1, 'Extirpación de lipoma en espalda.', [-6, '14:00', '16:30']),
+    scheduled(8, 3, 2, 'Colocación de tubos de ventilación (diábolos).', [-9, '08:00', '10:30']),
+    scheduled(6, 1, null, 'Cirugía de cataratas, ojo derecho.', [1, '14:00', '15:30']),
+    scheduled(3, 2, 2, 'Ablación por arritmia.', [2, '10:00', '12:30']),
+    scheduled(4, 3, 1, 'Frenectomía lingual.', [2, '13:00', '14:00']),
+    scheduled(5, 4, 2, 'Reemplazo valvular aórtico.', [4, '07:30', '09:00']),
+    scheduled(7, 1, 1, 'Colecistectomía laparoscópica.', [4, '09:30', '11:45']),
+    scheduled(8, 3, 2, 'Hernia umbilical.', [4, '12:00', '13:00']),
+    scheduled(1, 2, 1, 'Bypass coronario.', [4, '16:00', '18:00']),
+    scheduled(2, 1, 1, 'Hernia inguinal izquierda.', [7, '11:00', '13:00']),
+    scheduled(6, 4, null, 'Cateterismo diagnóstico.', [10, '08:00', '09:30']),
+    scheduled(3, 1, 2, 'Tiroidectomía parcial.', [10, '14:30', '17:00']),
+    scheduled(5, 2, 2, 'Rinoplastia.', [15, '09:00', '12:00']),
+    scheduled(4, 3, 1, 'Corrección de estrabismo.', [22, '10:00', '11:30']),
+].map((surgery, index) => ({ id: index + 1, ...surgery }));
+
+let nextId = surgeries.length + 1;
+
+function can(name) {
+    return permissions.includes(name);
+}
+
+function pad2(value) {
+    return String(value).padStart(2, '0');
+}
+
+function wallParts(date) {
+    const parts = {};
+    const formatted = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(date);
+
+    formatted.forEach((part) => {
+        if (part.type !== 'literal') {
+            parts[part.type] = part.value;
+        }
+    });
+
+    return parts;
+}
+
+function wallStamp(date) {
+    const parts = wallParts(date);
+
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+function todayKey() {
+    return wallStamp(new Date()).slice(0, 10);
+}
+
+function addDays(key, delta) {
+    const [year, month, day] = key.split('-').map(Number);
+    const date = new Date(year, month - 1, day + delta);
+
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function addMonths(key, delta) {
+    const [year, month] = key.split('-').map(Number);
+    const date = new Date(year, month - 1 + delta, 1);
+
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-01`;
+}
+
+function monthGrid(monthKey) {
+    const [year, month] = monthKey.split('-').map(Number);
+    const first = new Date(year, month - 1, 1);
+    const startWeekday = first.getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const prevMonthDays = new Date(year, month - 1, 0).getDate();
+    const cells = [];
+
+    for (let index = 0; index < 42; index += 1) {
+        const offset = index - startWeekday;
+
+        if (offset < 0) {
+            const day = prevMonthDays + offset + 1;
+            const date = new Date(year, month - 2, day);
+            cells.push({
+                key: `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`,
+                day,
+                inMonth: false,
+            });
+        } else if (offset >= daysInMonth) {
+            const day = offset - daysInMonth + 1;
+            const date = new Date(year, month, day);
+            cells.push({
+                key: `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`,
+                day,
+                inMonth: false,
+            });
+        } else {
+            const day = offset + 1;
+            cells.push({
+                key: `${year}-${pad2(month)}-${pad2(day)}`,
+                day,
+                inMonth: true,
+            });
+        }
+    }
+
+    return cells;
+}
+
+function monthTitle(monthKey) {
+    const [year, month] = monthKey.split('-').map(Number);
+
+    return new Date(year, month - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+}
+
+function formatDateLabel(dateKey) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+
+    return new Date(year, month - 1, day).toLocaleDateString('es-AR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+    });
+}
+
+function patientById(id) {
+    return patients.find((patient) => patient.id === id);
+}
+
+function doctorById(id) {
+    return doctors.find((doctor) => doctor.id === id);
+}
+
+function surgeryById(id) {
+    return surgeries.find((surgery) => surgery.id === id);
+}
+
+function searchPatients(term) {
+    const query = term.trim();
+
+    if (Array.from(query).length < 2) {
+        return [];
+    }
+
+    const needle = query.toLocaleLowerCase('es');
+
+    return patients
+        .filter((patient) => [patient.name, patient.dni, patient.email].some((value) => value.toLocaleLowerCase('es').includes(needle)))
+        .sort((left, right) => left.id - right.id)
+        .slice(0, 25);
+}
+
+function overlaps(start, end, otherStart, otherEnd) {
+    return start < otherEnd && otherStart < end;
+}
+
+function el(tag, attrs, children) {
+    const node = tag === 'svg' || tag === 'path'
+        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+        : document.createElement(tag);
+
+    Object.entries(attrs || {}).forEach(([key, value]) => {
+        if (key === 'class') {
+            node.setAttribute('class', value);
+        } else if (key === 'text') {
+            node.textContent = value;
+        } else if (value === true) {
+            node.setAttribute(key, '');
+        } else if (value !== false && value != null) {
+            node.setAttribute(key, String(value));
+        }
+    });
+
+    (children || []).forEach((child) => {
+        if (child == null || child === false) {
+            return;
+        }
+        node.append(child.nodeType ? child : document.createTextNode(String(child)));
+    });
+
+    return node;
+}
+
+function toast(message, variant) {
+    const host = document.getElementById('toasts');
+    const node = el('div', {
+        class: `toast toast-${variant}`,
+        role: variant === 'warn' ? 'alert' : 'status',
+        text: message,
+    });
+    host.append(node);
+    window.setTimeout(() => node.remove(), 3400);
+}
+
+function showView(next) {
+    view = next;
+    if (next !== 'calendar' && scheduleTargetId !== null) {
+        scheduleTargetId = null;
+        setCalendarSubtitle();
+    }
+    document.getElementById('view-list').hidden = next !== 'list';
+    document.getElementById('view-create').hidden = next !== 'create';
+    document.getElementById('view-calendar').hidden = next !== 'calendar';
+    renderNav();
+    closeDrawer();
+
+    if (next === 'calendar') {
+        renderCalendar();
+    }
+}
+
+function closeDrawer() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('is-open');
+    sidebar.dataset.open = 'false';
+    document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
+    document.getElementById('nav-toggle').setAttribute('aria-label', 'Abrir menú');
+    document.getElementById('user-toggle').setAttribute('aria-expanded', 'false');
+    document.getElementById('sidebar-nav-panel').hidden = false;
+    document.getElementById('sidebar-user-panel').hidden = true;
+}
+
+function renderNav() {
+    const parent = document.getElementById('nav-surgeries');
+    parent.setAttribute('aria-expanded', navOpen ? 'true' : 'false');
+    document.getElementById('nav-surgeries-links').hidden = !navOpen;
+
+    document.querySelectorAll('.nav-child').forEach((button) => {
+        const active = view === 'list' && button.dataset.section === section;
+        button.classList.toggle('is-active', active);
+        if (active) {
+            button.setAttribute('aria-current', 'page');
+        } else {
+            button.removeAttribute('aria-current');
+        }
+    });
+
+    document.querySelectorAll('[data-count]').forEach((node) => {
+        node.textContent = String(surgeries.filter(SECTIONS[node.dataset.count].matches).length);
+    });
+}
+
+function openSection(next) {
+    if (!can('surgeries.catalog.view')) {
+        return;
+    }
+
+    section = next;
+    applied = { ...EMPTY_FILTERS };
+    document.getElementById('filter-q').value = '';
+    filtersOpen = false;
+    renderFilterState();
+    renderList();
+    showView('list');
+}
+
+function renderList() {
+    const host = document.getElementById('surgery-list');
+    const current = SECTIONS[section];
+    host.replaceChildren();
+    document.getElementById('list-title').textContent = current.title;
+    document.getElementById('list-subtitle').textContent = current.subtitle;
+    document.getElementById('filter-status-field').hidden = section !== 'approved';
+    renderNav();
+
+    if (!can('surgeries.catalog.view')) {
+        host.append(el('p', { class: 'empty', text: 'No tenés permiso para ver las cirugías.' }));
+        return;
+    }
+
+    const rows = surgeries.filter(current.matches).filter(matchesFilters).sort(current.sort);
+
+    if (rows.length === 0) {
+        host.append(el('p', { class: 'empty', text: activeFilterCount() > 0 || applied.q.trim() !== '' ? 'No hay cirugías con esos filtros.' : 'No hay cirugías en esta sección.' }));
+        return;
+    }
+
+    rows.forEach((surgery, index) => {
+        if (section === 'approved' && surgery.status === 'scheduled' && rows[index - 1]?.status !== 'scheduled') {
+            host.append(el('div', { class: 'list-divider', role: 'separator', text: 'Programadas' }));
+        }
+        host.append(surgeryCard(surgery));
+    });
+}
+
+function matchesFilters(surgery) {
+    const patient = patientById(surgery.patient_id);
+    const doctor = doctorById(surgery.doctor_id);
+    const needle = applied.q.trim().toLocaleLowerCase('es');
+
+    if (needle !== '' && !patient.name.toLocaleLowerCase('es').includes(needle) && !patient.dni.includes(needle)) {
+        return false;
+    }
+    if (section === 'approved' && applied.status !== '' && surgery.status !== applied.status) {
+        return false;
+    }
+    if (applied.specialty_id !== '' && !doctor.specialty_ids.includes(Number(applied.specialty_id))) {
+        return false;
+    }
+    if (applied.doctor_id !== '' && surgery.doctor_id !== Number(applied.doctor_id)) {
+        return false;
+    }
+    if (applied.health_insurance_id === PARTICULAR) {
+        return surgery.health_insurance_id === null;
+    }
+    if (applied.health_insurance_id !== '' && surgery.health_insurance_id !== Number(applied.health_insurance_id)) {
+        return false;
+    }
+
+    return true;
+}
+
+function statusBadge(status) {
+    return el('span', { class: `status-badge status-${status}`, text: STATUS_LABEL[status] });
+}
+
+function timeRange(surgery) {
+    return `${surgery.starts_at.slice(11, 16)}–${surgery.ends_at.slice(11, 16)}`;
+}
+
+function insuranceName(id) {
+    return id === null ? 'Particular' : healthInsurances.find((item) => item.id === id).name;
+}
+
+function shortDate(dateKey) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+
+    return new Date(year, month - 1, day).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function surgeryCard(surgery) {
+    const patient = patientById(surgery.patient_id);
+    const doctor = doctorById(surgery.doctor_id);
+    const copy = el('div', { class: 'card-copy' }, [
+        surgery.starts_at ? el('div', { class: 'card-time', text: `${shortDate(surgery.starts_at.slice(0, 10))} · ${timeRange(surgery)}` }) : null,
+        el('div', { class: 'card-name', text: patient.name }),
+        el('div', { class: 'card-meta' }, ['DNI ', el('span', { class: 'mono', text: patient.dni })]),
+        el('div', { class: 'card-meta', text: `Solicita: ${doctor.name}` }),
+        statusBadge(surgery.status),
+    ]);
+    const detail = el('button', { type: 'button', class: 'btn btn-sm btn-outline', 'data-action': 'detail', text: 'Ver detalle' });
+    detail.addEventListener('click', () => openDetail(surgery.id));
+
+    return el('article', { class: 'card', 'data-surgery-id': surgery.id, 'data-status': surgery.status }, [
+        copy,
+        el('div', { class: 'card-actions' }, [detail]),
+    ]);
+}
+
+function activeFilterCount() {
+    return ['status', 'specialty_id', 'doctor_id', 'health_insurance_id'].filter((key) => applied[key] !== '').length;
+}
+
+function renderFilterState() {
+    const count = activeFilterCount();
+    document.getElementById('open-filters-label').textContent = count > 0 ? `Filtros (${count})` : 'Filtros';
+    document.getElementById('filter-form').hidden = filtersOpen;
+    document.getElementById('surgery-list').hidden = filtersOpen;
+    document.getElementById('filter-panel').hidden = !filtersOpen;
+}
+
+function openFilters() {
+    document.getElementById('filter-status').value = applied.status;
+    document.getElementById('filter-specialty').value = applied.specialty_id;
+    document.getElementById('filter-doctor').value = applied.doctor_id;
+    document.getElementById('filter-insurance').value = applied.health_insurance_id;
+    filtersOpen = true;
+    renderFilterState();
+    document.getElementById('filter-status').focus();
+}
+
+function closeFilters() {
+    filtersOpen = false;
+    renderFilterState();
+}
+
+function fillFilterSelects() {
+    const fill = (id, allLabel, options) => {
+        const select = document.getElementById(id);
+        select.replaceChildren(el('option', { value: '', text: allLabel }));
+        options.forEach(([value, label]) => select.append(el('option', { value, text: label })));
+    };
+
+    fill('filter-specialty', 'Todas', specialties.map((item) => [item.id, item.name]));
+    fill('filter-doctor', 'Todos', doctors.map((item) => [item.id, item.name]));
+    fill('filter-insurance', 'Todas', [...healthInsurances.map((item) => [item.id, item.name]), [PARTICULAR, 'Particular']]);
+}
+
+function fillInsuranceSelect() {
+    const select = document.getElementById('health-insurance-id');
+    select.replaceChildren(el('option', { value: '', text: 'Particular' }));
+    healthInsurances.forEach((item) => select.append(el('option', { value: item.id, text: item.name })));
+}
+
+function renderPatientResults() {
+    const input = document.getElementById('patient-q');
+    const host = document.getElementById('patient-results');
+    const hint = document.getElementById('patient-hint');
+    const query = input.value.trim();
+    host.replaceChildren();
+
+    if (Array.from(query).length < 2) {
+        hint.hidden = false;
+        hint.textContent = 'Mínimo 2 caracteres.';
+        return;
+    }
+
+    const matches = searchPatients(query);
+    hint.hidden = matches.length > 0;
+    hint.textContent = matches.length === 0 ? 'No hay pacientes con ese criterio.' : '';
+
+    matches.forEach((patient) => {
+        const button = el('button', { type: 'button', class: `pick${patient.id === selectedPatientId ? ' is-selected' : ''}` }, [
+            el('strong', { text: patient.name }),
+            el('span', { text: `DNI ${patient.dni} · ${patient.email}` }),
+        ]);
+        button.addEventListener('click', () => {
+            selectedPatientId = patient.id;
+            document.getElementById('health-insurance-id').value = patient.health_insurance_id ?? '';
+            renderPatientResults();
+            renderPicked();
+        });
+        host.append(button);
+    });
+}
+
+function renderPicked() {
+    const node = document.getElementById('patient-picked');
+    const patient = patientById(selectedPatientId);
+
+    if (!patient) {
+        node.hidden = true;
+        node.textContent = '';
+        return;
+    }
+
+    node.hidden = false;
+    node.textContent = `Paciente elegido: ${patient.name}`;
+}
+
+function fillDoctors() {
+    const select = document.getElementById('doctor-id');
+    select.replaceChildren(el('option', { value: '', text: 'Elegí un doctor' }));
+    doctors.forEach((doctor) => {
+        select.append(el('option', { value: doctor.id, text: doctor.name }));
+    });
+}
+
+function toMinutes(time) {
+    const [hour, minute] = time.split(':').map(Number);
+    return hour * 60 + minute;
+}
+
+function fromMinutes(total) {
+    const clamped = Math.max(0, Math.min(total, 23 * 60 + 55));
+    return `${pad2(Math.floor(clamped / 60))}:${pad2(clamped % 60)}`;
+}
+
+function time24(id, label, value, onChange) {
+    const [hour, minute] = value.split(':');
+    const hourSelect = el('select', { id: `${id}-h`, 'aria-label': `${label} (hora 0–23)` });
+    const minuteSelect = el('select', { id: `${id}-m`, 'aria-label': `${label} (minutos)` });
+
+    for (let index = 0; index < 24; index += 1) {
+        hourSelect.append(el('option', { value: pad2(index), text: pad2(index) }));
+    }
+    for (let index = 0; index < 60; index += 5) {
+        minuteSelect.append(el('option', { value: pad2(index), text: pad2(index) }));
+    }
+    hourSelect.value = hour;
+    minuteSelect.value = minute;
+
+    const emit = () => onChange(`${hourSelect.value}:${minuteSelect.value}`);
+    hourSelect.addEventListener('change', emit);
+    minuteSelect.addEventListener('change', emit);
+
+    return el('div', { class: 'field' }, [
+        el('span', { text: label }),
+        el('div', { class: 'time24', role: 'group', 'aria-label': label }, [hourSelect, el('span', { class: 'time-sep', 'aria-hidden': 'true', text: ':' }), minuteSelect]),
+    ]);
+}
+
+function scheduledOn(dateKey, exceptId) {
+    return surgeries
+        .filter((surgery) => surgery.id !== exceptId && surgery.status === 'scheduled' && surgery.starts_at && surgery.starts_at.slice(0, 10) === dateKey)
+        .sort((left, right) => left.starts_at.localeCompare(right.starts_at));
+}
+
+function nowMinutesOn(dateKey) {
+    const now = wallStamp(new Date());
+    if (dateKey < now.slice(0, 10)) {
+        return 24 * 60;
+    }
+    if (dateKey > now.slice(0, 10)) {
+        return 0;
+    }
+    return toMinutes(now.slice(11, 16));
+}
+
+function freeGaps(dateKey, busy) {
+    const gaps = [];
+    let cursor = Math.max(DAY_START_MIN, Math.ceil(nowMinutesOn(dateKey) / 5) * 5);
+
+    busy.forEach((surgery) => {
+        const start = toMinutes(surgery.starts_at.slice(11, 16));
+        const end = toMinutes(surgery.ends_at.slice(11, 16));
+        if (start - cursor >= 30) {
+            gaps.push([cursor, start]);
+        }
+        cursor = Math.max(cursor, end);
+    });
+    if (DAY_END_MIN - cursor >= 30) {
+        gaps.push([cursor, DAY_END_MIN]);
+    }
+
+    return gaps;
+}
+
+function scheduleCheck(dateKey, busy) {
+    const start = toMinutes(scheduleStart);
+    const end = toMinutes(scheduleEnd);
+
+    if (end <= start) {
+        return { ok: false, message: 'La hora de fin tiene que ser posterior a la de inicio.' };
+    }
+    if (`${dateKey} ${scheduleStart}:00` <= wallStamp(new Date())) {
+        return { ok: false, message: 'Ese horario ya pasó. Programá un horario futuro.' };
+    }
+
+    const clash = busy.find((other) => overlaps(`${dateKey} ${scheduleStart}:00`, `${dateKey} ${scheduleEnd}:00`, other.starts_at, other.ends_at));
+    if (clash) {
+        return {
+            ok: false,
+            clash: true,
+            message: `Se solapa con ${timeRange(clash)} (${patientById(clash.patient_id).name}).`,
+        };
+    }
+
+    return { ok: true, message: `Libre · ${end - start} min.` };
+}
+
+function renderCalendar() {
+    const focusedId = document.activeElement && document.activeElement.id;
+    paintCalendar();
+    if (focusedId) {
+        document.getElementById(focusedId)?.focus();
+    }
+}
+
+function paintCalendar() {
+    const monthHost = document.getElementById('calendar-month');
+    const panelHost = document.getElementById('day-panel');
+    const agenda = document.getElementById('agenda');
+    const narrow = window.matchMedia('(max-width: 767px)').matches;
+    agenda.classList.toggle('is-day', narrow && mobileDayOpen);
+    monthHost.replaceChildren();
+    panelHost.replaceChildren();
+
+    const head = el('div', { class: 'cal-head' });
+    const prev = el('button', { type: 'button', class: 'btn btn-outline btn-sm btn-icon', 'aria-label': 'Mes anterior' });
+    prev.append(el('svg', { class: 'icon icon-lg', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [svgPath('m15 18-6-6 6-6')]));
+    prev.addEventListener('click', () => {
+        visibleMonth = addMonths(visibleMonth, -1);
+        renderCalendar();
+    });
+    const next = el('button', { type: 'button', class: 'btn btn-outline btn-sm btn-icon', 'aria-label': 'Mes siguiente' });
+    next.append(el('svg', { class: 'icon icon-lg', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [svgPath('m9 18 6-6-6-6')]));
+    next.addEventListener('click', () => {
+        visibleMonth = addMonths(visibleMonth, 1);
+        renderCalendar();
+    });
+    head.append(prev, el('h2', { text: monthTitle(visibleMonth) }), next);
+
+    const grid = el('div', { class: 'cal-grid' });
+    WEEKDAYS.forEach((label) => grid.append(el('div', { class: 'weekday', text: label })));
+
+    const perDay = {};
+    surgeries.forEach((surgery) => {
+        if (surgery.status === 'scheduled' && surgery.starts_at) {
+            const key = surgery.starts_at.slice(0, 10);
+            perDay[key] = (perDay[key] ?? 0) + 1;
+        }
+    });
+
+    const scheduling = scheduleTargetId !== null;
+    const today = todayKey();
+
+    monthGrid(visibleMonth).forEach((day) => {
+        const button = el('button', {
+            type: 'button',
+            class: 'day',
+            text: String(day.day),
+        });
+
+        if (!day.inMonth || (scheduling && day.key < today)) {
+            button.classList.add('is-muted');
+            button.disabled = true;
+        } else {
+            button.dataset.day = day.key;
+            const count = perDay[day.key] ?? 0;
+            if (count >= 3) {
+                button.classList.add('tone-full');
+            } else if (count > 0) {
+                button.classList.add('tone-has');
+            }
+            if (count > 0) {
+                button.setAttribute('aria-label', `${day.day}, ${count} cirugía${count === 1 ? '' : 's'}`);
+            }
+            if (day.key === selectedDate) {
+                button.classList.add('is-selected');
+                button.setAttribute('aria-current', 'date');
+            }
+            button.addEventListener('click', () => {
+                selectedDate = day.key;
+                mobileDayOpen = true;
+                renderCalendar();
+            });
+        }
+
+        grid.append(button);
+    });
+
+    const legend = el('div', { class: 'legend' }, [
+        el('span', {}, [el('i', { class: 'swatch', 'aria-hidden': 'true' }), 'Sin cirugías']),
+        el('span', {}, [el('i', { class: 'swatch swatch-has', 'aria-hidden': 'true' }), 'Con cirugías']),
+        el('span', {}, [el('i', { class: 'swatch swatch-full', 'aria-hidden': 'true' }), '3 o más']),
+    ]);
+    monthHost.append(head, grid, legend);
+
+    const back = el('button', { type: 'button', class: 'back-link day-back', text: '' });
+    back.append(el('svg', { class: 'icon icon-chevron', viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [svgPath('m15 18-6-6 6-6')]));
+    back.append('Calendario');
+    back.addEventListener('click', () => {
+        mobileDayOpen = false;
+        renderCalendar();
+    });
+
+    const daySurgeries = scheduledOn(selectedDate, scheduling ? scheduleTargetId : null);
+    const title = formatDateLabel(selectedDate);
+    panelHost.append(
+        back,
+        el('h2', { text: title.charAt(0).toUpperCase() + title.slice(1) }),
+        el('p', {
+            class: 'hint',
+            text: `${daySurgeries.length} cirugía${daySurgeries.length === 1 ? '' : 's'} programada${daySurgeries.length === 1 ? '' : 's'}.`,
+        }),
+    );
+
+    if (scheduling) {
+        panelHost.append(renderScheduleDay(daySurgeries));
+        return;
+    }
+
+    panelHost.append(el('div', { class: 'timeline-wrap' }, [buildTimeline(daySurgeries, { onOpen: openDetail })]));
+}
+
+function buildTimeline(busy, options) {
+    const { preview = null, onPick = null, onOpen = null } = options;
+    const previewStart = preview ? toMinutes(preview.start) : null;
+    const previewEnd = preview ? toMinutes(preview.end) : null;
+    const firstHour = Math.floor(Math.min(DAY_START_MIN, previewStart ?? DAY_START_MIN, ...busy.map((item) => toMinutes(item.starts_at.slice(11, 16)))) / 60);
+    const lastHour = Math.ceil(Math.max(DAY_END_MIN, previewEnd ?? DAY_END_MIN, ...busy.map((item) => toMinutes(item.ends_at.slice(11, 16)))) / 60);
+    const span = (lastHour - firstHour) * 60;
+    const pct = (minutes) => `${((minutes - firstHour * 60) / span) * 100}%`;
+    const height = (minutes) => `${(minutes / span) * 100}%`;
+    const now = wallStamp(new Date());
+
+    const timeline = el('div', {
+        class: `timeline${onPick ? ' is-pickable' : ''}`,
+        style: `--hours: ${lastHour - firstHour}`,
+        'aria-label': 'Cirugías del día por hora',
+    });
+
+    for (let hour = firstHour; hour <= lastHour; hour += 1) {
+        timeline.append(el('div', { class: 'tl-hour', style: `top: ${pct(hour * 60)}` }, [el('span', { text: `${pad2(hour)}:00` })]));
+    }
+
+    const nowMin = Math.min(nowMinutesOn(selectedDate), lastHour * 60);
+    if (nowMin > firstHour * 60) {
+        timeline.append(el('div', { class: 'tl-past', style: `height: ${height(nowMin - firstHour * 60)}` }));
+    }
+
+    busy.forEach((surgery) => {
+        const start = toMinutes(surgery.starts_at.slice(11, 16));
+        const end = toMinutes(surgery.ends_at.slice(11, 16));
+        const patient = patientById(surgery.patient_id);
+        const doctor = doctorById(surgery.doctor_id);
+        const block = el(onOpen ? 'button' : 'div', {
+            type: onOpen ? 'button' : null,
+            class: `tl-block tl-busy${surgery.ends_at <= now ? ' is-done' : ''}`,
+            style: `top: ${pct(start)}; height: ${height(end - start)}`,
+            'aria-label': onOpen ? `${timeRange(surgery)}, ${patient.name}, ${doctor.name}. Ver detalle` : null,
+        }, [
+            el('strong', { class: 'mono', text: timeRange(surgery) }),
+            ` ${patient.name} · ${doctor.name}`,
+        ]);
+        if (onOpen) {
+            block.addEventListener('click', () => onOpen(surgery.id));
+        }
+        timeline.append(block);
+    });
+
+    if (preview && previewEnd > previewStart) {
+        timeline.append(
+            el('div', { class: `tl-block tl-preview ${preview.ok ? 'is-ok' : 'is-bad'}`, style: `top: ${pct(previewStart)}; height: ${height(previewEnd - previewStart)}` }, [
+                el('strong', { class: 'mono', text: `${preview.start}–${preview.end}` }),
+                ' Esta cirugía',
+            ]),
+        );
+    }
+
+    if (onPick) {
+        timeline.addEventListener('click', (event) => {
+            if (event.target.closest('.tl-busy')) {
+                return;
+            }
+            const rect = timeline.getBoundingClientRect();
+            onPick(firstHour * 60 + Math.round((((event.clientY - rect.top) / rect.height) * span) / 15) * 15);
+        });
+    }
+
+    return timeline;
+}
+
+function renderScheduleDay(busy) {
+    const check = scheduleCheck(selectedDate, busy);
+    const startMin = toMinutes(scheduleStart);
+    const endMin = toMinutes(scheduleEnd);
+    const timeline = buildTimeline(busy, {
+        preview: { start: scheduleStart, end: scheduleEnd, ok: check.ok },
+        onPick: (minutes) => {
+            const keep = Math.max(endMin - startMin, 30);
+            scheduleStart = fromMinutes(minutes);
+            scheduleEnd = fromMinutes(minutes + keep);
+            renderCalendar();
+        },
+    });
+
+    const gaps = freeGaps(selectedDate, busy);
+    const duration = Math.max(endMin - startMin, 30);
+    const chips = el('div', { class: 'gap-chips' });
+    if (gaps.length === 0) {
+        chips.append(el('p', { class: 'hint', text: 'No quedan huecos libres de 30 min o más este día.' }));
+    }
+    gaps.forEach(([from, to]) => {
+        const chip = el('button', { type: 'button', class: 'gap-chip', text: `${fromMinutes(from)}–${fromMinutes(to)}` });
+        chip.addEventListener('click', () => {
+            scheduleStart = fromMinutes(from);
+            scheduleEnd = fromMinutes(Math.min(from + duration, to));
+            renderCalendar();
+        });
+        chips.append(chip);
+    });
+
+    const status = el('p', { class: `schedule-status ${check.ok ? 'is-ok' : 'is-bad'}`, role: 'status', text: check.message });
+    const submit = el('button', { type: 'button', class: 'btn', id: 'schedule-submit', text: 'Programar' });
+    submit.disabled = !check.ok;
+    submit.addEventListener('click', submitSchedule);
+    const cancel = el('button', { type: 'button', class: 'btn btn-outline', text: 'Cancelar' });
+    cancel.addEventListener('click', cancelSchedule);
+
+    const controls = el('div', { class: 'schedule-controls' }, [
+        el('div', { class: 'time-row' }, [
+            time24('schedule-start', 'Hora de inicio', scheduleStart, (value) => {
+                const keep = Math.max(toMinutes(scheduleEnd) - toMinutes(scheduleStart), 30);
+                scheduleStart = value;
+                scheduleEnd = fromMinutes(toMinutes(value) + keep);
+                renderCalendar();
+            }),
+            time24('schedule-end', 'Hora de fin', scheduleEnd, (value) => {
+                scheduleEnd = value;
+                renderCalendar();
+            }),
+        ]),
+        status,
+        el('div', { class: 'field' }, [el('span', { text: 'Huecos libres' }), chips]),
+        el('div', { class: 'schedule-actions' }, [cancel, submit]),
+    ]);
+
+    return el('div', { class: 'schedule-day' }, [controls, el('div', { class: 'timeline-wrap' }, [timeline])]);
+}
+
+function setCalendarSubtitle() {
+    const node = document.getElementById('calendar-subtitle');
+    const surgery = surgeryById(scheduleTargetId);
+
+    if (!surgery) {
+        node.textContent = 'Calendario de cirugías programadas.';
+        return;
+    }
+
+    node.replaceChildren(
+        el('strong', { text: `Programar: ${patientById(surgery.patient_id).name}` }),
+        ` · Solicita ${doctorById(surgery.doctor_id).name}. Elegí un día y un horario libre.`,
+    );
+}
+
+function cancelSchedule() {
+    const id = scheduleTargetId;
+    scheduleTargetId = null;
+    setCalendarSubtitle();
+    showView('list');
+    if (id !== null) {
+        openDetail(id);
+    }
+}
+
+function submitSchedule() {
+    const surgery = surgeryById(scheduleTargetId);
+    if (!surgery || surgery.status !== 'to_schedule' || !can('surgeries.schedule')) {
+        return;
+    }
+
+    const check = scheduleCheck(selectedDate, scheduledOn(selectedDate, surgery.id));
+    if (!check.ok) {
+        toast(check.message, 'warn');
+        renderCalendar();
+        return;
+    }
+
+    surgery.status = 'scheduled';
+    surgery.starts_at = `${selectedDate} ${scheduleStart}:00`;
+    surgery.ends_at = `${selectedDate} ${scheduleEnd}:00`;
+    scheduleTargetId = null;
+    setCalendarSubtitle();
+    renderList();
+    renderCalendar();
+    toast(`Cirugía programada: ${selectedDate} ${scheduleStart}–${scheduleEnd}.`, 'ok');
+}
+
+function svgPath(d) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    return path;
+}
+
+function detailRow(label, value) {
+    return [el('dt', { text: label }), el('dd', {}, [value])];
+}
+
+function detailSection(title, rows) {
+    return el('section', { class: 'detail-section' }, [
+        el('h3', { text: title }),
+        el('dl', {}, rows.flatMap(([label, value]) => detailRow(label, value))),
+    ]);
+}
+
+function openDetail(id) {
+    const surgery = surgeryById(id);
+    if (!can('surgeries.catalog.view') || !surgery) {
+        return;
+    }
+
+    const patient = patientById(surgery.patient_id);
+    const doctor = doctorById(surgery.doctor_id);
+    const doctorSpecialties = doctor.specialty_ids.map((specialtyId) => specialties.find((item) => item.id === specialtyId).name).join(', ');
+    const schedule = surgery.starts_at
+        ? el('span', { class: 'mono', text: `${surgery.starts_at.slice(0, 10)} · ${timeRange(surgery)}` })
+        : 'Sin horario';
+
+    detailSurgeryId = id;
+    document.getElementById('detail-title').textContent = 'Detalle de la cirugía';
+    document.getElementById('detail-status').replaceChildren(statusBadge(surgery.status));
+    document.getElementById('detail-body').replaceChildren(
+        detailSection('Cirugía', [
+            ['Estado', STATUS_LABEL[surgery.status]],
+            ['Horario', schedule],
+            ['Obra social', insuranceName(surgery.health_insurance_id)],
+        ]),
+        detailSection('Paciente', [
+            ['Nombre', patient.name],
+            ['DNI', el('span', { class: 'mono', text: patient.dni })],
+            ['Correo', patient.email],
+        ]),
+        detailSection('Doctor', [
+            ['Nombre', doctor.name],
+            ['Especialidades', doctorSpecialties],
+        ]),
+        el('section', { class: 'detail-section' }, [el('h3', { text: 'Nota' }), el('p', { class: 'detail-note', text: surgery.note })]),
+    );
+
+    const actions = document.getElementById('detail-actions');
+    const close = el('button', { type: 'button', class: 'btn btn-outline', id: 'detail-close', text: 'Cerrar' });
+    close.addEventListener('click', closeDetail);
+    actions.replaceChildren(close);
+
+    if (can('surgeries.approve') && surgery.status === 'pending_approval') {
+        const approve = el('button', { type: 'button', class: 'btn', 'data-permission': 'surgeries.approve', text: 'Aprobar' });
+        approve.addEventListener('click', () => {
+            closeDetail();
+            openApprove(id);
+        });
+        actions.append(approve);
+    }
+
+    if (can('surgeries.schedule') && surgery.status === 'to_schedule') {
+        const program = el('button', { type: 'button', class: 'btn', 'data-permission': 'surgeries.schedule', text: 'Programar' });
+        program.addEventListener('click', () => {
+            closeDetail();
+            openSchedule(id);
+        });
+        actions.append(program);
+    }
+
+    document.getElementById('detail-modal').hidden = false;
+    close.focus();
+}
+
+function closeDetail() {
+    detailSurgeryId = null;
+    document.getElementById('detail-modal').hidden = true;
+}
+
+function openModal() {
+    const modal = document.getElementById('modal');
+    modal.hidden = false;
+    document.getElementById('modal-confirm').focus();
+}
+
+function closeModal() {
+    modalMode = null;
+    modalSurgeryId = null;
+    document.getElementById('modal').hidden = true;
+}
+
+function backToDetail() {
+    const id = modalSurgeryId;
+    closeModal();
+    if (id !== null) {
+        openDetail(id);
+    }
+}
+
+function openApprove(id) {
+    const surgery = surgeryById(id);
+    if (!can('surgeries.approve') || !surgery || surgery.status !== 'pending_approval') {
+        return;
+    }
+
+    modalMode = 'approve';
+    modalSurgeryId = id;
+    document.getElementById('modal-title').textContent = 'Aprobar cirugía';
+    document.getElementById('modal-message').textContent = 'Pasa a «A programar» y sigue sin horario.';
+    document.getElementById('modal-confirm').textContent = 'Aprobar';
+    openModal();
+}
+
+function openSchedule(id) {
+    const surgery = surgeryById(id);
+    if (!can('surgeries.schedule') || !surgery || surgery.status !== 'to_schedule') {
+        return;
+    }
+
+    selectedDate = addDays(todayKey(), 1);
+    visibleMonth = `${selectedDate.slice(0, 7)}-01`;
+    mobileDayOpen = false;
+    const firstGap = freeGaps(selectedDate, scheduledOn(selectedDate, id))[0];
+    scheduleStart = firstGap ? fromMinutes(firstGap[0]) : '09:00';
+    scheduleEnd = fromMinutes(toMinutes(scheduleStart) + 60);
+    showView('calendar');
+    scheduleTargetId = id;
+    setCalendarSubtitle();
+    renderCalendar();
+}
+
+function confirmModal() {
+    if (modalMode === 'approve') {
+        const surgery = surgeryById(modalSurgeryId);
+        if (!surgery || surgery.status !== 'pending_approval' || !can('surgeries.approve')) {
+            closeModal();
+            return;
+        }
+        surgery.status = 'to_schedule';
+        surgery.starts_at = null;
+        surgery.ends_at = null;
+        closeModal();
+        renderList();
+        openDetail(surgery.id);
+        toast('Cirugía aprobada. Quedó a programar.', 'ok');
+    }
+}
+
+function submitCreate(event) {
+    event.preventDefault();
+    if (!can('surgeries.create')) {
+        return;
+    }
+
+    const error = document.getElementById('create-error');
+    const note = document.getElementById('note').value.trim();
+    const doctorId = Number(document.getElementById('doctor-id').value);
+    const insuranceValue = document.getElementById('health-insurance-id').value;
+    const patient = patientById(selectedPatientId);
+    const doctor = doctorById(doctorId);
+
+    if (!patient || !doctor || note === '') {
+        error.hidden = false;
+        error.textContent = 'Elegí un paciente, un doctor y escribí la nota.';
+        return;
+    }
+
+    surgeries.unshift({
+        id: nextId,
+        patient_id: patient.id,
+        doctor_id: doctor.id,
+        note,
+        health_insurance_id: insuranceValue === '' ? null : Number(insuranceValue),
+        status: 'pending_approval',
+        starts_at: null,
+        ends_at: null,
+    });
+    nextId += 1;
+    error.hidden = true;
+    document.getElementById('create-form').reset();
+    selectedPatientId = null;
+    renderPatientResults();
+    renderPicked();
+    openSection('pending');
+    toast('Solicitaste la cirugía.', 'ok');
+}
+
+function applyPermissionVisibility() {
+    document.querySelectorAll('[data-permission]').forEach((node) => {
+        if (!can(node.dataset.permission)) {
+            node.hidden = true;
+        }
+    });
+}
+
+function bind() {
+    document.getElementById('nav-surgeries').addEventListener('click', () => {
+        navOpen = !navOpen;
+        renderNav();
+    });
+    document.querySelectorAll('.nav-child').forEach((button) => {
+        button.addEventListener('click', () => openSection(button.dataset.section));
+    });
+    document.getElementById('brand-home').addEventListener('click', () => {
+        navOpen = true;
+        openSection('pending');
+    });
+    document.getElementById('open-calendar').addEventListener('click', () => {
+        if (can('surgeries.catalog.view')) {
+            showView('calendar');
+        }
+    });
+    document.getElementById('open-create').addEventListener('click', () => {
+        if (can('surgeries.create')) {
+            showView('create');
+        }
+    });
+    document.getElementById('create-back').addEventListener('click', () => showView('list'));
+    document.getElementById('calendar-back').addEventListener('click', () => showView('list'));
+    document.getElementById('filter-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        applied = { ...applied, q: document.getElementById('filter-q').value };
+        renderList();
+    });
+    document.getElementById('open-filters').addEventListener('click', openFilters);
+    document.getElementById('filter-panel-back').addEventListener('click', closeFilters);
+    document.getElementById('filter-panel').addEventListener('submit', (event) => {
+        event.preventDefault();
+        applied = {
+            q: document.getElementById('filter-q').value,
+            status: document.getElementById('filter-status').value,
+            specialty_id: document.getElementById('filter-specialty').value,
+            doctor_id: document.getElementById('filter-doctor').value,
+            health_insurance_id: document.getElementById('filter-insurance').value,
+        };
+        closeFilters();
+        renderList();
+    });
+    document.getElementById('detail-backdrop').addEventListener('click', closeDetail);
+    document.getElementById('patient-q').addEventListener('input', () => {
+        selectedPatientId = null;
+        renderPicked();
+        renderPatientResults();
+    });
+    document.getElementById('create-form').addEventListener('submit', submitCreate);
+    document.getElementById('modal-cancel').addEventListener('click', backToDetail);
+    document.getElementById('modal-backdrop').addEventListener('click', backToDetail);
+    document.getElementById('modal-confirm').addEventListener('click', confirmModal);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            if (!document.getElementById('modal').hidden) {
+                backToDetail();
+                return;
+            }
+            if (!document.getElementById('detail-modal').hidden) {
+                closeDetail();
+                return;
+            }
+            closeDrawer();
+        }
+    });
+
+    const logout = () => toast('Esta demo no cierra la sesión.', 'info');
+    document.getElementById('logout-desktop').addEventListener('click', logout);
+    document.getElementById('logout-mobile').addEventListener('click', logout);
+
+    document.getElementById('nav-toggle').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        const showingNav = sidebar.classList.contains('is-open') && document.getElementById('sidebar-user-panel').hidden;
+        const willOpen = !showingNav;
+        sidebar.classList.toggle('is-open', willOpen);
+        sidebar.dataset.open = willOpen ? 'true' : 'false';
+        document.getElementById('sidebar-nav-panel').hidden = false;
+        document.getElementById('sidebar-user-panel').hidden = true;
+        document.getElementById('nav-toggle').setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        document.getElementById('nav-toggle').setAttribute('aria-label', willOpen ? 'Cerrar menú' : 'Abrir menú');
+        document.getElementById('user-toggle').setAttribute('aria-expanded', 'false');
+        document.getElementById('user-toggle').setAttribute('aria-label', 'Abrir sesión');
+    });
+
+    document.getElementById('user-toggle').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        const userPanel = document.getElementById('sidebar-user-panel');
+        const willOpen = !(sidebar.classList.contains('is-open') && !userPanel.hidden);
+        sidebar.classList.toggle('is-open', willOpen);
+        sidebar.dataset.open = willOpen ? 'true' : 'false';
+        document.getElementById('sidebar-nav-panel').hidden = willOpen;
+        userPanel.hidden = !willOpen;
+        document.getElementById('user-toggle').setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        document.getElementById('user-toggle').setAttribute('aria-label', willOpen ? 'Cerrar cuenta' : 'Abrir sesión');
+        document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
+        document.getElementById('nav-toggle').setAttribute('aria-label', 'Abrir menú');
+    });
+
+    window.addEventListener('resize', () => {
+        if (view === 'calendar') {
+            renderCalendar();
+        }
+    });
+}
+
+applyPermissionVisibility();
+fillFilterSelects();
+fillInsuranceSelect();
+fillDoctors();
+renderPatientResults();
+renderList();
+bind();
+
+</script>
+</body>
+</html>

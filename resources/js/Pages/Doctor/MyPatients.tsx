@@ -1,3 +1,4 @@
+import AssignModal from '@/Components/Agenda/AssignModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -7,6 +8,7 @@ import Catalog, { type CatalogAction } from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import type { PatientRecord } from '@/types';
 import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 type Props = {
     patients: PatientRecord[];
@@ -19,6 +21,7 @@ function patientLines(patient: PatientRecord): string[] {
 }
 
 export default function MyPatients({ patients, candidates, filters }: Props) {
+    const [assigning, setAssigning] = useState<PatientRecord | null>(null);
     const hasSearch = filters.q.trim() !== '';
     const linkedIds = new Set(patients.map((patient) => patient.id));
     const toLink = candidates.filter((patient) => !linkedIds.has(patient.id));
@@ -30,17 +33,17 @@ export default function MyPatients({ patients, candidates, filters }: Props) {
     const items = [
         ...toLink.map((patient) => ({
             key: `link-${patient.id}`,
-            title: patient.user.name,
+            title: patient.name,
             lines: patientLines(patient),
             actions: [{ kind: 'link' as const, onClick: () => router.post('/my-patients', { patient_id: patient.id }) }] satisfies CatalogAction[],
         })),
         ...patients.map((patient) => ({
             key: patient.id,
-            title: patient.user.name,
+            title: patient.name,
             lines: patientLines(patient),
             actions: [
-                { kind: 'info' as const, href: `/my-patients/${patient.id}`, name: patient.user.name },
-                { kind: 'assign' as const, href: `/agenda?patient_id=${patient.id}&panel=assign` },
+                { kind: 'info' as const, href: `/my-patients/${patient.id}`, name: patient.name },
+                { kind: 'assign' as const, onClick: () => setAssigning(patient) },
             ] satisfies CatalogAction[],
         })),
     ];
@@ -62,6 +65,7 @@ export default function MyPatients({ patients, candidates, filters }: Props) {
                     />
                 </StageCard>
             </PageScreen>
+            {assigning ? <AssignModal patient={assigning} onDismiss={() => setAssigning(null)} /> : null}
         </>
     );
 }

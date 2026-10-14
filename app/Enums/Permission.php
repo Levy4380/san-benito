@@ -22,6 +22,7 @@ enum Permission: string
     case OwnAvailabilityDelete = 'own.availability.delete';
 
     case AppointmentsCancel = 'appointments.cancel';
+    case AppointmentsAssign = 'appointments.assign';
     case AppointmentsCatalogView = 'appointments.catalog.view';
     case PatientsLink = 'patients.link';
     case AvailabilityCreate = 'availability.create';
@@ -65,6 +66,7 @@ enum Permission: string
         $staff = [
             self::DoctorsBrowse,
             self::AppointmentsCancel,
+            self::AppointmentsAssign,
             self::PatientsLink,
             self::AvailabilityCreate,
             self::AvailabilityProgram,

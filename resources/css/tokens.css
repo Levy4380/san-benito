@@ -52,6 +52,17 @@
   --page-header-h: 5.75rem;
   --page-header-title-h: calc(var(--text-xl) * 1.25);
   --page-header-sub-h: 2.35rem;
+  --tl-step-h: 2.4rem;
+  --tl-gutter: 3.1rem;
+  --tl-inset: 3.35rem;
+  --tl-busy-bg: oklch(88% 0.06 250);
+  --tl-busy-border: oklch(75% 0.08 250);
+  --tl-busy-ink: oklch(32% 0.08 250);
+  --tl-done-bg: var(--color-paper-3);
+  --tl-window-bg: color-mix(in oklch, var(--color-accent) 8%, transparent);
+  --tl-past-stripe: oklch(93.5% 0.014 255 / 0.7);
+  --tl-paint-bg: color-mix(in oklch, var(--color-accent) 16%, transparent);
+  --tl-erase-bg: color-mix(in oklch, var(--color-danger) 10%, transparent);
 }
 
 @media (max-width: 767px) {

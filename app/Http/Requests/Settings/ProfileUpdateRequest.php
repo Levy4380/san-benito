@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Settings;
 
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,6 +27,7 @@ class ProfileUpdateRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(Patient::class, 'email')->ignore($this->user()->patient?->id),
             ],
         ];
     }

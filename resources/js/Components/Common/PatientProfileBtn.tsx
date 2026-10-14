@@ -9,6 +9,7 @@ type Props = {
     className?: string;
     size?: 'sm' | 'xs';
     label?: string;
+    href?: string;
 };
 
 export default function PatientProfileBtn({
@@ -17,12 +18,13 @@ export default function PatientProfileBtn({
     className,
     size = 'sm',
     label = 'Más información',
+    href,
 }: Props) {
     const aria = name ? `${label} de ${name}` : label;
 
     return (
         <Btn variant="outline" size={size} className={cn('shrink-0', className)} asChild>
-            <Link href={`/my-patients/${patientId}`} aria-label={aria} title={aria}>
+            <Link href={href ?? `/my-patients/${patientId}`} aria-label={aria} title={aria}>
                 <Info className={cn('shrink-0', size === 'xs' ? 'size-3' : 'size-[1.05rem]')} aria-hidden strokeWidth={2} />
                 {label}
             </Link>

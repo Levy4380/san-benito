@@ -52,6 +52,9 @@ class DemoSeeder extends Seeder
         $patient = Patient::query()->firstOrCreate(
             ['user_id' => $user->id],
             [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
                 'dni' => $dni,
                 'birth_date' => $birthDate,
             ],

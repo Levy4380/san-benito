@@ -46,6 +46,9 @@ class ProductRequirementsTest extends TestCase
         $this->assertTrue($user->hasRole('patient'));
         $this->assertNotNull($user->patient);
         $this->assertSame('40111222', $user->patient->dni);
+        $this->assertSame('Nora Paciente', $user->patient->name);
+        $this->assertSame('nora@example.com', $user->patient->email);
+        $this->assertSame('1144445555', $user->patient->phone);
     }
 
     public function test_2_patient_filters_doctors_and_lists_all_with_default_todas(): void
@@ -377,12 +380,11 @@ class ProductRequirementsTest extends TestCase
                 ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s')));
 
         $this->actingAs($doctor->user)
-            ->get('/agenda?date='.$start->toDateString().'&panel=assign')
+            ->getJson('/agenda/assign-options?date='.$start->toDateString())
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->has('slots', 12)
-                ->where('slots.0.starts_at', $start->format('Y-m-d H:i:s'))
-                ->where('slots.6.starts_at', $afternoon->format('Y-m-d H:i:s')));
+            ->assertJsonCount(12, 'slots')
+            ->assertJsonPath('slots.0.starts_at', $start->format('Y-m-d H:i:s'))
+            ->assertJsonPath('slots.6.starts_at', $afternoon->format('Y-m-d H:i:s'));
 
         $linked = $this->makePatient();
         $doctor->patients()->syncWithoutDetaching([$linked->id]);
@@ -1011,9 +1013,9 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($doctor->user)
-            ->get('/agenda?date='.$start->toDateString().'&panel=assign')
+            ->getJson('/agenda/assign-options?date='.$start->toDateString())
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('slots', 3));
+            ->assertJsonCount(3, 'slots');
 
         $this->actingAs($doctor->user)
             ->post('/agenda/appointments', [
@@ -1244,22 +1246,14 @@ class ProductRequirementsTest extends TestCase
             ->get('/agenda?patient_id='.$linked->id.'&panel=assign')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('panel', 'assign')
-                ->where('preselectedPatient.id', $linked->id));
+                ->where('panel', 'day')
+                ->missing('preselectedPatient')
+                ->missing('patients'));
 
         $this->actingAs($doctor->user)
             ->get('/agenda?date='.$date)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('panel', 'day')
-                ->where('preselectedPatient', null));
-
-        $this->actingAs($doctor->user)
-            ->get('/agenda?date='.$date.'&patient_id='.$linked->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('panel', 'day')
-                ->where('preselectedPatient', null));
+            ->assertInertia(fn ($page) => $page->where('panel', 'day'));
 
         $this->actingAs($this->makePatient()->user)
             ->get('/book?coverage=particular&specialty_id='.Specialty::query()->firstOrFail()->id)

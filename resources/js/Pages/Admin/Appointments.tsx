@@ -9,7 +9,7 @@ import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, Boo
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
 import Results from '@/Components/Surfaces/Results';
-import type { AppointmentRecord, DoctorRecord, PatientRecord, Specialty } from '@/types';
+import type { AppointmentRecord, ProfessionalRecord, PatientRecord, Specialty } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { X } from 'lucide-react';
 
@@ -19,15 +19,15 @@ type Paginator = {
 
 type Props = {
     appointments: Paginator;
-    filters: { doctor_id: number | null; patient_id: number | null; specialty_id: number | null; date: string | null };
-    doctors: DoctorRecord[];
+    filters: { professional_id: number | null; patient_id: number | null; specialty_id: number | null; date: string | null };
+    professionals: ProfessionalRecord[];
     patients: PatientRecord[];
     specialties: Specialty[];
 };
 
-export default function AdminAppointments({ appointments, filters, doctors, patients, specialties }: Props) {
+export default function AdminAppointments({ appointments, filters, professionals, patients, specialties }: Props) {
     const apply = (data: FilterValues) => {
-        router.get('/admin/appointments', data, { preserveState: true });
+        router.get('/admin/reservas', data, { preserveState: true });
     };
 
     return (
@@ -38,7 +38,7 @@ export default function AdminAppointments({ appointments, filters, doctors, pati
                     <Results>
                         <Filters
                             applied={{
-                                doctor_id: filters.doctor_id != null ? String(filters.doctor_id) : '',
+                                professional_id: filters.professional_id != null ? String(filters.professional_id) : '',
                                 patient_id: filters.patient_id != null ? String(filters.patient_id) : '',
                                 specialty_id: filters.specialty_id != null ? String(filters.specialty_id) : 'all',
                             }}
@@ -50,14 +50,14 @@ export default function AdminAppointments({ appointments, filters, doctors, pati
                             }
                             advanced={
                                 <>
-                                    <Field label="Doctor" htmlFor="doctor_id" flush className="min-w-0">
+                                    <Field label="Profesional" htmlFor="professional_id" flush className="min-w-0">
                                         <Combobox
-                                            id="doctor_id"
-                                            name="doctor_id"
-                                            defaultValue={filters.doctor_id != null ? String(filters.doctor_id) : ''}
+                                            id="professional_id"
+                                            name="professional_id"
+                                            defaultValue={filters.professional_id != null ? String(filters.professional_id) : ''}
                                             options={[
                                                 { value: '', label: 'Todos' },
-                                                ...doctors.map((doctor) => ({ value: String(doctor.id), label: doctor.user.name })),
+                                                ...professionals.map((professional) => ({ value: String(professional.id), label: professional.user.name })),
                                             ]}
                                         />
                                     </Field>

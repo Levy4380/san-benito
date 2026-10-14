@@ -7,43 +7,43 @@ import TextInput from '@/Components/Form/TextInput';
 import Catalog from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import { specialtyNames } from '@/lib/specialties';
-import type { DoctorRecord, Specialty } from '@/types';
+import type { ProfessionalRecord, Specialty } from '@/types';
 import { Head, router } from '@inertiajs/react';
 
 type Props = {
-    doctors: DoctorRecord[];
+    professionals: ProfessionalRecord[];
     specialties: Specialty[];
     filters: { specialty_id: string; q: string };
 };
 
-export default function DoctorsIndex({ doctors, specialties, filters }: Props) {
+export default function ProfessionalsIndex({ professionals, specialties, filters }: Props) {
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
 
     const apply = (data: FilterValues) => {
-        router.get('/doctors', data, { preserveState: true });
+        router.get('/paciente/profesionales', data, { preserveState: true });
     };
 
     return (
         <>
-            <Head title="Doctores" />
-            <PageScreen header={<PageHeader title="Doctores" description="Buscá por especialidad o nombre." />}>
+            <Head title="Profesionales" />
+            <PageScreen header={<PageHeader title="Profesionales" description="Buscá por especialidad o nombre." />}>
                 <StageCard>
                     <Catalog
                         applied={{ specialty_id: filters.specialty_id || 'all' }}
                         onApply={apply}
                         empty={hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
-                        items={doctors.map((doctor) => ({
-                            key: doctor.id,
-                            title: doctor.user.name,
-                            lines: [specialtyNames(doctor.specialties)],
+                        items={professionals.map((professional) => ({
+                            key: professional.id,
+                            title: professional.user.name,
+                            lines: [specialtyNames(professional.specialties)],
                             actions: [
-                                { kind: 'info', href: `/doctors/${doctor.id}`, name: doctor.user.name },
-                                { kind: 'slots', href: `/doctors/${doctor.id}/slots` },
+                                { kind: 'info', href: `/paciente/profesionales/${professional.id}`, name: professional.user.name },
+                                { kind: 'slots', href: `/paciente/profesionales/${professional.id}/horarios` },
                             ],
                         }))}
                         primary={
-                            <Field label="Nombre" htmlFor="q" flush className="min-w-0">
-                                <TextInput id="q" name="q" defaultValue={filters.q} />
+                            <Field label="Buscar" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} placeholder="Nombre" />
                             </Field>
                         }
                         advanced={

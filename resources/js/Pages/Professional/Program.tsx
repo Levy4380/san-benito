@@ -16,7 +16,7 @@ import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import { formatDateLabel, isWeekendKey, minutesBetween, pad2, todayKey, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
-import type { DoctorRecord } from '@/types';
+import type { ProfessionalRecord } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { CalendarCheck, Check, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -25,7 +25,7 @@ type Range = { start: string; end: string };
 type Tone = 'empty' | 'has' | 'full';
 
 type Props = {
-    doctor: DoctorRecord;
+    professional: ProfessionalRecord;
     tones: Record<string, Tone>;
 };
 
@@ -89,7 +89,7 @@ function eraseRange(ranges: Range[], start: number, end: number, minLength: numb
     );
 }
 
-export default function Program({ doctor, tones }: Props) {
+export default function Program({ professional, tones }: Props) {
     const [step, setStep] = useState<'when' | 'hours'>('when');
     const [month, setMonth] = useState(todayKey().slice(0, 7) + '-01');
     const [dates, setDates] = useState<string[]>([todayKey()]);
@@ -98,7 +98,7 @@ export default function Program({ doctor, tones }: Props) {
     const [end, setEnd] = useState('12:00');
     const [ranges, setRanges] = useState<Range[]>([]);
     const form = useForm({ dates, ranges, block_weekends: blockWeekends });
-    const duration = doctor.slot_duration_minutes;
+    const duration = professional.slot_duration_minutes;
 
     const selectedDays = useMemo(() => {
         const keys = blockWeekends ? dates.filter((key) => !isWeekendKey(key)) : dates;

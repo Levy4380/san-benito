@@ -1,26 +1,24 @@
 const PRODUCT_PAGES = new Set([
     'Patient/Home',
     'Patient/Book',
-    'Doctor/Home',
-    'Doctor/Agenda',
-    'Doctor/Program',
-    'Doctor/MyPatients',
-    'Doctor/PatientProfile',
-    'Doctors/Index',
-    'Doctors/Show',
-    'Doctors/Specialties',
-    'Doctors/HealthInsurances',
-    'Doctors/Slots',
+    'Professional/Home',
+    'Professional/Agenda',
+    'Professional/Program',
+    'Professional/MyPatients',
+    'Professional/PatientProfile',
+    'Professionals/Index',
+    'Professionals/Show',
+    'Professionals/Specialties',
+    'Professionals/HealthInsurances',
+    'Professionals/Slots',
     'Appointments/Index',
     'Appointments/History',
     'Settings/Agenda',
     'Settings/Profile',
     'Settings/Password',
     'Admin/Appointments',
-    'Admin/Doctors',
-    'Admin/DoctorCreate',
+    'Admin/Professionals',
     'Admin/Patients',
-    'Admin/PatientCreate',
     'Admin/Admins',
     'Admin/AdminCreate',
     'Admin/UserPatient',
@@ -33,7 +31,7 @@ const PRODUCT_PAGES = new Set([
     'Admin/HealthInsuranceEdit',
 ]);
 
-const HOME_PAGES = new Set(['Patient/Home', 'Doctor/Home']);
+const HOME_PAGES = new Set(['Patient/Home', 'Professional/Home']);
 
 export function isProductPage(name: string): boolean {
     return PRODUCT_PAGES.has(name);

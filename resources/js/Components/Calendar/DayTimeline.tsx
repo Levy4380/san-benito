@@ -17,7 +17,7 @@ type Props = {
     now?: string;
     bands: DayTimelineBand[];
     blocks: DayTimelineBlock[];
-    /** Minutes per row of fixed height (e.g. the doctor's slot duration) */
+    /** Minutes per row of fixed height (e.g. the professional's slot duration) */
     stepMinutes?: number;
     className?: string;
     label?: string;
@@ -74,7 +74,7 @@ export default function DayTimeline({
     const span = (lastHour - firstHour) * 60;
     const top = (minutes: number) => `${((minutes - firstHour * 60) / span) * 100}%`;
     const height = (minutes: number) => `${(minutes / span) * 100}%`;
-    const firstContent = Math.min(...ranges.map(([start]) => start), lastHour * 60);
+    const firstContent = ranges.length === 0 ? firstHour * 60 : Math.min(...ranges.map(([start]) => start), lastHour * 60);
 
     const today = now ? wallDate(now) : null;
     const nowMin = !now || !today ? 0 : date < today ? lastHour * 60 : date > today ? 0 : Math.min(minutesOf(now), lastHour * 60);

@@ -18,7 +18,7 @@ export default function PatientProfile({ patient }: Props) {
     return (
         <>
             <Head title={patient.name} />
-            <PageScreen header={<PageHeader title={patient.name} backHref="/my-patients" backLabel="Mis pacientes" />}>
+            <PageScreen header={<PageHeader title={patient.name} backHref="/profesional/mis-pacientes" backLabel="Mis pacientes" />}>
                 <StageCard>
                     <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <dl className="m-0 grid w-full gap-[var(--space-sm)]">
@@ -36,7 +36,7 @@ export default function PatientProfile({ patient }: Props) {
                             </div>
                             <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Obra social</dt>
-                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.health_insurance ?? '—'}</dd>
+                                <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.health_insurance ?? 'Particular'}</dd>
                             </div>
                             <div className="grid gap-[0.2rem]">
                                 <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Teléfono</dt>

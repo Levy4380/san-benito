@@ -1,18 +1,18 @@
 import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
-import type { DoctorRecord, Specialty } from '@/types';
+import type { ProfessionalRecord, Specialty } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { Save } from 'lucide-react';
 
 type Props = {
-    doctor: DoctorRecord;
+    professional: ProfessionalRecord;
     specialties: Specialty[];
 };
 
-export default function AssociateSpecialtiesForm({ doctor, specialties }: Props) {
+export default function AssociateSpecialtiesForm({ professional, specialties }: Props) {
     const form = useForm({
-        specialty_ids: doctor.specialties.map((specialty) => specialty.id),
+        specialty_ids: professional.specialties.map((specialty) => specialty.id),
     });
 
     return (
@@ -20,7 +20,7 @@ export default function AssociateSpecialtiesForm({ doctor, specialties }: Props)
             className="grid min-h-0 flex-1 content-start gap-[var(--space-md)] overflow-auto"
             onSubmit={(event) => {
                 event.preventDefault();
-                form.patch(`/admin/doctors/${doctor.id}/specialties`);
+                form.patch(`/admin/profesionales/${professional.id}/especialidades`);
             }}
         >
             <Field label="Especialidades" htmlFor="specialty_ids" error={form.errors.specialty_ids}>

@@ -19,7 +19,7 @@ export default function AdminHealthInsuranceCreate() {
                     <PageHeader
                         title="Obras sociales"
                         description="Catálogo de obras sociales. Solo super admin."
-                        backHref="/admin/settings/health-insurances"
+                        backHref="/admin/configuracion/obras-sociales"
                         backLabel="Obras sociales"
                     />
                 }
@@ -30,7 +30,7 @@ export default function AdminHealthInsuranceCreate() {
                             className="grid min-h-0 flex-1 content-start overflow-auto"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                form.post('/admin/settings/health-insurances');
+                                form.post('/health-insurances');
                             }}
                         >
                             <Field label="Nombre" htmlFor="health_insurance_name" error={form.errors.name}>

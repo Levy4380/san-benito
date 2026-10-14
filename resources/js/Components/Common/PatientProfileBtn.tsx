@@ -24,7 +24,7 @@ export default function PatientProfileBtn({
 
     return (
         <Btn variant="outline" size={size} className={cn('shrink-0', className)} asChild>
-            <Link href={href ?? `/my-patients/${patientId}`} aria-label={aria} title={aria}>
+            <Link href={href ?? `/profesional/mis-pacientes/${patientId}`} aria-label={aria} title={aria}>
                 <Info className={cn('shrink-0', size === 'xs' ? 'size-3' : 'size-[1.05rem]')} aria-hidden strokeWidth={2} />
                 {label}
             </Link>

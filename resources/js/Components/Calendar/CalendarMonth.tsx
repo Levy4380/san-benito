@@ -3,7 +3,7 @@ import { PointerEvent, useRef } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarDay from '@/Components/Calendar/CalendarDay';
 import CalendarLegendSwatch from '@/Components/Calendar/CalendarLegendSwatch';
-import { addMonths, isWeekendKey, lastDateOfMonth, monthGrid, monthTitle } from '@/lib/datetime';
+import { addMonths, isWeekendKey, lastDateOfMonth, monthGrid, monthTitle, wallDate } from '@/lib/datetime';
 import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +24,8 @@ type Props = {
     selectedDates?: string[];
     blockWeekends?: boolean;
     minDate?: string;
+    /** Y-m-d (or wall datetime) from the server. Days before it stay clickable, at lower opacity. */
+    today?: string;
     legend?: CalLegendItem[];
 };
 
@@ -38,9 +40,11 @@ export default function CalendarMonth({
     selectedDates,
     blockWeekends,
     minDate,
+    today,
     legend,
 }: Props) {
     const days = monthGrid(month);
+    const todayKey = today ? wallDate(today) : null;
     const prevDisabled = Boolean(minDate && lastDateOfMonth(addMonths(month, -1)) < minDate);
     const painting = useRef<boolean | null>(null);
     const selectedRef = useRef(selectedDates);
@@ -146,6 +150,7 @@ export default function CalendarMonth({
                     const tone = tones?.[day.key] ?? 'empty';
                     const blocked = Boolean(blockWeekends && isWeekendKey(day.key));
                     const isPast = Boolean(minDate && day.key < minDate);
+                    const isDimmed = Boolean(todayKey && day.inMonth && day.key < todayKey);
                     const isMuted = !day.inMonth || blocked || isPast;
                     const isSelected = !isMuted && (selected === day.key || Boolean(selectedDates?.includes(day.key)));
 
@@ -156,6 +161,7 @@ export default function CalendarMonth({
                             tone={tone}
                             selected={isSelected}
                             muted={isMuted}
+                            past={isDimmed}
                             disabled={isMuted}
                             paint={paint}
                             onClick={() => {

@@ -12,7 +12,7 @@ import { Plus, Trash2 } from 'lucide-react';
 type CatalogHealthInsurance = {
     id: number;
     name: string;
-    doctors_count: number;
+    professionals_count: number;
 };
 
 type Props = {
@@ -26,15 +26,15 @@ export default function AdminHealthInsurances({ healthInsurances }: Props) {
         const ok = await ask({
             title: 'Eliminar obra social',
             message:
-                healthInsurance.doctors_count > 0
-                    ? `¿Eliminar ${healthInsurance.name}? Los doctores y pacientes asignados se desvinculan; no se borran.`
+                healthInsurance.professionals_count > 0
+                    ? `¿Eliminar ${healthInsurance.name}? Los profesionales y pacientes asignados se desvinculan; no se borran.`
                     : `¿Eliminar ${healthInsurance.name}?`,
             confirmLabel: 'Eliminar',
             danger: true,
         });
 
         if (ok) {
-            router.delete(`/admin/settings/health-insurances/${healthInsurance.id}`);
+            router.delete(`/health-insurances/${healthInsurance.id}`);
         }
     };
 
@@ -46,11 +46,11 @@ export default function AdminHealthInsurances({ healthInsurances }: Props) {
                     <PageHeader
                         title="Obras sociales"
                         description="Catálogo de obras sociales. Solo super admin."
-                        backHref="/admin/settings"
+                        backHref="/admin/configuracion"
                         backLabel="Configuración"
                         actions={
                             <Btn asChild>
-                                <Link href="/admin/settings/health-insurances/create">
+                                <Link href="/admin/configuracion/obras-sociales/crear">
                                     <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Crear obra social
                                 </Link>
@@ -89,14 +89,14 @@ function HealthInsuranceRow({
     healthInsurance: CatalogHealthInsurance;
     onDelete: () => void;
 }) {
-    const doctorsLabel = healthInsurance.doctors_count === 1 ? '1 doctor' : `${healthInsurance.doctors_count} doctores`;
+    const professionalsLabel = healthInsurance.professionals_count === 1 ? '1 profesional' : `${healthInsurance.professionals_count} profesionales`;
 
     return (
         <ListRow className="max-md:flex-wrap">
             <strong className="min-w-0 flex-1 truncate">{healthInsurance.name}</strong>
-            <span className="text-ink-2 text-sm">{doctorsLabel}</span>
+            <span className="text-ink-2 text-sm">{professionalsLabel}</span>
             <Btn size="sm" variant="outline" asChild>
-                <Link href={`/admin/settings/health-insurances/${healthInsurance.id}/edit`}>Editar</Link>
+                <Link href={`/admin/configuracion/obras-sociales/${healthInsurance.id}/editar`}>Editar</Link>
             </Btn>
             <Btn type="button" variant="danger" size="sm" onClick={onDelete}>
                 <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

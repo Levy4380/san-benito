@@ -15,13 +15,13 @@ import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import SlotRow from '@/Components/Surfaces/SlotRow';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
 import { hasPermission, Permission } from '@/lib/permissions';
-import type { AppointmentRecord, AvailabilityWindowRecord, DoctorRecord, SharedData, Slot } from '@/types';
+import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, SharedData, Slot } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { CalendarPlus, NotebookPen, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 
 type Props = {
-    doctor: DoctorRecord;
+    professional: ProfessionalRecord;
     selectedDate: string | null;
     daysWithSlots: string[];
     slots: Slot[];
@@ -36,8 +36,8 @@ type Props = {
     patients?: { id: number; name: string; dni: string }[];
 };
 
-export default function DoctorSlots({
-    doctor,
+export default function ProfessionalSlots({
+    professional,
     selectedDate,
     daysWithSlots,
     slots,
@@ -53,7 +53,12 @@ export default function DoctorSlots({
     const [assignStartsAt, setAssignStartsAt] = useState<string | undefined>(undefined);
     const [patientId, setPatientId] = useState('');
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
-    const { auth } = usePage<SharedData>().props;
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
+    const onAdminAgenda = page.url.split('?')[0].startsWith('/admin/profesionales/');
+    const slotsPath = onAdminAgenda
+        ? `/admin/profesionales/${professional.id}/horarios`
+        : `/paciente/profesionales/${professional.id}/horarios`;
     const canViewPatient = hasPermission(auth.user?.permissions, Permission.PatientsCatalogView);
     const canCancel = hasPermission(auth.user?.permissions, Permission.AppointmentsCancel);
     const staffDay = timeline && selectedDate ? { date: selectedDate, ...timeline } : null;
@@ -80,15 +85,15 @@ export default function DoctorSlots({
               { tone: 'empty' as const, label: 'Sin turnos' },
               { tone: 'has' as const, label: 'Con turnos' },
           ];
-    const onlySpecialty = doctor.specialties.length === 1 ? doctor.specialties[0] : null;
+    const onlySpecialty = professional.specialties.length === 1 ? professional.specialties[0] : null;
     const selectedSpecialtyId = specialtyId ?? onlySpecialty?.id ?? null;
-    const selectedSpecialty = doctor.specialties.find((specialty) => specialty.id === selectedSpecialtyId) ?? null;
+    const selectedSpecialty = professional.specialties.find((specialty) => specialty.id === selectedSpecialtyId) ?? null;
     const description = selectedSpecialty
-        ? `${doctor.user.name} · ${selectedSpecialty.name}. Elegí un día marcado.`
-        : `${doctor.user.name}. Elegí una especialidad y un día marcado.`;
+        ? `${professional.user.name} · ${selectedSpecialty.name}. Elegí un día marcado.`
+        : `${professional.user.name}. Elegí una especialidad y un día marcado.`;
 
     const go = (query: { date?: string; specialty_id?: number }) => {
-        router.get(`/doctors/${doctor.id}/slots`, query, { preserveState: true });
+        router.get(slotsPath, query, { preserveState: true });
     };
 
     const selectDay = (date: string) => {
@@ -117,7 +122,7 @@ export default function DoctorSlots({
         if (assigning) {
             if (patientId) {
                 router.post(
-                    `/admin/doctors/${doctor.id}/appointments`,
+                    `/professionals/${professional.id}/appointments`,
                     {
                         starts_at: startsAt,
                         specialty_id: selectedSpecialtyId,
@@ -130,7 +135,7 @@ export default function DoctorSlots({
             }
             return;
         }
-        router.post(`/doctors/${doctor.id}/appointments`, {
+        router.post(`/professionals/${professional.id}/appointments`, {
             starts_at: startsAt,
             specialty_id: selectedSpecialtyId,
         });
@@ -147,7 +152,7 @@ export default function DoctorSlots({
                 onChange={chooseSpecialty}
                 options={[
                     { value: '', label: 'Elegí una especialidad' },
-                    ...doctor.specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                    ...professional.specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
                 ]}
             />
         </Field>
@@ -197,7 +202,7 @@ export default function DoctorSlots({
                 className="mt-[var(--space-xs)] min-h-[12rem] flex-1"
                 date={staffDay.date}
                 now={staffDay.now}
-                stepMinutes={doctor.slot_duration_minutes}
+                stepMinutes={professional.slot_duration_minutes}
                 bands={staffDay.windows.map((window) => ({ key: window.id, starts_at: window.starts_at, ends_at: window.ends_at }))}
                 blocks={staffDay.appointments.map((appointment) => ({
                     key: appointment.id,
@@ -224,7 +229,7 @@ export default function DoctorSlots({
             <ConfirmDialog
                 title="Agendar turno"
                 message={[
-                    doctor.user.name,
+                    professional.user.name,
                     formatDateLabel(staffDay.date),
                     assignStartsAt ? `${wallTime(assignStartsAt)} hs` : null,
                 ]
@@ -233,7 +238,7 @@ export default function DoctorSlots({
                 onDismiss={closeBooking}
             >
                 <div className="flex max-h-[60dvh] min-h-0 flex-col">
-                    {specialtyField('slot_specialty_id_modal')}
+                    {onlySpecialty ? null : specialtyField('slot_specialty_id_modal')}
                     {patients ? (
                         <Field label="Paciente" htmlFor="slot_patient_id" className="shrink-0">
                             <Combobox
@@ -249,9 +254,26 @@ export default function DoctorSlots({
                             />
                         </Field>
                     ) : null}
-                    {dayBody}
+                    {assignStartsAt ? (
+                        bookingSlots.length === 0 ? (
+                            <Empty>Ese horario ya no está libre.</Empty>
+                        ) : null
+                    ) : (
+                        dayBody
+                    )}
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-[0.55rem]">
+                    {assignStartsAt ? (
+                        <Btn
+                            type="button"
+                            className="min-w-[6.5rem]"
+                            disabled={!selectedSpecialtyId || !patientId || bookingSlots.length === 0}
+                            onClick={() => book(assignStartsAt)}
+                        >
+                            <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                            Reservar
+                        </Btn>
+                    ) : null}
                     <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeBooking}>
                         <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         Volver
@@ -269,8 +291,8 @@ export default function DoctorSlots({
                     <PageHeader
                         title="Turnos disponibles"
                         description={description}
-                        backHref={`/doctors/${doctor.id}`}
-                        backLabel={doctor.user.name}
+                        backHref={onAdminAgenda ? `/admin/profesionales/${professional.id}` : `/paciente/profesionales/${professional.id}`}
+                        backLabel={professional.user.name}
                     />
                 }
             >
@@ -291,6 +313,7 @@ export default function DoctorSlots({
                                         month={month}
                                         selected={selectedDate}
                                         tones={tones}
+                                        today={staffDay?.now}
                                         onSelect={selectDay}
                                         onMonthChange={changeMonth}
                                         legend={legend}
@@ -317,6 +340,7 @@ export default function DoctorSlots({
                             month={month}
                             selected={selectedDate}
                             tones={tones}
+                            today={staffDay?.now}
                             onSelect={selectDay}
                             onMonthChange={changeMonth}
                             legend={legend}
@@ -338,8 +362,9 @@ export default function DoctorSlots({
             {openAppointment ? (
                 <TimelineAppointmentDialog
                     appointment={openAppointment}
-                    profileHref={canViewPatient ? `/admin/patients/${openAppointment.patient_id}` : null}
+                    profileHref={canViewPatient ? `/admin/pacientes/${openAppointment.patient_id}` : null}
                     canCancel={canCancel}
+                    cancelHref={`/appointments/${openAppointment.id}`}
                     onDismiss={() => setOpenAppointmentId(null)}
                 />
             ) : null}

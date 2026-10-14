@@ -12,7 +12,7 @@ import { Plus, Trash2 } from 'lucide-react';
 type CatalogSpecialty = {
     id: number;
     name: string;
-    doctors_count: number;
+    professionals_count: number;
 };
 
 type Props = {
@@ -26,15 +26,15 @@ export default function AdminSpecialties({ specialties }: Props) {
         const ok = await ask({
             title: 'Eliminar especialidad',
             message:
-                specialty.doctors_count > 0
-                    ? `¿Eliminar ${specialty.name}? Los doctores asignados se desvinculan; no se borran.`
+                specialty.professionals_count > 0
+                    ? `¿Eliminar ${specialty.name}? Los profesionales asignados se desvinculan; no se borran.`
                     : `¿Eliminar ${specialty.name}?`,
             confirmLabel: 'Eliminar',
             danger: true,
         });
 
         if (ok) {
-            router.delete(`/admin/settings/specialties/${specialty.id}`);
+            router.delete(`/specialties/${specialty.id}`);
         }
     };
 
@@ -46,11 +46,11 @@ export default function AdminSpecialties({ specialties }: Props) {
                     <PageHeader
                         title="Especialidades"
                         description="Catálogo de especialidades. Solo super admin."
-                        backHref="/admin/settings"
+                        backHref="/admin/configuracion"
                         backLabel="Configuración"
                         actions={
                             <Btn asChild>
-                                <Link href="/admin/settings/specialties/create">
+                                <Link href="/admin/configuracion/especialidades/crear">
                                     <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Crear especialidad
                                 </Link>
@@ -79,14 +79,14 @@ export default function AdminSpecialties({ specialties }: Props) {
 }
 
 function SpecialtyRow({ specialty, onDelete }: { specialty: CatalogSpecialty; onDelete: () => void }) {
-    const doctorsLabel = specialty.doctors_count === 1 ? '1 doctor' : `${specialty.doctors_count} doctores`;
+    const professionalsLabel = specialty.professionals_count === 1 ? '1 profesional' : `${specialty.professionals_count} profesionales`;
 
     return (
         <ListRow className="max-md:flex-wrap">
             <strong className="min-w-0 flex-1 truncate">{specialty.name}</strong>
-            <span className="text-ink-2 text-sm">{doctorsLabel}</span>
+            <span className="text-ink-2 text-sm">{professionalsLabel}</span>
             <Btn size="sm" variant="outline" asChild>
-                <Link href={`/admin/settings/specialties/${specialty.id}/edit`}>Editar</Link>
+                <Link href={`/admin/configuracion/especialidades/${specialty.id}/editar`}>Editar</Link>
             </Btn>
             <Btn type="button" variant="danger" size="sm" onClick={onDelete}>
                 <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />

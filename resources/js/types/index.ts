@@ -1,4 +1,4 @@
-export type RoleName = 'patient' | 'doctor' | 'admin' | 'super_admin';
+export type RoleName = 'patient' | 'professional' | 'admin' | 'super_admin';
 
 export type ToastVariant = 'ok' | 'warn' | 'info';
 
@@ -29,7 +29,7 @@ export type HealthInsurance = {
     name: string;
 };
 
-export type DoctorRecord = {
+export type ProfessionalRecord = {
     id: number;
     license_number: string;
     slot_duration_minutes: number;
@@ -55,19 +55,19 @@ export type Slot = {
 
 export type AppointmentRecord = {
     id: number;
-    doctor_id: number;
+    professional_id: number;
     patient_id: number;
     specialty_id: number;
     starts_at: string;
     ends_at: string;
-    doctor?: DoctorRecord;
+    professional?: ProfessionalRecord;
     patient?: PatientRecord;
     specialty?: Specialty;
 };
 
 export type AvailabilityWindowRecord = {
     id: number;
-    doctor_id: number;
+    professional_id: number;
     starts_at: string;
     ends_at: string;
 };

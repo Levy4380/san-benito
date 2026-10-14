@@ -1,3 +1,4 @@
+import CreateProfessionalModal from '@/Components/Admin/CreateProfessionalModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -8,37 +9,37 @@ import TextInput from '@/Components/Form/TextInput';
 import Catalog from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import { specialtyNames } from '@/lib/specialties';
-import type { DoctorRecord, Specialty } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import type { ProfessionalRecord, Specialty } from '@/types';
+import { Head, router } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
-    doctors: DoctorRecord[];
+    professionals: ProfessionalRecord[];
     specialties: Specialty[];
     filters: { specialty_id: string; q: string };
 };
 
-export default function AdminDoctors({ doctors, specialties, filters }: Props) {
+export default function AdminProfessionals({ professionals, specialties, filters }: Props) {
+    const [creating, setCreating] = useState(false);
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
 
     const apply = (data: FilterValues) => {
-        router.get('/admin/doctors', data, { preserveState: true });
+        router.get('/admin/profesionales', data, { preserveState: true });
     };
 
     return (
         <>
-            <Head title="Doctores" />
+            <Head title="Profesionales" />
             <PageScreen
                 header={
                     <PageHeader
-                        title="Doctores"
+                        title="Profesionales"
                         description="Alta de profesionales."
                         actions={
-                            <Btn asChild>
-                                <Link href="/admin/doctors/create">
-                                    <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Crear doctor
-                                </Link>
+                            <Btn type="button" onClick={() => setCreating(true)}>
+                                <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Crear profesional
                             </Btn>
                         }
                     />
@@ -49,18 +50,18 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                         applied={{ specialty_id: filters.specialty_id || 'all' }}
                         onApply={apply}
                         empty={hasFilters ? 'No hay profesionales con esos filtros.' : 'Todavía no hay profesionales.'}
-                        items={doctors.map((doctor) => ({
-                            key: doctor.id,
-                            title: doctor.user.name,
-                            lines: [specialtyNames(doctor.specialties), doctor.license_number],
+                        items={professionals.map((professional) => ({
+                            key: professional.id,
+                            title: professional.user.name,
+                            lines: [specialtyNames(professional.specialties), professional.license_number],
                             actions: [
-                                { kind: 'info', href: `/doctors/${doctor.id}`, name: doctor.user.name },
-                                { kind: 'agenda', href: `/doctors/${doctor.id}/slots`, name: doctor.user.name },
+                                { kind: 'info', href: `/admin/profesionales/${professional.id}`, name: professional.user.name },
+                                { kind: 'agenda', href: `/admin/profesionales/${professional.id}/horarios`, name: professional.user.name },
                             ],
                         }))}
                         primary={
-                            <Field label="Nombre" htmlFor="q" flush className="min-w-0">
-                                <TextInput id="q" name="q" defaultValue={filters.q} />
+                            <Field label="Buscar" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} placeholder="Nombre" />
                             </Field>
                         }
                         advanced={
@@ -79,6 +80,7 @@ export default function AdminDoctors({ doctors, specialties, filters }: Props) {
                     />
                 </StageCard>
             </PageScreen>
+            {creating ? <CreateProfessionalModal onDismiss={() => setCreating(false)} /> : null}
         </>
     );
 }

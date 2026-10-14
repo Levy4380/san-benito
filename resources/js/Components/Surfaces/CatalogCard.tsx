@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { Link } from '@inertiajs/react';
 import { CalendarClock, CalendarDays, Info, Link2, UserPlus } from 'lucide-react';
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 
 const catalogCardBase = cn(
     'flex flex-col items-stretch gap-[0.65rem] rounded-lg border border-rule bg-paper px-[var(--space-sm)] py-[0.7rem] text-left font-inherit text-ink no-underline transition-[border-color,background-color] duration-short ease-out [&_strong]:font-display [&_strong]:text-[length:var(--text-md)] [&_strong]:font-semibold [&_span:not([class*="inline-flex"])]:text-sm [&_span:not([class*="inline-flex"])]:text-ink-2',
@@ -31,7 +31,6 @@ type Common = {
     title?: string;
     lines?: string[];
     actions?: CatalogAction[];
-    layout?: CatalogLayout;
 };
 
 type ButtonProps = Common &
@@ -47,10 +46,8 @@ type DivProps = Common &
 type Props = ButtonProps | DivProps;
 
 function CatalogActionButtons({ actions, className }: { actions: CatalogAction[]; className?: string }) {
-    const stacked = actions.some((action) => action.kind === 'agenda');
-
     return (
-        <CatalogCardActions className={cn(stacked && 'flex-col items-start', className)}>
+        <CatalogCardActions className={className}>
             {actions.map((action) => {
                 if (action.kind === 'info') {
                     const aria = action.name ? `Más información de ${action.name}` : 'Más información';
@@ -122,7 +119,6 @@ export default function CatalogCard({
     title,
     lines,
     actions,
-    layout = 'grid',
     ...props
 }: Props) {
     const structured = title !== undefined;
@@ -130,21 +126,10 @@ export default function CatalogCard({
     const interactive = asChild || resolvedAs === 'button' || typeof (props as { onClick?: unknown }).onClick === 'function';
     const classes = cn(catalogCardBase, interactive && catalogCardInteractive, selected && 'border-accent bg-accent-soft', className);
     const meta = lines ?? [];
-    const actionButtons =
-        actions && actions.length > 0 ? (
-            <CatalogActionButtons
-                actions={actions}
-                className={cn('max-md:mt-0 max-md:basis-full', layout === 'list' ? 'md:mt-0 md:shrink-0' : 'md:mt-auto')}
-            />
-        ) : null;
+    const actionButtons = actions && actions.length > 0 ? <CatalogActionButtons actions={actions} className="mt-auto" /> : null;
     const body = structured ? (
-        <div
-            className={cn(
-                'flex w-full min-w-0 flex-wrap items-start gap-x-[var(--space-sm)] gap-y-[0.65rem]',
-                layout === 'grid' && 'md:contents',
-            )}
-        >
-            <div className={cn('flex min-w-0 flex-1 flex-col gap-[0.65rem]', layout === 'grid' && 'md:contents')}>
+        <div className="flex h-full w-full min-w-0 flex-1 flex-col gap-[0.65rem]">
+            <div className="flex min-w-0 flex-col gap-[0.65rem]">
                 <strong className="min-w-0">{title}</strong>
                 {meta.length > 0 ? <CatalogLines lines={meta} /> : null}
             </div>
@@ -178,7 +163,59 @@ export default function CatalogCard({
 }
 
 export function CatalogCardActions({ children, className }: { children: ReactNode; className?: string }) {
-    return <div className={cn('mt-auto flex flex-wrap gap-[0.35rem]', className)}>{children}</div>;
+    const ref = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        const root = ref.current;
+
+        if (!root) {
+            return;
+        }
+
+        const measure = () => {
+            const items = [...root.children] as HTMLElement[];
+
+            if (items.length === 0) {
+                return;
+            }
+
+            for (const item of items) {
+                item.style.width = 'max-content';
+            }
+
+            const max = Math.ceil(Math.max(...items.map((item) => item.getBoundingClientRect().width)));
+            const styles = getComputedStyle(root);
+            const gap = Number.parseFloat(styles.columnGap || styles.gap) || 0;
+            const available = root.parentElement?.clientWidth ?? root.clientWidth;
+            const needed = max * items.length + gap * (items.length - 1);
+            const width = needed > available ? Math.floor((available - gap * (items.length - 1)) / items.length) : max;
+
+            for (const item of items) {
+                item.style.width = `${width}px`;
+            }
+        };
+
+        let cancelled = false;
+
+        measure();
+        window.addEventListener('resize', measure);
+        void document.fonts?.ready.then(() => {
+            if (!cancelled) {
+                measure();
+            }
+        });
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('resize', measure);
+        };
+    }, [children]);
+
+    return (
+        <div ref={ref} className={cn('mt-auto flex w-max max-w-full flex-row flex-nowrap items-stretch gap-[0.35rem]', className)}>
+            {children}
+        </div>
+    );
 }
 
 export function CatalogGrid({

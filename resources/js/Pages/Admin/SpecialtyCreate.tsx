@@ -19,7 +19,7 @@ export default function AdminSpecialtyCreate() {
                     <PageHeader
                         title="Especialidades"
                         description="Catálogo de especialidades. Solo super admin."
-                        backHref="/admin/settings/specialties"
+                        backHref="/admin/configuracion/especialidades"
                         backLabel="Especialidades"
                     />
                 }
@@ -30,7 +30,7 @@ export default function AdminSpecialtyCreate() {
                             className="grid min-h-0 flex-1 content-start overflow-auto"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                form.post('/admin/settings/specialties');
+                                form.post('/specialties');
                             }}
                         >
                             <Field label="Nombre" htmlFor="specialty_name" error={form.errors.name}>

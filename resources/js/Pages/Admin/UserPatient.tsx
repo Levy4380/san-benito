@@ -23,7 +23,7 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
     return (
         <>
             <Head title={patient.name} />
-            <PageScreen header={<PageHeader title={patient.name} backHref="/admin/patients" backLabel="Pacientes" />}>
+            <PageScreen header={<PageHeader title={patient.name} backHref="/admin/pacientes" backLabel="Pacientes" />}>
                 <StageCard>
                     <Surface className="min-h-0 flex-1 gap-[var(--space-md)] overflow-y-auto">
                         <dl className="m-0 grid w-full gap-[var(--space-sm)]">
@@ -48,7 +48,7 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
                             className="grid content-start gap-[var(--space-sm)]"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                form.patch(`/admin/patients/${patient.id}/health-insurance`);
+                                form.patch(`/patients/${patient.id}/health-insurance`);
                             }}
                         >
                             <Field label="Obra social (opcional)" htmlFor="health_insurance_id" error={form.errors.health_insurance_id}>
@@ -57,7 +57,7 @@ export default function AdminUserPatient({ patient, healthInsuranceId, healthIns
                                     value={form.data.health_insurance_id}
                                     onChange={(event) => form.setData('health_insurance_id', event.target.value)}
                                 >
-                                    <option value="">Sin obra social</option>
+                                    <option value="">Particular</option>
                                     {healthInsurances.map((healthInsurance) => (
                                         <option key={healthInsurance.id} value={healthInsurance.id}>
                                             {healthInsurance.name}

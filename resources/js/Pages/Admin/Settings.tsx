@@ -19,7 +19,7 @@ export default function AdminSettings() {
                     <Results>
                         <ResultList>
                             <ListRow asChild>
-                                <Link href="/admin/settings/specialties">
+                                <Link href="/admin/configuracion/especialidades">
                                     <span className="flex min-w-0 items-center gap-[0.65rem]">
                                         <Stethoscope className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                         <strong>Especialidades</strong>
@@ -28,7 +28,7 @@ export default function AdminSettings() {
                                 </Link>
                             </ListRow>
                             <ListRow asChild>
-                                <Link href="/admin/settings/health-insurances">
+                                <Link href="/admin/configuracion/obras-sociales">
                                     <span className="flex min-w-0 items-center gap-[0.65rem]">
                                         <IdCard className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                         <strong>Obras sociales</strong>

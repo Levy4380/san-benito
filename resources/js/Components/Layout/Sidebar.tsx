@@ -24,21 +24,21 @@ import type { RoleName, SharedData } from '@/types';
 type NavItem = { href: string; label: string; icon: LucideIcon; permission: PermissionName };
 
 const portalNav: NavItem[] = [
-    { href: '/doctors', label: 'Doctores', icon: Stethoscope, permission: Permission.DoctorsBrowse },
-    { href: '/my-appointments', label: 'Mis turnos', icon: CalendarClock, permission: Permission.OwnAppointmentsView },
-    { href: '/book', label: 'Reservar turno', icon: NotebookPen, permission: Permission.AppointmentsBook },
-    { href: '/agenda', label: 'Mi agenda', icon: Calendar, permission: Permission.OwnAgendaView },
-    { href: '/agenda/program', label: 'Programar turnos', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
-    { href: '/my-patients', label: 'Mis pacientes', icon: Users, permission: Permission.OwnPatientsView },
-    { href: '/settings/agenda', label: 'Config. agenda', icon: Settings, permission: Permission.OwnAgendaSettingsUpdate },
+    { href: '/paciente/profesionales', label: 'Profesionales', icon: Stethoscope, permission: Permission.ProfessionalsBrowse },
+    { href: '/paciente/mis-turnos', label: 'Mis turnos', icon: CalendarClock, permission: Permission.OwnAppointmentsView },
+    { href: '/paciente/reserva', label: 'Reservar turno', icon: NotebookPen, permission: Permission.AppointmentsBook },
+    { href: '/profesional/agenda', label: 'Mi agenda', icon: Calendar, permission: Permission.OwnAgendaView },
+    { href: '/profesional/programar', label: 'Programar turnos', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
+    { href: '/profesional/mis-pacientes', label: 'Mis pacientes', icon: Users, permission: Permission.OwnPatientsView },
+    { href: '/profesional/configuracion/agenda', label: 'Config. agenda', icon: Settings, permission: Permission.OwnAgendaSettingsUpdate },
 ];
 
 const staffNav: NavItem[] = [
-    { href: '/admin/appointments', label: 'Reservas', icon: ClipboardList, permission: Permission.AppointmentsCatalogView },
-    { href: '/admin/doctors', label: 'Doctores', icon: Stethoscope, permission: Permission.DoctorsCatalogView },
-    { href: '/admin/patients', label: 'Pacientes', icon: Users, permission: Permission.PatientsCatalogView },
-    { href: '/admin/admins', label: 'Administradores', icon: Shield, permission: Permission.AdminsManage },
-    { href: '/admin/settings', label: 'Configuración', icon: Settings, permission: Permission.SpecialtiesManage },
+    { href: '/admin/reservas', label: 'Reservas', icon: ClipboardList, permission: Permission.AppointmentsCatalogView },
+    { href: '/admin/profesionales', label: 'Profesionales', icon: Stethoscope, permission: Permission.ProfessionalsCatalogView },
+    { href: '/admin/pacientes', label: 'Pacientes', icon: Users, permission: Permission.PatientsCatalogView },
+    { href: '/admin/administradores', label: 'Administradores', icon: Shield, permission: Permission.AdminsManage },
+    { href: '/admin/configuracion', label: 'Configuración', icon: Settings, permission: Permission.SpecialtiesManage },
 ];
 
 type Props = {
@@ -202,8 +202,8 @@ function navFor(permissions: string[]): NavItem[] {
 }
 
 function roleLabelFor(role: RoleName): string {
-    if (role === 'doctor') {
-        return 'Doctor';
+    if (role === 'professional') {
+        return 'Profesional';
     }
     if (role === 'admin') {
         return 'Admin';

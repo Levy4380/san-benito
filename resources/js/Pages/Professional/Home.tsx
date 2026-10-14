@@ -12,7 +12,7 @@ type Props = {
     upcoming: AppointmentRecord[];
 };
 
-export default function DoctorHome({ upcoming }: Props) {
+export default function ProfessionalHome({ upcoming }: Props) {
     const { auth } = usePage<SharedData>().props;
 
     return (
@@ -22,7 +22,7 @@ export default function DoctorHome({ upcoming }: Props) {
                 <HomeHero title={`Hola, ${auth.user?.name}`} subtitle="Gestioná tu agenda y tus pacientes.">
                     <HomeStartPrimary>
                         <Btn prominence="cta" asChild>
-                            <Link href="/agenda">
+                            <Link href="/profesional/agenda">
                                 <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Ver agenda
                             </Link>
@@ -30,13 +30,13 @@ export default function DoctorHome({ upcoming }: Props) {
                     </HomeStartPrimary>
                     <HomeStartSecondary>
                         <Btn variant="outline" block asChild>
-                            <Link href="/agenda/program">
+                            <Link href="/profesional/programar">
                                 <CalendarPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Programar turnos
                             </Link>
                         </Btn>
                         <Btn variant="outline" block asChild>
-                            <Link href="/my-patients">
+                            <Link href="/profesional/mis-pacientes">
                                 <Users className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Mis pacientes
                             </Link>
@@ -45,7 +45,7 @@ export default function DoctorHome({ upcoming }: Props) {
                     <HomeUpcoming
                         actions={
                             <Btn variant="outline" size="sm" asChild>
-                                <Link href="/agenda">
+                                <Link href="/profesional/agenda">
                                     <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Ver agenda
                                 </Link>

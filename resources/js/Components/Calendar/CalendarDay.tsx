@@ -16,6 +16,10 @@ const dayVariants = cva(
                 true: 'cursor-default opacity-35',
                 false: 'cursor-pointer',
             },
+            past: {
+                true: 'opacity-50',
+                false: '',
+            },
             paint: {
                 true: '',
                 false: '',
@@ -25,6 +29,7 @@ const dayVariants = cva(
         defaultVariants: {
             tone: 'empty',
             muted: false,
+            past: false,
             paint: false,
         },
     },
@@ -35,6 +40,7 @@ type Props = {
     tone?: 'empty' | 'has' | 'full';
     selected?: boolean;
     muted?: boolean;
+    past?: boolean;
     disabled?: boolean;
     paint?: boolean;
     onClick?: () => void;
@@ -45,6 +51,7 @@ export default function CalendarDay({
     tone = 'empty',
     selected = false,
     muted = false,
+    past = false,
     disabled = false,
     paint = false,
     onClick,
@@ -55,7 +62,7 @@ export default function CalendarDay({
             data-day={day.inMonth ? day.key : undefined}
             disabled={disabled || muted}
             className={cn(
-                dayVariants({ tone, muted, paint: paint && !disabled && !muted }),
+                dayVariants({ tone, muted, past: past && !muted, paint: paint && !disabled && !muted }),
                 selected && 'bg-accent text-accent-ink shadow-[inset_0_0_0_2px_var(--color-day-ring)]',
             )}
             onClick={onClick}

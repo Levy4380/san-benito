@@ -63,17 +63,32 @@ class AvailabilityWindowService
             }
         }
 
-        foreach ($planned as $index => $window) {
-            $this->assertValidWindow($professional, $window['starts_at'], $window['ends_at']);
+        foreach ($planned as $window) {
+            $this->assertWindowSpan($professional, $window['starts_at'], $window['ends_at']);
+        }
 
+        $this->assertDaysAreFree($professional, $dates->all());
+
+        foreach ($planned as $index => $window) {
             foreach ($planned as $otherIndex => $other) {
-                if ($otherIndex === $index) {
+                if ($otherIndex <= $index) {
+                    continue;
+                }
+
+                if ($window['starts_at']->toDateString() !== $other['starts_at']->toDateString()) {
                     continue;
                 }
 
                 if ($window['starts_at']->lt($other['ends_at']) && $window['ends_at']->gt($other['starts_at'])) {
                     throw ValidationException::withMessages([
-                        'ranges' => 'La franja se solapa con otra ya cargada.',
+                        'ranges' => sprintf(
+                            'El %s las franjas %s–%s y %s–%s se solapan. Ajustá esos horarios para que no se pisen.',
+                            $window['starts_at']->format('d/m/Y'),
+                            $window['starts_at']->format('H:i'),
+                            $window['ends_at']->format('H:i'),
+                            $other['starts_at']->format('H:i'),
+                            $other['ends_at']->format('H:i'),
+                        ),
                     ]);
                 }
             }
@@ -125,11 +140,100 @@ class AvailabilityWindowService
         abort(403);
     }
 
+    /**
+     * @param  list<string>  $dates
+     */
+    private function assertDaysAreFree(Professional $professional, array $dates): void
+    {
+        $start = Carbon::parse(min($dates))->startOfDay();
+        $end = Carbon::parse(max($dates))->endOfDay();
+
+        $windows = AvailabilityWindow::query()
+            ->forProfessional($professional)
+            ->overlapping($start, $end)
+            ->orderBy('starts_at')
+            ->get();
+
+        $appointments = Appointment::query()
+            ->forProfessional($professional)
+            ->whereBetween('starts_at', [$start, $end])
+            ->orderBy('starts_at')
+            ->get();
+
+        $problems = [];
+
+        foreach ($dates as $date) {
+            $day = Carbon::parse($date)->startOfDay();
+            $dayEnd = $day->copy()->endOfDay();
+            $dayWindows = $windows->filter(
+                fn (AvailabilityWindow $window) => $window->starts_at->lt($dayEnd) && $window->ends_at->gt($day),
+            );
+            $dayAppointments = $appointments->filter(
+                fn (Appointment $appointment) => $appointment->starts_at->toDateString() === $day->toDateString(),
+            );
+
+            if ($dayWindows->isEmpty() && $dayAppointments->isEmpty()) {
+                continue;
+            }
+
+            $parts = [];
+
+            if ($dayWindows->isNotEmpty()) {
+                $parts[] = 'franjas '.$dayWindows
+                    ->map(fn (AvailabilityWindow $window) => $window->starts_at->format('H:i').'–'.$window->ends_at->format('H:i'))
+                    ->implode(', ');
+            }
+
+            if ($dayAppointments->isNotEmpty()) {
+                $parts[] = 'turnos '.$dayAppointments
+                    ->map(fn (Appointment $appointment) => $appointment->starts_at->format('H:i').'–'.$appointment->ends_at->format('H:i'))
+                    ->implode(', ');
+            }
+
+            $problems[] = $day->format('d/m/Y').' ('.implode('; ', $parts).')';
+        }
+
+        if ($problems !== []) {
+            throw ValidationException::withMessages([
+                'dates' => 'Estos días ya tienen carga y no se pueden programar: '.implode('; ', $problems).'. Elegí días sin franjas ni turnos.',
+            ]);
+        }
+    }
+
     private function assertValidWindow(Professional $professional, Carbon $start, Carbon $end): void
+    {
+        $this->assertWindowSpan($professional, $start, $end);
+
+        $overlap = AvailabilityWindow::query()
+            ->forProfessional($professional)
+            ->overlapping($start, $end)
+            ->orderBy('starts_at')
+            ->first();
+
+        if ($overlap instanceof AvailabilityWindow) {
+            throw ValidationException::withMessages([
+                'starts_at' => sprintf(
+                    'La franja %s–%s del %s se solapa con la ya cargada %s–%s del %s.',
+                    $start->format('H:i'),
+                    $end->format('H:i'),
+                    $start->format('d/m/Y'),
+                    $overlap->starts_at->format('H:i'),
+                    $overlap->ends_at->format('H:i'),
+                    $overlap->starts_at->format('d/m/Y'),
+                ),
+            ]);
+        }
+    }
+
+    private function assertWindowSpan(Professional $professional, Carbon $start, Carbon $end): void
     {
         if (! $end->gt($start)) {
             throw ValidationException::withMessages([
-                'starts_at' => 'La franja debe terminar después de comenzar.',
+                'starts_at' => sprintf(
+                    'La franja del %s tiene que terminar después de las %s.',
+                    $start->format('d/m/Y'),
+                    $start->format('H:i'),
+                ),
             ]);
         }
 
@@ -137,18 +241,14 @@ class AvailabilityWindowService
 
         if ($minutes < (int) $professional->slot_duration_minutes) {
             throw ValidationException::withMessages([
-                'ends_at' => 'Cada franja debe admitir al menos un turno.',
-            ]);
-        }
-
-        $overlaps = AvailabilityWindow::query()
-            ->forProfessional($professional)
-            ->overlapping($start, $end)
-            ->exists();
-
-        if ($overlaps) {
-            throw ValidationException::withMessages([
-                'starts_at' => 'La franja se solapa con otra ya cargada.',
+                'ends_at' => sprintf(
+                    'La franja %s–%s del %s dura %d min y cada turno es de %d min.',
+                    $start->format('H:i'),
+                    $end->format('H:i'),
+                    $start->format('d/m/Y'),
+                    $minutes,
+                    (int) $professional->slot_duration_minutes,
+                ),
             ]);
         }
     }

@@ -17,16 +17,18 @@ import SlotRow from '@/Components/Surfaces/SlotRow';
 import { formatDateLabel, isWeekendKey, minutesBetween, pad2, todayKey, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { ProfessionalRecord } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { CalendarCheck, Check, ChevronRight, Minus, Plus, RotateCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Range = { start: string; end: string };
 type Tone = 'empty' | 'has' | 'full';
 
 type Props = {
     professional: ProfessionalRecord;
+    month: string;
     tones: Record<string, Tone>;
+    blockedDates: string[];
 };
 
 const PROGRAM_LEGEND = [
@@ -89,16 +91,28 @@ function eraseRange(ranges: Range[], start: number, end: number, minLength: numb
     );
 }
 
-export default function Program({ professional, tones }: Props) {
+export default function Program({ professional, month: initialMonth, tones, blockedDates }: Props) {
     const [step, setStep] = useState<'when' | 'hours'>('when');
-    const [month, setMonth] = useState(todayKey().slice(0, 7) + '-01');
-    const [dates, setDates] = useState<string[]>([todayKey()]);
+    const [month, setMonth] = useState(initialMonth);
+    const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(todayKey()) ? [] : [todayKey()]));
     const [blockWeekends, setBlockWeekends] = useState(false);
     const [start, setStart] = useState('09:00');
     const [end, setEnd] = useState('12:00');
     const [ranges, setRanges] = useState<Range[]>([]);
     const form = useForm({ dates, ranges, block_weekends: blockWeekends });
     const duration = professional.slot_duration_minutes;
+    const blocked = useMemo(() => new Set(blockedDates), [blockedDates]);
+    const requestedMonth = useRef(initialMonth);
+
+    useEffect(() => {
+        setDates((current) => current.filter((key) => !blocked.has(key)));
+    }, [blocked]);
+
+    useEffect(() => {
+        if (initialMonth === requestedMonth.current) {
+            setMonth(initialMonth);
+        }
+    }, [initialMonth]);
 
     const selectedDays = useMemo(() => {
         const keys = blockWeekends ? dates.filter((key) => !isWeekendKey(key)) : dates;
@@ -107,7 +121,7 @@ export default function Program({ professional, tones }: Props) {
     }, [dates, blockWeekends]);
 
     const paintDay = (key: string, on: boolean) => {
-        if (on && blockWeekends && isWeekendKey(key)) {
+        if (blocked.has(key) || (on && blockWeekends && isWeekendKey(key))) {
             return;
         }
         setDates((current) => {
@@ -165,7 +179,7 @@ export default function Program({ professional, tones }: Props) {
     };
 
     const selectWorkdaysOfMonth = () => {
-        const keys = weekdayKeysOfMonth(month);
+        const keys = weekdayKeysOfMonth(month).filter((key) => !blocked.has(key));
         if (keys.length === 0) {
             return;
         }
@@ -188,6 +202,23 @@ export default function Program({ professional, tones }: Props) {
             ? `${formatDateLabel(selectedDays[0])} · turnos de ${duration} min`
             : `${selectedDays.length} días · turnos de ${duration} min`;
 
+    const changeMonth = (next: string) => {
+        if (next === requestedMonth.current) {
+            return;
+        }
+        requestedMonth.current = next;
+        setMonth(next);
+        router.get(
+            '/profesional/programar',
+            { month: next },
+            { preserveState: true, preserveScroll: true, replace: true, only: ['tones', 'blockedDates', 'month'] },
+        );
+    };
+
+    const resetDays = () => {
+        setDates(blocked.has(todayKey()) ? [] : [todayKey()]);
+    };
+
     const renderCalendar = () => (
         <CalendarMonth
             month={month}
@@ -195,8 +226,9 @@ export default function Program({ professional, tones }: Props) {
             tones={tones}
             paint
             blockWeekends={blockWeekends}
+            disabledDates={blockedDates}
             onPaint={paintDay}
-            onMonthChange={setMonth}
+            onMonthChange={changeMonth}
             legend={PROGRAM_LEGEND}
         />
     );
@@ -232,7 +264,7 @@ export default function Program({ professional, tones }: Props) {
                                     compact
                                     blockWeekends={blockWeekends}
                                     onToggleWeekends={toggleWeekends}
-                                    onReset={() => setDates([todayKey()])}
+                                    onReset={resetDays}
                                     onSelectWorkdays={selectWorkdaysOfMonth}
                                 />
                                 <WizardStickyCta
@@ -256,7 +288,7 @@ export default function Program({ professional, tones }: Props) {
                                 {renderCalendar()}
                                 <Panel title="Elegí los días" className="gap-0">
                                     <Hint id="program-when-hint" className="m-0 max-w-none text-left">
-                                        Podés seleccionar hoy, un día o arrastrar varios.
+                                        Arrastrá los días libres. Los que ya tienen franjas o turnos no se pueden pintar.
                                     </Hint>
                                     {selectedDays.length > 0 ? (
                                         <Hint id="program-when-count" className="m-0 max-w-none text-left">
@@ -267,7 +299,7 @@ export default function Program({ professional, tones }: Props) {
                                         <WhenToolbar
                                             blockWeekends={blockWeekends}
                                             onToggleWeekends={toggleWeekends}
-                                            onReset={() => setDates([todayKey()])}
+                                            onReset={resetDays}
                                             onSelectWorkdays={selectWorkdaysOfMonth}
                                         />
                                     </PanelScroll>

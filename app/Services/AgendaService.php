@@ -18,11 +18,14 @@ class AgendaService
     /**
      * @return array<string, mixed>
      */
-    public function pageData(Professional $professional, ?string $date, mixed $panel = null): array
+    public function pageData(Professional $professional, ?string $date, mixed $panel = null, ?string $month = null): array
     {
         $selected = $date ? Carbon::parse($date) : now();
-        $monthStart = $selected->copy()->startOfMonth()->startOfDay();
-        $monthEnd = $selected->copy()->endOfMonth()->endOfDay();
+        $view = is_string($month) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $month) === 1
+            ? Carbon::parse($month)
+            : $selected->copy();
+        $monthStart = $view->copy()->startOfMonth()->startOfDay();
+        $monthEnd = $view->copy()->endOfMonth()->endOfDay();
 
         $windows = AvailabilityWindow::query()
             ->forProfessional($professional)
@@ -44,11 +47,26 @@ class AgendaService
         );
 
         $dayKey = $selected->toDateString();
-        $daySlots = $slots->filter(fn (array $slot) => str_starts_with($slot['starts_at'], $dayKey))->values();
-        $dayAppointments = $appointments->filter(fn (Appointment $appointment) => $appointment->starts_at->toDateString() === $dayKey)->values();
         $dayStart = $selected->copy()->startOfDay();
         $dayEnd = $selected->copy()->endOfDay();
-        $dayWindows = $windows->filter(fn (AvailabilityWindow $window) => $window->starts_at->lte($dayEnd) && $window->ends_at->gt($dayStart))->values();
+        $daySlots = $dayEnd->lt(now())
+            ? collect()
+            : $this->availability->calculateSlots(
+                $professional,
+                $dayStart->lt(now()) ? now() : $dayStart,
+                $dayEnd,
+            );
+        $dayAppointments = Appointment::query()
+            ->forProfessional($professional)
+            ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty'])
+            ->whereBetween('starts_at', [$dayStart, $dayEnd])
+            ->orderBy('starts_at')
+            ->get();
+        $dayWindows = AvailabilityWindow::query()
+            ->forProfessional($professional)
+            ->overlapping($dayStart, $dayEnd)
+            ->orderBy('starts_at')
+            ->get();
 
         $tones = $this->calendarTones($professional, $monthStart, $monthEnd, $slots, $appointments, $windows);
 
@@ -58,6 +76,7 @@ class AgendaService
 
         return [
             'professional' => $professional->load(['user', 'specialties']),
+            'month' => $view->copy()->startOfMonth()->toDateString(),
             'selectedDate' => $dayKey,
             'panel' => $step,
             'windows' => $dayWindows,
@@ -182,6 +201,62 @@ class AgendaService
         );
 
         return $this->calendarTones($professional, $monthStart, $monthEnd, $slots, $appointments, $windows);
+    }
+
+    /**
+     * Tones and days that already have a window or an appointment, for the program calendar.
+     * Includes a week of padding so the month grid's spillover days are accurate.
+     *
+     * @return array{tones: array<string, string>, blockedDates: list<string>}
+     */
+    public function programCalendar(Professional $professional, Carbon $month): array
+    {
+        $rangeStart = $month->copy()->startOfMonth()->startOfDay()->subDays(7);
+        $rangeEnd = $month->copy()->endOfMonth()->endOfDay()->addDays(7);
+        $windows = AvailabilityWindow::query()
+            ->forProfessional($professional)
+            ->overlapping($rangeStart, $rangeEnd)
+            ->orderBy('starts_at')
+            ->get();
+        $appointments = Appointment::query()
+            ->forProfessional($professional)
+            ->whereBetween('starts_at', [$rangeStart, $rangeEnd])
+            ->get();
+        $slots = $this->availability->calculateSlots(
+            $professional,
+            $rangeStart->lt(now()) ? now() : $rangeStart->copy(),
+            $rangeEnd,
+        );
+        $tones = $this->calendarTones($professional, $rangeStart, $rangeEnd, $slots, $appointments, $windows);
+        $blockedDates = [];
+        $cursor = $rangeStart->copy();
+
+        while ($cursor->lte($rangeEnd)) {
+            $day = $cursor->copy();
+            $key = $day->toDateString();
+            $dayEnd = $day->copy()->endOfDay();
+            $hasWindow = $windows->contains(
+                fn (AvailabilityWindow $window) => $window->starts_at->lt($dayEnd) && $window->ends_at->gt($day),
+            );
+            $hasAppointment = $appointments->contains(
+                fn (Appointment $appointment) => $appointment->starts_at->toDateString() === $key,
+            );
+
+            if ($hasWindow || $hasAppointment) {
+                $blockedDates[] = $key;
+
+                if (($tones[$key] ?? 'empty') === 'empty') {
+                    $tones[$key] = 'has';
+                }
+            }
+
+            $cursor->addDay();
+        }
+
+        return [
+            'tones' => $tones,
+            'blockedDates' => $blockedDates,
+        ];
     }
 
     /**

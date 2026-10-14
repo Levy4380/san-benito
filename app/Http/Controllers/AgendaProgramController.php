@@ -9,6 +9,7 @@ use App\Services\AvailabilityWindowService;
 use App\Services\ProfessionalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,10 +18,17 @@ class AgendaProgramController extends Controller
     public function create(Request $request, ProfessionalService $professionals, AgendaService $agenda): Response
     {
         $professional = $professionals->forUser($request->user());
+        $monthInput = $request->string('month')->toString();
+        $month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $monthInput) === 1
+            ? Carbon::parse($monthInput)
+            : now();
+        $calendar = $agenda->programCalendar($professional, $month);
 
         return Inertia::render('Professional/Program', [
             'professional' => $professional->load(['user', 'specialties']),
-            'tones' => $agenda->tonesForNearbyMonths($professional),
+            'month' => $month->copy()->startOfMonth()->toDateString(),
+            'tones' => $calendar['tones'],
+            'blockedDates' => $calendar['blockedDates'],
         ]);
     }
 

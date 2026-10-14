@@ -174,7 +174,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                                         legend={[
                                             { tone: 'empty', label: 'Sin turnos' },
                                             { tone: 'has', label: 'Con turnos libres' },
-                                            { tone: 'full', label: 'Todo reservado' },
+                                            { tone: 'full', label: 'Sin turnos libres' },
                                         ]}
                                     />
                                 ) : (

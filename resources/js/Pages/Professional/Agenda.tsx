@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, Slot } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CalendarPlus, Plus, Trash2, Undo2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type PanelStep = 'day' | 'load';
 
@@ -30,13 +30,15 @@ type Props = {
     slots: Slot[];
     appointments: AppointmentRecord[];
     tones: Record<string, 'empty' | 'has' | 'full'>;
+    month: string;
     now: string;
 };
 
 type AgendaModal = 'load' | 'assign';
 
-export default function Agenda({ professional, selectedDate, panel, windows, slots, appointments, tones, now }: Props) {
-    const [month, setMonth] = useState(selectedDate.slice(0, 7) + '-01');
+export default function Agenda({ professional, selectedDate, panel, windows, slots, appointments, tones, month: serverMonth, now }: Props) {
+    const [month, setMonth] = useState(serverMonth);
+    const requestedMonth = useRef(serverMonth);
     const [mobileDayOpen, setMobileDayOpen] = useState(panel !== 'day');
     const [modal, setModal] = useState<AgendaModal | null>(panel === 'load' ? 'load' : null);
     const [assignStartsAt, setAssignStartsAt] = useState<string | undefined>(undefined);
@@ -51,16 +53,42 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
     const { ask, dialog } = useConfirm();
     const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
 
+    useEffect(() => {
+        if (serverMonth === requestedMonth.current) {
+            setMonth(serverMonth);
+        }
+    }, [serverMonth]);
+
     const go = (date: string) => {
+        const nextMonth = `${date.slice(0, 7)}-01`;
+        requestedMonth.current = nextMonth;
+        setMonth(nextMonth);
         setMobileDayOpen(true);
-        router.get('/profesional/agenda', { date }, { preserveState: true });
+        router.get('/profesional/agenda', { date, month: nextMonth }, { preserveState: true });
+    };
+
+    const changeMonth = (next: string) => {
+        if (next === requestedMonth.current) {
+            return;
+        }
+        requestedMonth.current = next;
+        setMonth(next);
+        router.get(
+            '/profesional/agenda',
+            { date: selectedDate, month: next, ...(panel === 'load' ? { panel } : {}) },
+            { preserveState: true, preserveScroll: true, replace: true, only: ['tones', 'month'] },
+        );
     };
 
     const closeModal = () => {
         setModal(null);
         shortForm.clearErrors();
         if (panel !== 'day') {
-            router.get('/profesional/agenda', { date: selectedDate }, { preserveState: true, preserveScroll: true, replace: true });
+            router.get(
+                '/profesional/agenda',
+                { date: selectedDate, month },
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
         }
     };
 
@@ -93,11 +121,11 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
             tones={tones}
             today={now}
             onSelect={go}
-            onMonthChange={setMonth}
+            onMonthChange={changeMonth}
             legend={[
                 { tone: 'empty', label: 'Sin turnos' },
                 { tone: 'has', label: 'Con turnos libres' },
-                { tone: 'full', label: 'Todo reservado' },
+                { tone: 'full', label: 'Sin turnos libres' },
             ]}
         />
     );

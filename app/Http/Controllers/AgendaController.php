@@ -14,7 +14,8 @@ class AgendaController extends Controller
     {
         $professional = $professionals->forUser($request->user());
         $date = $request->filled('date') ? $request->string('date')->toString() : null;
+        $month = $request->filled('month') ? $request->string('month')->toString() : null;
 
-        return Inertia::render('Professional/Agenda', $agenda->pageData($professional, $date, $request->input('panel')));
+        return Inertia::render('Professional/Agenda', $agenda->pageData($professional, $date, $request->input('panel'), $month));
     }
 }

@@ -39,6 +39,19 @@ class AvailabilityWindowService
             ->unique()
             ->values();
 
+        $today = now()->toDateString();
+        $past = $dates->filter(fn (string $date) => $date < $today)->values();
+
+        if ($past->isNotEmpty()) {
+            $named = $past
+                ->map(fn (string $date) => Carbon::parse($date)->format('d/m/Y'))
+                ->implode(', ');
+
+            throw ValidationException::withMessages([
+                'dates' => 'No se puede programar un día anterior a hoy: '.$named.'.',
+            ]);
+        }
+
         if ($blockWeekends) {
             $dates = $dates->reject(function (string $date) {
                 $day = Carbon::parse($date);

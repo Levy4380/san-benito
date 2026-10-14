@@ -18,15 +18,22 @@ class AgendaProgramController extends Controller
     public function create(Request $request, ProfessionalService $professionals, AgendaService $agenda): Response
     {
         $professional = $professionals->forUser($request->user());
+        $today = now()->toDateString();
         $monthInput = $request->string('month')->toString();
         $month = preg_match('/^\d{4}-\d{2}-\d{2}$/', $monthInput) === 1
             ? Carbon::parse($monthInput)
             : now();
+
+        if ($month->copy()->endOfMonth()->toDateString() < $today) {
+            $month = now();
+        }
+
         $calendar = $agenda->programCalendar($professional, $month);
 
         return Inertia::render('Professional/Program', [
             'professional' => $professional->load(['user', 'specialties']),
             'month' => $month->copy()->startOfMonth()->toDateString(),
+            'today' => $today,
             'tones' => $calendar['tones'],
             'blockedDates' => $calendar['blockedDates'],
         ]);

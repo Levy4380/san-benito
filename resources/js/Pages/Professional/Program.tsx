@@ -14,7 +14,7 @@ import Hint from '@/Components/Surfaces/Hint';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
-import { formatDateLabel, isWeekendKey, minutesBetween, pad2, todayKey, weekdayKeysOfMonth } from '@/lib/datetime';
+import { formatDateLabel, isWeekendKey, minutesBetween, pad2, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { ProfessionalRecord } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -27,6 +27,7 @@ type Tone = 'empty' | 'has' | 'full';
 type Props = {
     professional: ProfessionalRecord;
     month: string;
+    today: string;
     tones: Record<string, Tone>;
     blockedDates: string[];
 };
@@ -91,10 +92,10 @@ function eraseRange(ranges: Range[], start: number, end: number, minLength: numb
     );
 }
 
-export default function Program({ professional, month: initialMonth, tones, blockedDates }: Props) {
+export default function Program({ professional, month: initialMonth, today, tones, blockedDates }: Props) {
     const [step, setStep] = useState<'when' | 'hours'>('when');
     const [month, setMonth] = useState(initialMonth);
-    const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(todayKey()) ? [] : [todayKey()]));
+    const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(today) ? [] : [today]));
     const [blockWeekends, setBlockWeekends] = useState(false);
     const [start, setStart] = useState('09:00');
     const [end, setEnd] = useState('12:00');
@@ -105,8 +106,8 @@ export default function Program({ professional, month: initialMonth, tones, bloc
     const requestedMonth = useRef(initialMonth);
 
     useEffect(() => {
-        setDates((current) => current.filter((key) => !blocked.has(key)));
-    }, [blocked]);
+        setDates((current) => current.filter((key) => key >= today && !blocked.has(key)));
+    }, [blocked, today]);
 
     useEffect(() => {
         if (initialMonth === requestedMonth.current) {
@@ -141,9 +142,13 @@ export default function Program({ professional, month: initialMonth, tones, bloc
         setBlockWeekends(checked);
         if (checked) {
             setDates((current) => {
-                const next = current.filter((key) => !isWeekendKey(key));
+                const next = current.filter((key) => key >= today && !isWeekendKey(key) && !blocked.has(key));
 
-                return next.length ? next : [todayKey()].filter((key) => !isWeekendKey(key));
+                if (next.length) {
+                    return next;
+                }
+
+                return !isWeekendKey(today) && !blocked.has(today) ? [today] : [];
             });
         }
     };
@@ -166,7 +171,7 @@ export default function Program({ professional, month: initialMonth, tones, bloc
         setRanges((current) => eraseRange(current, from, to, duration));
     };
 
-    const timelineDate = selectedDays[0] ?? todayKey();
+    const timelineDate = selectedDays[0] ?? today;
 
     const goHours = () => {
         if (selectedDays.length === 0) {
@@ -179,7 +184,7 @@ export default function Program({ professional, month: initialMonth, tones, bloc
     };
 
     const selectWorkdaysOfMonth = () => {
-        const keys = weekdayKeysOfMonth(month).filter((key) => !blocked.has(key));
+        const keys = weekdayKeysOfMonth(month).filter((key) => key >= today && !blocked.has(key));
         if (keys.length === 0) {
             return;
         }
@@ -216,7 +221,7 @@ export default function Program({ professional, month: initialMonth, tones, bloc
     };
 
     const resetDays = () => {
-        setDates(blocked.has(todayKey()) ? [] : [todayKey()]);
+        setDates(blocked.has(today) ? [] : [today]);
     };
 
     const renderCalendar = () => (
@@ -227,6 +232,7 @@ export default function Program({ professional, month: initialMonth, tones, bloc
             paint
             blockWeekends={blockWeekends}
             disabledDates={blockedDates}
+            minDate={today}
             onPaint={paintDay}
             onMonthChange={changeMonth}
             legend={PROGRAM_LEGEND}

@@ -1,10 +1,14 @@
 import { pad2, wallDate, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
-import { type CSSProperties, type PointerEvent, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type PointerEvent, useRef, useState } from 'react';
 
 const DAY_START = 7 * 60;
 const DAY_END = 21 * 60;
 const DAY_MINUTES = 24 * 60;
+/** New windows can start on any 5-minute mark. Their slots then step from that start. */
+const PAINT_SNAP = 5;
+const STEP_MIN = 5;
+const STEP_MAX = 120;
 
 export type DayTimelineBand = { key: string | number; starts_at: string; ends_at: string };
 
@@ -25,11 +29,11 @@ type Props = {
     /** Free calculated slots, rendered as «+ Asignar turno» when `onFreeSelect` is set */
     freeSlots?: { starts_at: string; ends_at: string }[];
     onFreeSelect?: (startsAt: string) => void;
-    /** Drag to paint [start, end) minutes snapped to the step; `on` is false when the drag starts inside a band. */
+    /** Drag to paint [start, end). A new window starts on a 5-minute mark; slots and erases step from that window's start. `on` is false when the drag starts inside a band. */
     onPaint?: (start: number, end: number, on: boolean) => void;
 };
 
-type PaintDraft = { from: number; to: number; on: boolean };
+type PaintDraft = { from: number; to: number; on: boolean; origin: number };
 
 function formatMinutes(minutes: number): string {
     return `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
@@ -48,6 +52,35 @@ function clipToDay(date: string, startsAt: string, endsAt: string): [number, num
     return [start, end];
 }
 
+/** Minute-of-day where this window's slots begin (its own start, carried across midnight). */
+function gridOrigin(date: string, startsAt: string, step: number): number {
+    const start = minutesOf(startsAt);
+    if (wallDate(startsAt) >= date) {
+        return start;
+    }
+
+    return ((start - (DAY_MINUTES % step)) % step + step) % step;
+}
+
+/** Slot boundaries inside [start, end), skipping the window edge and the hour marks. */
+function slotLines(origin: number, start: number, end: number, step: number): number[] {
+    if (end - start < step) {
+        return [];
+    }
+
+    const offset = ((origin - start) % step + step) % step;
+    const first = start + (offset === 0 ? step : offset);
+    const lines: number[] = [];
+
+    for (let minute = first; minute < end; minute += step) {
+        if (minute % 60 !== 0) {
+            lines.push(minute);
+        }
+    }
+
+    return lines;
+}
+
 export default function DayTimeline({
     date,
     now,
@@ -61,8 +94,7 @@ export default function DayTimeline({
     onFreeSelect,
     onPaint,
 }: Props) {
-    const step = Math.max(5, Math.min(stepMinutes, 60));
-    const wrapRef = useRef<HTMLDivElement>(null);
+    const step = Math.max(STEP_MIN, Math.min(stepMinutes, STEP_MAX));
     const [paint, setPaint] = useState<PaintDraft | null>(null);
     const paintRef = useRef<PaintDraft | null>(null);
     const clippedBands = bands.map((band) => ({ band, range: clipToDay(date, band.starts_at, band.ends_at) }));
@@ -74,7 +106,6 @@ export default function DayTimeline({
     const span = (lastHour - firstHour) * 60;
     const top = (minutes: number) => `${((minutes - firstHour * 60) / span) * 100}%`;
     const height = (minutes: number) => `${(minutes / span) * 100}%`;
-    const firstContent = ranges.length === 0 ? firstHour * 60 : Math.min(...ranges.map(([start]) => start), lastHour * 60);
 
     const today = now ? wallDate(now) : null;
     const nowMin = !now || !today ? 0 : date < today ? lastHour * 60 : date > today ? 0 : Math.min(minutesOf(now), lastHour * 60);
@@ -82,13 +113,15 @@ export default function DayTimeline({
     /* H:i ranges can't end at 24:00 */
     const paintMaxEnd = lastHour * 60 >= DAY_MINUTES ? DAY_MINUTES - step : lastHour * 60;
 
-    const minuteAt = (event: PointerEvent<HTMLDivElement>) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const raw = firstHour * 60 + ((event.clientY - rect.top) / rect.height) * span;
-        const snapped = Math.floor(raw / step) * step;
+    const clampMinute = (minute: number) => Math.max(firstHour * 60, Math.min(minute, paintMaxEnd - step));
 
-        return Math.max(firstHour * 60, Math.min(snapped, paintMaxEnd - step));
+    const rawMinute = (event: PointerEvent<HTMLDivElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+
+        return firstHour * 60 + ((event.clientY - rect.top) / rect.height) * span;
     };
+
+    const snapCell = (raw: number, origin: number) => clampMinute(origin + Math.floor((raw - origin) / step) * step);
 
     const paintRange = (draft: PaintDraft): [number, number] => [Math.min(draft.from, draft.to), Math.max(draft.from, draft.to) + step];
 
@@ -102,9 +135,11 @@ export default function DayTimeline({
             return;
         }
         event.preventDefault();
-        const minute = minuteAt(event);
-        const inside = clippedBands.some(({ range: [start, end] }) => minute >= start && minute < end);
-        updatePaint({ from: minute, to: minute, on: !inside });
+        const raw = rawMinute(event);
+        const band = clippedBands.find(({ range: [start, end] }) => raw >= start && raw < end);
+        const origin = band ? gridOrigin(date, band.band.starts_at, step) : clampMinute(Math.floor(raw / PAINT_SNAP) * PAINT_SNAP);
+        const minute = band ? snapCell(raw, origin) : origin;
+        updatePaint({ from: minute, to: minute, on: !band, origin });
         event.currentTarget.setPointerCapture(event.pointerId);
     };
 
@@ -113,7 +148,7 @@ export default function DayTimeline({
         if (!draft) {
             return;
         }
-        const minute = minuteAt(event);
+        const minute = snapCell(rawMinute(event), draft.origin);
         if (minute !== draft.to) {
             updatePaint({ ...draft, to: minute });
         }
@@ -132,24 +167,15 @@ export default function DayTimeline({
     const onPaintCancel = () => updatePaint(null);
 
     const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index);
-    const steps =
-        step < 60 && 60 % step === 0
-            ? Array.from({ length: span / step }, (_, index) => firstHour * 60 + index * step).filter((minutes) => minutes % 60 !== 0)
-            : [];
-
-    useEffect(() => {
-        const wrap = wrapRef.current;
-        const timeline = wrap?.firstElementChild;
-        if (!wrap || !(timeline instanceof HTMLElement)) {
-            return;
-        }
-        const offset = ((Math.max(firstContent - step, firstHour * 60) - firstHour * 60) / span) * timeline.offsetHeight;
-        wrap.scrollTop = offset;
-    }, [date, firstContent, firstHour, span, step]);
+    const steps = clippedBands.flatMap(({ band, range: [start, end] }) =>
+        slotLines(gridOrigin(date, band.starts_at, step), start, end, step).map((minute) => ({
+            key: `${band.key}-${minute}`,
+            minute,
+        })),
+    );
 
     return (
         <div
-            ref={wrapRef}
             className={cn(
                 'timeline-wrap border-rule bg-paper max-h-[34rem] min-h-0 overflow-y-auto rounded-[var(--radius-card)] border py-[0.5rem] pr-[0.25rem]',
                 className,
@@ -160,11 +186,11 @@ export default function DayTimeline({
                 style={{ '--steps': span / step } as CSSProperties}
                 aria-label={label}
             >
-                {steps.map((minutes) => (
+                {steps.map(({ key, minute }) => (
                     <div
-                        key={minutes}
+                        key={key}
                         className="tl-step border-rule/60 absolute right-0 left-[var(--tl-gutter)] border-t border-dotted"
-                        style={{ top: top(minutes) }}
+                        style={{ top: top(minute) }}
                     />
                 ))}
 

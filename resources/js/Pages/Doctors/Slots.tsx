@@ -50,6 +50,7 @@ export default function DoctorSlots({
     const [month, setMonth] = useState((selectedDate ?? previewDays[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const [mobileDayOpen, setMobileDayOpen] = useState(Boolean(selectedDate));
     const [bookingOpen, setBookingOpen] = useState(false);
+    const [assignStartsAt, setAssignStartsAt] = useState<string | undefined>(undefined);
     const [patientId, setPatientId] = useState('');
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
     const { auth } = usePage<SharedData>().props;
@@ -58,6 +59,17 @@ export default function DoctorSlots({
     const staffDay = timeline && selectedDate ? { date: selectedDate, ...timeline } : null;
     const openAppointment = staffDay?.appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
     const assigning = Boolean(staffDay && patients);
+
+    const openBooking = (startsAt?: string) => {
+        setAssignStartsAt(startsAt);
+        setBookingOpen(true);
+    };
+
+    const closeBooking = () => {
+        setBookingOpen(false);
+        setAssignStartsAt(undefined);
+        setPatientId('');
+    };
     const tones = staffDay ? (bookingTones ?? {}) : Object.fromEntries(daysWithSlots.map((day) => [day, 'has' as const]));
     const legend = staffDay
         ? [
@@ -112,10 +124,7 @@ export default function DoctorSlots({
                         patient_id: Number(patientId),
                     },
                     {
-                        onSuccess: () => {
-                            setBookingOpen(false);
-                            setPatientId('');
-                        },
+                        onSuccess: closeBooking,
                     },
                 );
             }
@@ -126,6 +135,8 @@ export default function DoctorSlots({
             specialty_id: selectedSpecialtyId,
         });
     };
+
+    const bookingSlots = assignStartsAt ? slots.filter((slot) => slot.starts_at === assignStartsAt) : slots;
 
     const specialtyField = (id: string) => (
         <Field label="Especialidad" htmlFor={id} className="shrink-0">
@@ -154,10 +165,10 @@ export default function DoctorSlots({
                         </ListRow>
                     ))
                 )
-            ) : slots.length === 0 ? (
-                <Empty>No hay horarios en este día.</Empty>
+            ) : bookingSlots.length === 0 ? (
+                <Empty>{assignStartsAt ? 'Ese horario ya no está libre.' : 'No hay horarios en este día.'}</Empty>
             ) : (
-                slots.map((slot) => (
+                bookingSlots.map((slot) => (
                     <SlotRow key={slot.starts_at}>
                         <strong>
                             {wallTime(slot.starts_at)} — {wallTime(slot.ends_at)}
@@ -196,9 +207,11 @@ export default function DoctorSlots({
                     subtitle: appointment.specialty?.name,
                 }))}
                 onBlockSelect={(key) => setOpenAppointmentId(Number(key))}
+                freeSlots={assigning ? slots : undefined}
+                onFreeSelect={assigning ? openBooking : undefined}
             />
             <div className="flex shrink-0 justify-end pt-[var(--space-sm)]">
-                <Btn type="button" onClick={() => setBookingOpen(true)}>
+                <Btn type="button" onClick={() => openBooking()}>
                     <CalendarPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                     Agendar turno
                 </Btn>
@@ -210,8 +223,14 @@ export default function DoctorSlots({
         staffDay && bookingOpen ? (
             <ConfirmDialog
                 title="Agendar turno"
-                message={`${doctor.user.name} · ${formatDateLabel(staffDay.date)}`}
-                onDismiss={() => setBookingOpen(false)}
+                message={[
+                    doctor.user.name,
+                    formatDateLabel(staffDay.date),
+                    assignStartsAt ? `${wallTime(assignStartsAt)} hs` : null,
+                ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                onDismiss={closeBooking}
             >
                 <div className="flex max-h-[60dvh] min-h-0 flex-col">
                     {specialtyField('slot_specialty_id_modal')}
@@ -233,7 +252,7 @@ export default function DoctorSlots({
                     {dayBody}
                 </div>
                 <div className="flex justify-end">
-                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={() => setBookingOpen(false)}>
+                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeBooking}>
                         <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         Volver
                     </Btn>

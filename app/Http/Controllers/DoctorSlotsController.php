@@ -34,13 +34,21 @@ class DoctorSlotsController extends Controller
 
         $daysWithSlots = $availability->upcomingDaysWithSlots($doctor, 5);
 
-        $daySlots = $selectedDate
-            ? $availability->nextOfferableSlotPerDay(
-                $doctor,
-                Carbon::parse($selectedDate)->startOfDay(),
-                Carbon::parse($selectedDate)->endOfDay(),
-            )
-            : collect();
+        $daySlots = collect();
+        if ($selectedDate) {
+            $dayStart = Carbon::parse($selectedDate)->startOfDay();
+            $dayEnd = Carbon::parse($selectedDate)->endOfDay();
+            // Staff assign any free calculated slot (d42); patients only see the first offerable of the day (d39).
+            $daySlots = $staff
+                ? ($dayEnd->lt(now())
+                    ? collect()
+                    : $availability->calculateSlots(
+                        $doctor,
+                        $dayStart->lt(now()) ? now() : $dayStart,
+                        $dayEnd,
+                    )->values())
+                : $availability->nextOfferableSlotPerDay($doctor, $dayStart, $dayEnd);
+        }
 
         $requestedSpecialtyId = $request->filled('specialty_id') ? $request->integer('specialty_id') : null;
         $specialty = $requestedSpecialtyId

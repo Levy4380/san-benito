@@ -87,8 +87,12 @@ class DoctorSlotsTimelineTest extends TestCase
                 ->where('bookingTones.2026-10-08', 'has')
                 ->where('bookingTones.2026-10-09', 'empty')
                 ->has('bookingTones', 31)
-                ->has('slots', 1)
-                ->where('slots.0.starts_at', '2026-10-07 10:40:00'));
+                ->has('slots', 4)
+                ->where('slots.0.starts_at', '2026-10-07 10:40:00')
+                ->where('slots.1.starts_at', '2026-10-07 11:00:00')
+                ->where('slots.2.starts_at', '2026-10-07 11:20:00')
+                ->where('slots.3.starts_at', '2026-10-07 11:40:00')
+                ->has('patients'));
     }
 
     public function test_admin_with_date_gets_that_day(): void

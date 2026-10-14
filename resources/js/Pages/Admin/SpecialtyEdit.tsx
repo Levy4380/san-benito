@@ -9,7 +9,7 @@ import Results from '@/Components/Surfaces/Results';
 import { Head, useForm } from '@inertiajs/react';
 import { Save } from 'lucide-react';
 
-type CatalogDoctor = {
+type CatalogProfessional = {
     id: number;
     name: string;
     assigned: boolean;
@@ -17,13 +17,13 @@ type CatalogDoctor = {
 
 type Props = {
     specialty: { id: number; name: string };
-    doctors: CatalogDoctor[];
+    professionals: CatalogProfessional[];
 };
 
-export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
+export default function AdminSpecialtyEdit({ specialty, professionals }: Props) {
     const form = useForm({
         name: specialty.name,
-        doctor_ids: doctors.filter((doctor) => doctor.assigned).map((doctor) => doctor.id),
+        professional_ids: professionals.filter((professional) => professional.assigned).map((professional) => professional.id),
     });
 
     return (
@@ -33,8 +33,8 @@ export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
                 header={
                     <PageHeader
                         title="Especialidades"
-                        description="Nombre y doctores asociados."
-                        backHref="/admin/settings/specialties"
+                        description="Nombre y profesionales asociados."
+                        backHref="/admin/configuracion/especialidades"
                         backLabel="Especialidades"
                     />
                 }
@@ -45,7 +45,7 @@ export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
                             className="grid min-h-0 flex-1 content-start overflow-auto"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                form.patch(`/admin/settings/specialties/${specialty.id}`);
+                                form.patch(`/specialties/${specialty.id}`);
                             }}
                         >
                             <Field label="Nombre" htmlFor="specialty_name" error={form.errors.name}>
@@ -56,19 +56,19 @@ export default function AdminSpecialtyEdit({ specialty, doctors }: Props) {
                                     required
                                 />
                             </Field>
-                            <Field label="Doctores" htmlFor="doctor_ids" error={form.errors.doctor_ids}>
+                            <Field label="Profesionales" htmlFor="professional_ids" error={form.errors.professional_ids}>
                                 <Combobox
-                                    id="doctor_ids"
+                                    id="professional_ids"
                                     multiple
-                                    value={form.data.doctor_ids.map(String)}
-                                    placeholder="Elegí doctores"
-                                    searchLabel="Buscar doctor"
-                                    empty="Todavía no hay doctores."
-                                    emptyFiltered="No hay doctores con ese nombre."
-                                    onChange={(values) => form.setData('doctor_ids', values.map(Number))}
-                                    options={doctors.map((doctor) => ({
-                                        value: String(doctor.id),
-                                        label: doctor.name,
+                                    value={form.data.professional_ids.map(String)}
+                                    placeholder="Elegí profesionales"
+                                    searchLabel="Buscar profesional"
+                                    empty="Todavía no hay profesionales."
+                                    emptyFiltered="No hay profesionales con ese nombre."
+                                    onChange={(values) => form.setData('professional_ids', values.map(Number))}
+                                    options={professionals.map((professional) => ({
+                                        value: String(professional.id),
+                                        label: professional.name,
                                     }))}
                                 />
                             </Field>

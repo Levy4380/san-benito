@@ -19,6 +19,6 @@ class AppointmentPolicy
         }
 
         return $user->patient?->id === $appointment->patient_id
-            || $user->doctor?->id === $appointment->doctor_id;
+            || $user->professional?->id === $appointment->professional_id;
     }
 }

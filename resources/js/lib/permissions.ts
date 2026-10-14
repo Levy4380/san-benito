@@ -1,6 +1,6 @@
 export const Permission = {
     PortalHome: 'portal.home',
-    DoctorsBrowse: 'doctors.browse',
+    ProfessionalsBrowse: 'professionals.browse',
     AppointmentsBook: 'appointments.book',
     OwnAppointmentsView: 'own.appointments.view',
     OwnAppointmentsCancel: 'own.appointments.cancel',
@@ -19,8 +19,8 @@ export const Permission = {
     AvailabilityCreate: 'availability.create',
     AvailabilityProgram: 'availability.program',
     AvailabilityDelete: 'availability.delete',
-    DoctorsCatalogView: 'doctors.catalog.view',
-    DoctorsCreate: 'doctors.create',
+    ProfessionalsCatalogView: 'professionals.catalog.view',
+    ProfessionalsCreate: 'professionals.create',
     PatientsCatalogView: 'patients.catalog.view',
     PatientsCreate: 'patients.create',
     AdminsManage: 'admins.manage',

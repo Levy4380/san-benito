@@ -61,7 +61,7 @@ export default function Register({ healthInsurances }: Props) {
                         value={data.health_insurance_id}
                         onChange={(event) => setData('health_insurance_id', event.target.value)}
                     >
-                        <option value="">Sin obra social</option>
+                        <option value="">Particular</option>
                         {healthInsurances.map((healthInsurance) => (
                             <option key={healthInsurance.id} value={healthInsurance.id}>
                                 {healthInsurance.name}

@@ -7,17 +7,17 @@ export function primaryRole(roles: RoleName[]): RoleName {
     if (roles.includes('admin')) {
         return 'admin';
     }
-    if (roles.includes('doctor')) {
-        return 'doctor';
+    if (roles.includes('professional')) {
+        return 'professional';
     }
 
     return 'patient';
 }
 
-export function canSeeAppointmentDoctor(roles: RoleName[]): boolean {
+export function canSeeAppointmentProfessional(roles: RoleName[]): boolean {
     const role = primaryRole(roles);
 
-    return role !== 'doctor';
+    return role !== 'professional';
 }
 
 export function canSeeAppointmentPatient(roles: RoleName[]): boolean {

@@ -1,3 +1,4 @@
+import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import { cn } from '@/lib/utils';
 import { ListFilter, Search } from 'lucide-react';
@@ -47,32 +48,6 @@ export default function Filters({ primary, advanced, applied = {}, onApply, list
         setOpen(true);
     };
 
-    if (open && hasAdvanced) {
-        return (
-            <form
-                key={appliedKey}
-                className={cn('mb-0 flex min-h-0 w-full flex-1 flex-col gap-[var(--space-md)]', className)}
-                onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                    event.preventDefault();
-                    applyFromForm(event.currentTarget);
-                }}
-            >
-                {Object.entries(panelPrimary).map(([name, value]) => (
-                    <input key={name} type="hidden" name={name} value={value} />
-                ))}
-                <div className="grid min-h-0 flex-1 content-start gap-[var(--space-sm)] overflow-y-auto sm:grid-cols-2">
-                    {advanced}
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-[var(--space-sm)]">
-                    <Btn type="submit">Aplicar</Btn>
-                    <Btn type="button" variant="outline" onClick={() => setOpen(false)}>
-                        Volver
-                    </Btn>
-                </div>
-            </form>
-        );
-    }
-
     return (
         <>
             <div
@@ -82,6 +57,7 @@ export default function Filters({ primary, advanced, applied = {}, onApply, list
                     className,
                 )}
             >
+                {listExtras}
                 <form
                     ref={listFormRef}
                     className={cn(
@@ -108,8 +84,34 @@ export default function Filters({ primary, advanced, applied = {}, onApply, list
                         </Btn>
                     ) : null}
                 </form>
-                {listExtras}
             </div>
+            {open && hasAdvanced ? (
+                <ConfirmDialog
+                    title="Filtros"
+                    onDismiss={() => setOpen(false)}
+                    className="max-h-[calc(100dvh-2rem)] w-[min(36rem,100%)] overflow-y-auto"
+                >
+                    <form
+                        key={appliedKey}
+                        className="mb-0 flex flex-col gap-[var(--space-md)]"
+                        onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                            event.preventDefault();
+                            applyFromForm(event.currentTarget);
+                        }}
+                    >
+                        {Object.entries(panelPrimary).map(([name, value]) => (
+                            <input key={name} type="hidden" name={name} value={value} />
+                        ))}
+                        <div className="grid content-start gap-[var(--space-sm)] sm:grid-cols-2">{advanced}</div>
+                        <div className="flex flex-wrap items-center justify-end gap-[var(--space-sm)]">
+                            <Btn type="button" variant="outline" onClick={() => setOpen(false)}>
+                                Volver
+                            </Btn>
+                            <Btn type="submit">Aplicar</Btn>
+                        </div>
+                    </form>
+                </ConfirmDialog>
+            ) : null}
             {children}
         </>
     );

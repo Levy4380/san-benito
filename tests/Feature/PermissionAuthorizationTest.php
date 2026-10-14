@@ -23,7 +23,7 @@ class PermissionAuthorizationTest extends TestCase
     public function test_roles_sync_permissions_without_direct_user_grants(): void
     {
         $this->makePatient();
-        $this->makeDoctor();
+        $this->makeProfessional();
         $this->makeAdmin();
         $this->makeSuperAdmin();
 
@@ -37,21 +37,21 @@ class PermissionAuthorizationTest extends TestCase
     public function test_create_and_associate_gets_follow_post_permissions(): void
     {
         $patient = $this->makePatient();
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $admin = $this->makeAdmin();
         $super = $this->makeSuperAdmin();
 
-        $this->actingAs($admin)->get('/admin/doctors/create')->assertOk();
-        $this->actingAs($super)->get('/admin/doctors/create')->assertOk();
-        $this->actingAs($admin)->get('/admin/admins/create')->assertRedirect('/');
-        $this->actingAs($admin)->get('/admin/patients/create')->assertRedirect('/');
-        $this->actingAs($super)->get('/admin/admins/create')->assertOk();
-        $this->actingAs($super)->get('/admin/patients/create')->assertOk();
-        $this->actingAs($super)->get('/admin/settings/specialties/create')->assertOk();
-        $this->actingAs($admin)->get('/admin/settings/specialties/create')->assertRedirect('/');
-        $this->actingAs($patient->user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
-        $this->actingAs($admin)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
-        $this->actingAs($super)->get('/doctors/'.$doctor->id.'/specialties')->assertOk();
-        $this->actingAs($doctor->user)->get('/doctors/'.$doctor->id.'/specialties')->assertRedirect('/');
+        $this->actingAs($admin)->get('/professionals/create')->assertOk();
+        $this->actingAs($super)->get('/professionals/create')->assertOk();
+        $this->actingAs($admin)->get('/admin/administradores/crear')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/patients/create')->assertRedirect('/admin');
+        $this->actingAs($super)->get('/admin/administradores/crear')->assertOk();
+        $this->actingAs($super)->get('/patients/create')->assertOk();
+        $this->actingAs($super)->get('/admin/configuracion/especialidades/crear')->assertOk();
+        $this->actingAs($admin)->get('/admin/configuracion/especialidades/crear')->assertRedirect('/admin');
+        $this->actingAs($patient->user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/paciente');
+        $this->actingAs($admin)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/admin');
+        $this->actingAs($super)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertOk();
+        $this->actingAs($professional->user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/profesional');
     }
 }

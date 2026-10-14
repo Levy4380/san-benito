@@ -44,9 +44,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function doctor(): HasOne
+    public function professional(): HasOne
     {
-        return $this->hasOne(Doctor::class);
+        return $this->hasOne(Professional::class);
     }
 
     public function patient(): HasOne

@@ -1,41 +1,45 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, History, List, NotebookPen, X } from 'lucide-react';
+import { Calendar, CalendarDays, History, NotebookPen, Undo2, X } from 'lucide-react';
 import { useState } from 'react';
+import DayTimeline from '@/Components/Calendar/DayTimeline';
+import WeekTimeline, { blocksOnDay } from '@/Components/Calendar/WeekTimeline';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
-import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
-import { useConfirm } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Empty from '@/Components/Surfaces/Empty';
 import Panel from '@/Components/Surfaces/Panel';
-import { wallDate } from '@/lib/datetime';
+import { BookingCardFields } from '@/Components/Surfaces/BookingCard';
+import { formatDateLabel, wallDate } from '@/lib/datetime';
 import type { AppointmentRecord } from '@/types';
 
 type Props = {
     appointments: AppointmentRecord[];
     today: string;
+    now: string;
 };
 
-const appointmentViews: readonly ViewSwitchOption<'list' | 'cal'>[] = [
-    { value: 'list', label: 'Lista', icon: List },
-    { value: 'cal', label: 'Calendario', icon: Calendar },
+const appointmentViews: readonly ViewSwitchOption<'week' | 'month'>[] = [
+    { value: 'week', label: 'Semanal', icon: CalendarDays },
+    { value: 'month', label: 'Mensual', icon: Calendar },
 ];
 
-const defaultAppointmentView = 'list' satisfies 'list' | 'cal';
+const defaultAppointmentView = 'week' satisfies 'week' | 'month';
 
-export default function MyAppointments({ appointments, today }: Props) {
-    const [mode, setMode] = useState<'list' | 'cal'>(defaultAppointmentView);
+export default function MyAppointments({ appointments, today, now }: Props) {
+    const [mode, setMode] = useState<'week' | 'month'>(defaultAppointmentView);
     const { ask, dialog } = useConfirm();
     const days = appointments.map((appointment) => wallDate(appointment.starts_at));
     const tones = Object.fromEntries(days.map((day) => [day, 'has' as const]));
     const [month, setMonth] = useState((days[0] ?? today).slice(0, 7) + '-01');
     const [selected, setSelected] = useState<string | null>(days[0] ?? null);
     const [mobileDayOpen, setMobileDayOpen] = useState(false);
-    const visible = mode === 'cal' && selected ? appointments.filter((appointment) => wallDate(appointment.starts_at) === selected) : appointments;
+    const [openId, setOpenId] = useState<number | null>(null);
+    const open = appointments.find((appointment) => appointment.id === openId) ?? null;
 
     const cancel = async (id: number) => {
         const ok = await ask({
@@ -45,7 +49,7 @@ export default function MyAppointments({ appointments, today }: Props) {
             danger: true,
         });
         if (ok) {
-            router.delete(`/appointments/${id}`);
+            router.delete(`/appointments/${id}`, { onSuccess: () => setOpenId(null) });
         }
     };
 
@@ -69,7 +73,23 @@ export default function MyAppointments({ appointments, today }: Props) {
         />
     );
 
-    const dayList = <AppointmentList appointments={visible} onCancel={cancel} />;
+    const dayPanel = (sheet = false) => (
+        <Panel className="h-full min-h-0" sheet={sheet} title={selected ? formatDateLabel(selected) : undefined}>
+            {selected ? (
+                <DayTimeline
+                    className="mt-[var(--space-xs)] min-h-[12rem] flex-1"
+                    date={selected}
+                    now={now}
+                    bands={[]}
+                    blocks={blocksOnDay(appointments, selected)}
+                    label={`Reservas del ${formatDateLabel(selected)}`}
+                    onBlockSelect={(key) => setOpenId(Number(key))}
+                />
+            ) : (
+                <Empty>No tenés turnos próximos.</Empty>
+            )}
+        </Panel>
+    );
 
     return (
         <>
@@ -87,19 +107,19 @@ export default function MyAppointments({ appointments, today }: Props) {
                                     value={mode}
                                     onChange={(next) => {
                                         setMode(next);
-                                        if (next === 'cal') {
+                                        if (next === 'month') {
                                             setMobileDayOpen(false);
                                         }
                                     }}
                                 />
                                 <Btn variant="outline" asChild>
-                                    <Link href="/my-appointments/history">
+                                    <Link href="/paciente/mis-turnos/historial">
                                         <History className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                         Historial de turnos
                                     </Link>
                                 </Btn>
                                 <Btn asChild>
-                                    <Link href="/book">
+                                    <Link href="/paciente/reserva">
                                         <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                         Reservar turno
                                     </Link>
@@ -110,13 +130,14 @@ export default function MyAppointments({ appointments, today }: Props) {
                 }
             >
                 <StageCard id="my-body">
-                    {mode === 'cal' ? (
+                    {mode === 'month' ? (
                         <>
                             <MobileDaySwap
                                 dayOpen={mobileDayOpen}
                                 onBackToCalendar={() => setMobileDayOpen(false)}
+                                backLabel="Mes"
                                 calendar={calendar}
-                                panel={<Panel className="h-full min-h-0">{dayList}</Panel>}
+                                panel={dayPanel()}
                             />
                             <StageCard layout="split" className="max-md:!hidden">
                                 <CalendarMonth
@@ -131,39 +152,30 @@ export default function MyAppointments({ appointments, today }: Props) {
                                         { tone: 'has', label: 'Con turnos' },
                                     ]}
                                 />
-                                <Panel sheet>{dayList}</Panel>
+                                {dayPanel(true)}
                             </StageCard>
                         </>
                     ) : (
-                        <AppointmentList appointments={visible} onCancel={cancel} />
+                        <WeekTimeline today={today} now={now} appointments={appointments} onSelect={setOpenId} />
                     )}
                 </StageCard>
             </PageScreen>
+            {open ? (
+                <ConfirmDialog title="Turno" onDismiss={() => setOpenId(null)}>
+                    <BookingCardFields appointment={open} />
+                    <div className="flex flex-wrap justify-end gap-[0.5rem]">
+                        <Btn type="button" variant="outline" onClick={() => setOpenId(null)}>
+                            <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                            Volver
+                        </Btn>
+                        <Btn type="button" variant="danger" onClick={() => cancel(open.id)}>
+                            <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                            Cancelar turno
+                        </Btn>
+                    </div>
+                </ConfirmDialog>
+            ) : null}
             {dialog}
         </>
-    );
-}
-
-function AppointmentList({ appointments, onCancel }: { appointments: AppointmentRecord[]; onCancel: (id: number) => void }) {
-    if (appointments.length === 0) {
-        return <Empty>No tenés turnos próximos.</Empty>;
-    }
-
-    return (
-        <BookingList>
-            {appointments.map((appointment) => (
-                <BookingCard key={appointment.id}>
-                    <BookingCardRow>
-                        <BookingCardFields appointment={appointment} />
-                        <BookingCardActions>
-                            <Btn type="button" variant="danger" size="xs" onClick={() => onCancel(appointment.id)}>
-                                <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />
-                                Cancelar
-                            </Btn>
-                        </BookingCardActions>
-                    </BookingCardRow>
-                </BookingCard>
-            ))}
-        </BookingList>
     );
 }

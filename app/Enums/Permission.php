@@ -7,7 +7,7 @@ use App\Models\User;
 enum Permission: string
 {
     case PortalHome = 'portal.home';
-    case DoctorsBrowse = 'doctors.browse';
+    case ProfessionalsBrowse = 'professionals.browse';
     case AppointmentsBook = 'appointments.book';
 
     case OwnAppointmentsView = 'own.appointments.view';
@@ -28,8 +28,8 @@ enum Permission: string
     case AvailabilityCreate = 'availability.create';
     case AvailabilityProgram = 'availability.program';
     case AvailabilityDelete = 'availability.delete';
-    case DoctorsCatalogView = 'doctors.catalog.view';
-    case DoctorsCreate = 'doctors.create';
+    case ProfessionalsCatalogView = 'professionals.catalog.view';
+    case ProfessionalsCreate = 'professionals.create';
     case PatientsCatalogView = 'patients.catalog.view';
     case PatientsCreate = 'patients.create';
     case AdminsManage = 'admins.manage';
@@ -64,7 +64,7 @@ enum Permission: string
     public static function forRole(string $role): array
     {
         $staff = [
-            self::DoctorsBrowse,
+            self::ProfessionalsBrowse,
             self::AppointmentsCancel,
             self::AppointmentsAssign,
             self::PatientsLink,
@@ -72,19 +72,19 @@ enum Permission: string
             self::AvailabilityProgram,
             self::AvailabilityDelete,
             self::AppointmentsCatalogView,
-            self::DoctorsCatalogView,
-            self::DoctorsCreate,
+            self::ProfessionalsCatalogView,
+            self::ProfessionalsCreate,
         ];
 
         return match ($role) {
             'patient' => [
                 self::PortalHome,
-                self::DoctorsBrowse,
+                self::ProfessionalsBrowse,
                 self::AppointmentsBook,
                 self::OwnAppointmentsView,
                 self::OwnAppointmentsCancel,
             ],
-            'doctor' => [
+            'professional' => [
                 self::PortalHome,
                 self::OwnAppointmentsCancel,
                 self::OwnAgendaView,
@@ -125,7 +125,7 @@ enum Permission: string
      */
     public static function roles(): array
     {
-        return ['patient', 'doctor', 'admin', 'super_admin'];
+        return ['patient', 'professional', 'admin', 'super_admin'];
     }
 
     public static function middleware(self $permission, self ...$more): string

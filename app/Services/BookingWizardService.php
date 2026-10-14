@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Professional;
 use App\Models\Specialty;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -11,14 +11,14 @@ use Illuminate\Support\Collection;
 class BookingWizardService
 {
     public function __construct(
-        private readonly DoctorSearchService $search,
+        private readonly ProfessionalSearchService $search,
         private readonly AvailabilityService $availability,
     ) {}
 
     /**
      * @return array<string, mixed>
      */
-    public function pageData(?string $coverage, ?int $specialtyId, ?int $doctorId, ?string $date, Patient $patient): array
+    public function pageData(?string $coverage, ?int $specialtyId, ?int $professionalId, ?string $date, Patient $patient): array
     {
         $patient->loadMissing('healthInsurances');
         $insuranceId = $patient->healthInsurances->first()?->id;
@@ -28,44 +28,44 @@ class BookingWizardService
             ? collect()
             : $this->specialtiesFor($effective, $insuranceId);
 
-        $doctors = collect();
-        $nearestDoctorId = null;
+        $professionals = collect();
+        $nearestProfessionalId = null;
 
-        if ($effective !== null && $specialtyId && $doctorId === null) {
+        if ($effective !== null && $specialtyId && $professionalId === null) {
             $found = $this->search->search($specialtyId, null, true);
 
             if ($effective === 'health_insurance' && $insuranceId !== null) {
-                $found = $this->onlyDoctorsWithInsurance($found, $insuranceId);
+                $found = $this->onlyProfessionalsWithInsurance($found, $insuranceId);
             }
 
-            [$doctors, $nearestDoctorId] = $this->doctorsWithAvailability($found);
+            [$professionals, $nearestProfessionalId] = $this->professionalsWithAvailability($found);
         }
 
-        $doctor = null;
+        $professional = null;
         $slots = collect();
         $daysWithSlots = collect();
 
-        if ($effective !== null && $doctorId) {
-            $doctor = Doctor::query()->with(['user', 'specialties'])->find($doctorId);
+        if ($effective !== null && $professionalId) {
+            $professional = Professional::query()->with(['user', 'specialties'])->find($professionalId);
 
             if (
-                $doctor
+                $professional
                 && $effective === 'health_insurance'
                 && $insuranceId !== null
-                && ! $doctor->healthInsurances()->whereKey($insuranceId)->exists()
+                && ! $professional->healthInsurances()->whereKey($insuranceId)->exists()
             ) {
-                $doctor = null;
+                $professional = null;
             }
 
-            if ($doctor) {
-                $daysWithSlots = $this->availability->upcomingDaysWithSlots($doctor, 12);
+            if ($professional) {
+                $daysWithSlots = $this->availability->upcomingDaysWithSlots($professional, 12);
                 if ($date) {
                     $start = Carbon::parse($date)->startOfDay();
                     $end = Carbon::parse($date)->endOfDay();
-                    $slots = $this->availability->nextOfferableSlotPerDay($doctor, $start, $end);
+                    $slots = $this->availability->nextOfferableSlotPerDay($professional, $start, $end);
                 } else {
                     $slots = $this->availability->nextOfferableSlotPerDay(
-                        $doctor,
+                        $professional,
                         now(),
                         now()->addDays(60)->endOfDay(),
                     )->take(12)->values();
@@ -75,17 +75,17 @@ class BookingWizardService
 
         return [
             'specialties' => $specialties,
-            'doctors' => $doctors,
-            'nearest_doctor_id' => $nearestDoctorId,
-            'doctor' => $doctor,
+            'professionals' => $professionals,
+            'nearest_professional_id' => $nearestProfessionalId,
+            'professional' => $professional,
             'slots' => $slots,
             'daysWithSlots' => $daysWithSlots,
             'has_health_insurance' => $insuranceId !== null,
             'filters' => [
                 'coverage' => $effective,
                 'specialty_id' => $effective ? $specialtyId : null,
-                'doctor_id' => $doctor?->id,
-                'date' => $doctor ? $date : null,
+                'professional_id' => $professional?->id,
+                'date' => $professional ? $date : null,
             ],
         ];
     }
@@ -110,8 +110,8 @@ class BookingWizardService
     {
         if ($coverage === 'health_insurance' && $insuranceId !== null) {
             return Specialty::query()
-                ->whereHas('doctors', function ($doctors) use ($insuranceId): void {
-                    $doctors->whereHas('healthInsurances', function ($insurances) use ($insuranceId): void {
+                ->whereHas('professionals', function ($professionals) use ($insuranceId): void {
+                    $professionals->whereHas('healthInsurances', function ($insurances) use ($insuranceId): void {
                         $insurances->whereKey($insuranceId);
                     });
                 })
@@ -119,59 +119,59 @@ class BookingWizardService
                 ->get();
         }
 
-        return $this->search->specialties(onlyWithDoctors: true);
+        return $this->search->specialties(onlyWithProfessionals: true);
     }
 
     /**
-     * @param  Collection<int, Doctor>  $doctors
-     * @return Collection<int, Doctor>
+     * @param  Collection<int, Professional>  $professionals
+     * @return Collection<int, Professional>
      */
-    private function onlyDoctorsWithInsurance(Collection $doctors, int $insuranceId): Collection
+    private function onlyProfessionalsWithInsurance(Collection $professionals, int $insuranceId): Collection
     {
-        if ($doctors->isEmpty()) {
-            return $doctors;
+        if ($professionals->isEmpty()) {
+            return $professionals;
         }
 
-        $allowed = Doctor::query()
-            ->whereKey($doctors->modelKeys())
+        $allowed = Professional::query()
+            ->whereKey($professionals->modelKeys())
             ->whereHas('healthInsurances', function ($insurances) use ($insuranceId): void {
                 $insurances->whereKey($insuranceId);
             })
             ->pluck('id');
 
-        return $doctors->whereIn('id', $allowed->all())->values();
+        return $professionals->whereIn('id', $allowed->all())->values();
     }
 
     /**
-     * Doctors with at least one free calculated slot (60-day horizon), nearest first.
+     * Professionals with at least one free calculated slot (60-day horizon), nearest first.
      *
-     * @param  Collection<int, Doctor>  $doctors
-     * @return array{0: Collection<int, Doctor>, 1: ?int}
+     * @param  Collection<int, Professional>  $professionals
+     * @return array{0: Collection<int, Professional>, 1: ?int}
      */
-    private function doctorsWithAvailability(Collection $doctors): array
+    private function professionalsWithAvailability(Collection $professionals): array
     {
         $nearestId = null;
         $nearestAt = null;
         $withSlots = collect();
 
-        foreach ($doctors as $doctor) {
-            $startsAt = $this->availability->nextAvailableStartsAt($doctor);
+        foreach ($professionals as $professional) {
+            $startsAt = $this->availability->nextAvailableStartsAt($professional);
 
             if ($startsAt === null) {
                 continue;
             }
 
-            $withSlots->push($doctor);
+            $withSlots->push($professional);
 
             if ($nearestAt === null || $startsAt < $nearestAt) {
                 $nearestAt = $startsAt;
-                $nearestId = $doctor->id;
+                $nearestId = $professional->id;
             }
         }
 
         if ($nearestId !== null) {
             $withSlots = $withSlots
-                ->sortBy(fn (Doctor $doctor): int => $doctor->id === $nearestId ? 0 : 1)
+                ->sortBy(fn (Professional $professional): int => $professional->id === $nearestId ? 0 : 1)
                 ->values();
         }
 

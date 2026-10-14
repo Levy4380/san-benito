@@ -104,7 +104,7 @@ export default function Login({ status, canResetPassword, demoAccounts = [] }: P
                                 { value: '', label: 'Elegí una cuenta' },
                                 ...demoAccounts.map((account) => ({
                                     value: account.email,
-                                    label: `${account.role} · ${account.name}`,
+                                    label: `${account.name} · Rol: ${account.role}`,
                                 })),
                             ]}
                         />

@@ -25,7 +25,7 @@ export default function AdminAdminCreate() {
                     <PageHeader
                         title="Administradores"
                         description="Alta de admins. Solo super admin."
-                        backHref="/admin/admins"
+                        backHref="/admin/administradores"
                         backLabel="Administradores"
                     />
                 }
@@ -36,7 +36,7 @@ export default function AdminAdminCreate() {
                             className="grid min-h-0 flex-1 content-start overflow-auto"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                form.post('/admin/admins');
+                                form.post('/admins');
                             }}
                         >
                             <Field label="Nombre" htmlFor="name">

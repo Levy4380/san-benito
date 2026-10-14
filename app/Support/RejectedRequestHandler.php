@@ -31,9 +31,11 @@ class RejectedRequestHandler
             'errors' => $e instanceof ValidationException ? $e->errors() : null,
         ]);
 
-        if ($status === 403 && $this->shouldRedirectHome($request)) {
+        $user = $request->user();
+
+        if ($status === 403 && $user !== null && $this->shouldRedirectHome($request)) {
             return redirect()
-                ->to(RoleRedirector::home(), 303)
+                ->to(RoleRedirector::landing($user), 303)
                 ->header('Cache-Control', 'no-store, private');
         }
 

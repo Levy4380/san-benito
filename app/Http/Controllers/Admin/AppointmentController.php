@@ -13,7 +13,7 @@ class AppointmentController extends Controller
     public function index(Request $request, AdminAppointmentService $appointments): Response
     {
         $filters = [
-            'doctor_id' => $request->integer('doctor_id') ?: null,
+            'professional_id' => $request->integer('professional_id') ?: null,
             'patient_id' => $request->integer('patient_id') ?: null,
             'specialty_id' => $request->integer('specialty_id') ?: null,
             'date' => $request->filled('date') ? $request->string('date')->toString() : null,

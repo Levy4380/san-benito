@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Enums\Permission;
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -13,15 +13,15 @@ use Illuminate\Validation\ValidationException;
 
 class AvailabilityWindowService
 {
-    public function createShortWindow(Doctor $doctor, string $startsAt): AvailabilityWindow
+    public function createShortWindow(Professional $professional, string $startsAt): AvailabilityWindow
     {
         $start = Carbon::parse($startsAt);
-        $end = $start->copy()->addMinutes((int) $doctor->slot_duration_minutes);
+        $end = $start->copy()->addMinutes((int) $professional->slot_duration_minutes);
 
-        $this->assertValidWindow($doctor, $start, $end);
+        $this->assertValidWindow($professional, $start, $end);
 
         return AvailabilityWindow::query()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => $start,
             'ends_at' => $end,
         ]);
@@ -32,7 +32,7 @@ class AvailabilityWindowService
      * @param  list<array{start: string, end: string}>  $ranges  HH:mm
      * @return list<AvailabilityWindow>
      */
-    public function program(Doctor $doctor, array $dates, array $ranges, bool $blockWeekends): array
+    public function program(Professional $professional, array $dates, array $ranges, bool $blockWeekends): array
     {
         $dates = collect($dates)
             ->map(fn (string $date) => Carbon::parse($date)->toDateString())
@@ -64,7 +64,7 @@ class AvailabilityWindowService
         }
 
         foreach ($planned as $index => $window) {
-            $this->assertValidWindow($doctor, $window['starts_at'], $window['ends_at']);
+            $this->assertValidWindow($professional, $window['starts_at'], $window['ends_at']);
 
             foreach ($planned as $otherIndex => $other) {
                 if ($otherIndex === $index) {
@@ -79,12 +79,12 @@ class AvailabilityWindowService
             }
         }
 
-        return DB::transaction(function () use ($doctor, $planned) {
+        return DB::transaction(function () use ($professional, $planned) {
             $created = [];
 
             foreach ($planned as $window) {
                 $created[] = AvailabilityWindow::query()->create([
-                    'doctor_id' => $doctor->id,
+                    'professional_id' => $professional->id,
                     'starts_at' => $window['starts_at'],
                     'ends_at' => $window['ends_at'],
                 ]);
@@ -97,7 +97,7 @@ class AvailabilityWindowService
     public function delete(AvailabilityWindow $window): void
     {
         $hasAppointments = Appointment::query()
-            ->forDoctor($window->doctor_id)
+            ->forProfessional($window->professional_id)
             ->overlapping($window->starts_at, $window->ends_at)
             ->exists();
 
@@ -110,7 +110,7 @@ class AvailabilityWindowService
         $window->delete();
     }
 
-    public function assertOwnedBy(User $user, Doctor $doctor, Permission $ability): void
+    public function assertOwnedBy(User $user, Professional $professional, Permission $ability): void
     {
         if ($ability->allows($user)) {
             return;
@@ -118,14 +118,14 @@ class AvailabilityWindowService
 
         $own = $ability->own();
 
-        if ($own !== null && $own->allows($user) && $user->doctor?->is($doctor)) {
+        if ($own !== null && $own->allows($user) && $user->professional?->is($professional)) {
             return;
         }
 
         abort(403);
     }
 
-    private function assertValidWindow(Doctor $doctor, Carbon $start, Carbon $end): void
+    private function assertValidWindow(Professional $professional, Carbon $start, Carbon $end): void
     {
         if (! $end->gt($start)) {
             throw ValidationException::withMessages([
@@ -135,14 +135,14 @@ class AvailabilityWindowService
 
         $minutes = (int) $start->diffInMinutes($end, false);
 
-        if ($minutes < (int) $doctor->slot_duration_minutes) {
+        if ($minutes < (int) $professional->slot_duration_minutes) {
             throw ValidationException::withMessages([
                 'ends_at' => 'Cada franja debe admitir al menos un turno.',
             ]);
         }
 
         $overlaps = AvailabilityWindow::query()
-            ->forDoctor($doctor)
+            ->forProfessional($professional)
             ->overlapping($start, $end)
             ->exists();
 

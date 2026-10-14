@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Doctor;
+use App\Models\Professional;
 use App\Models\Specialty;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,29 +16,29 @@ class SpecialtyService
     public function list(): Collection
     {
         return Specialty::query()
-            ->withCount('doctors')
+            ->withCount('professionals')
             ->orderBy('name')
             ->get();
     }
 
     /**
-     * @return array{specialty: array{id: int, name: string}, doctors: list<array{id: int, name: string, assigned: bool}>}
+     * @return array{specialty: array{id: int, name: string}, professionals: list<array{id: int, name: string, assigned: bool}>}
      */
     public function editForm(Specialty $specialty): array
     {
-        $assigned = $specialty->doctors()->pluck('doctors.id')->all();
+        $assigned = $specialty->professionals()->pluck('professionals.id')->all();
         $assignedSet = array_flip($assigned);
 
-        $doctors = Doctor::query()
+        $professionals = Professional::query()
             ->with('user')
-            ->join('users', 'users.id', '=', 'doctors.user_id')
+            ->join('users', 'users.id', '=', 'professionals.user_id')
             ->orderBy('users.name')
-            ->select('doctors.*')
+            ->select('professionals.*')
             ->get()
-            ->map(fn (Doctor $doctor): array => [
-                'id' => $doctor->id,
-                'name' => $doctor->user->name,
-                'assigned' => isset($assignedSet[$doctor->id]),
+            ->map(fn (Professional $professional): array => [
+                'id' => $professional->id,
+                'name' => $professional->user->name,
+                'assigned' => isset($assignedSet[$professional->id]),
             ])
             ->all();
 
@@ -47,7 +47,7 @@ class SpecialtyService
                 'id' => $specialty->id,
                 'name' => $specialty->name,
             ],
-            'doctors' => $doctors,
+            'professionals' => $professionals,
         ];
     }
 
@@ -62,7 +62,7 @@ class SpecialtyService
     }
 
     /**
-     * @param  array{name: string, doctor_ids?: list<int>}  $data
+     * @param  array{name: string, professional_ids?: list<int>}  $data
      */
     public function update(Specialty $specialty, array $data): Specialty
     {
@@ -71,8 +71,8 @@ class SpecialtyService
                 'name' => $data['name'],
             ]);
 
-            if (array_key_exists('doctor_ids', $data)) {
-                $specialty->doctors()->sync($data['doctor_ids']);
+            if (array_key_exists('professional_ids', $data)) {
+                $specialty->professionals()->sync($data['professional_ids']);
             }
 
             return $specialty;

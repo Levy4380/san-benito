@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Professional;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -41,10 +41,10 @@ class DemoScheduleSeeder extends Seeder
         $this->ensureExtraPatients();
 
         $patients = Patient::query()->get();
-        $doctors = Doctor::query()->with('specialties')->get();
+        $professionals = Professional::query()->with('specialties')->get();
 
-        foreach ($doctors as $index => $doctor) {
-            $this->seedDoctor($doctor, $patients, $index);
+        foreach ($professionals as $index => $professional) {
+            $this->seedProfessional($professional, $patients, $index);
         }
     }
 
@@ -60,10 +60,10 @@ class DemoScheduleSeeder extends Seeder
     /**
      * @param  Collection<int, Patient>  $patients
      */
-    private function seedDoctor(Doctor $doctor, Collection $patients, int $index): void
+    private function seedProfessional(Professional $professional, Collection $patients, int $index): void
     {
-        $duration = (int) $doctor->slot_duration_minutes;
-        $specialtyIds = $doctor->specialties->pluck('id')->all();
+        $duration = (int) $professional->slot_duration_minutes;
+        $specialtyIds = $professional->specialties->pluck('id')->all();
         $today = now()->startOfDay();
 
         for ($offset = -self::DAYS_BACK; $offset <= self::DAYS_AHEAD; $offset++) {
@@ -75,7 +75,7 @@ class DemoScheduleSeeder extends Seeder
 
             foreach ($this->rangesFor($day, $index) as [$from, $to]) {
                 $window = AvailabilityWindow::query()->create([
-                    'doctor_id' => $doctor->id,
+                    'professional_id' => $professional->id,
                     'starts_at' => $day->copy()->setTimeFromTimeString($from),
                     'ends_at' => $day->copy()->setTimeFromTimeString($to),
                 ]);
@@ -84,7 +84,7 @@ class DemoScheduleSeeder extends Seeder
                     continue;
                 }
 
-                $this->bookWindow($doctor, $window, $duration, $patients, $specialtyIds);
+                $this->bookWindow($professional, $window, $duration, $patients, $specialtyIds);
             }
         }
     }
@@ -109,7 +109,7 @@ class DemoScheduleSeeder extends Seeder
      * @param  Collection<int, Patient>  $patients
      * @param  list<int>  $specialtyIds
      */
-    private function bookWindow(Doctor $doctor, AvailabilityWindow $window, int $duration, Collection $patients, array $specialtyIds): void
+    private function bookWindow(Professional $professional, AvailabilityWindow $window, int $duration, Collection $patients, array $specialtyIds): void
     {
         $cursor = $window->starts_at->copy();
 
@@ -118,14 +118,14 @@ class DemoScheduleSeeder extends Seeder
                 $patient = $patients->random();
 
                 Appointment::query()->create([
-                    'doctor_id' => $doctor->id,
+                    'professional_id' => $professional->id,
                     'patient_id' => $patient->id,
                     'specialty_id' => $specialtyIds[array_rand($specialtyIds)],
                     'starts_at' => $cursor->copy(),
                     'ends_at' => $cursor->copy()->addMinutes($duration),
                 ]);
 
-                $doctor->patients()->syncWithoutDetaching([$patient->id]);
+                $professional->patients()->syncWithoutDetaching([$patient->id]);
             }
 
             $cursor->addMinutes($duration);

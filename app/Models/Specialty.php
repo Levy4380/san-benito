@@ -20,9 +20,9 @@ class Specialty extends Model
         'name',
     ];
 
-    public function doctors(): BelongsToMany
+    public function professionals(): BelongsToMany
     {
-        return $this->belongsToMany(Doctor::class, 'doctor_specialty')->withTimestamps();
+        return $this->belongsToMany(Professional::class, 'professional_specialty')->withTimestamps();
     }
 
     public function appointments(): HasMany

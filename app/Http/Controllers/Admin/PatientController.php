@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminPatientRequest;
 use App\Http\Requests\Admin\UpdatePatientHealthInsuranceRequest;
 use App\Models\Patient;
-use App\Services\DoctorPatientService;
 use App\Services\HealthInsuranceService;
 use App\Services\PatientService;
+use App\Services\ProfessionalPatientService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,21 +17,24 @@ use Inertia\Response;
 
 class PatientController extends Controller
 {
-    public function index(Request $request, PatientService $patients): Response
+    public function index(Request $request, PatientService $patients, HealthInsuranceService $healthInsurances): Response
     {
         $term = $request->input('q');
+        $insurance = $patients->parseHealthInsuranceFilter($request->input('health_insurance_id'));
 
         return Inertia::render('Admin/Patients', [
-            'patients' => $patients->list(is_string($term) ? $term : null),
+            'patients' => $patients->list(is_string($term) ? $term : null, $insurance['id']),
+            'healthInsurances' => $healthInsurances->options(),
             'filters' => [
                 'q' => is_string($term) ? $term : '',
+                'health_insurance_id' => $insurance['value'],
             ],
         ]);
     }
 
-    public function create(HealthInsuranceService $healthInsurances): Response
+    public function create(HealthInsuranceService $healthInsurances): JsonResponse
     {
-        return Inertia::render('Admin/PatientCreate', [
+        return response()->json([
             'healthInsurances' => $healthInsurances->options(),
         ]);
     }
@@ -55,7 +59,7 @@ class PatientController extends Controller
             ]);
     }
 
-    public function show(Patient $patient, DoctorPatientService $links, HealthInsuranceService $healthInsurances): Response
+    public function show(Patient $patient, ProfessionalPatientService $links, HealthInsuranceService $healthInsurances): Response
     {
         $profile = $links->profile($patient);
 

@@ -29,7 +29,7 @@ export default function AgendaSettings({ slot_duration_minutes }: Props) {
                     as="form"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        form.patch('/settings/agenda');
+                        form.patch('/agenda/settings');
                     }}
                 >
                     <Field label="Duración del turno (minutos)" htmlFor="slot_duration_minutes">

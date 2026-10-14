@@ -46,7 +46,7 @@ export default function AdminAdmins({ users, filters }: Props) {
     const hasFilters = filters.q.trim() !== '';
 
     const apply = (data: FilterValues) => {
-        router.get('/admin/admins', data, { preserveState: true });
+        router.get('/admin/administradores', data, { preserveState: true });
     };
 
     return (
@@ -59,7 +59,7 @@ export default function AdminAdmins({ users, filters }: Props) {
                         description="Alta de admins. Solo super admin."
                         actions={
                             <Btn asChild>
-                                <Link href="/admin/admins/create">
+                                <Link href="/admin/administradores/crear">
                                     <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Crear administrador
                                 </Link>
@@ -78,8 +78,8 @@ export default function AdminAdmins({ users, filters }: Props) {
                             lines: [user.email, staffRoleLabel(user.roles)],
                         }))}
                         primary={
-                            <Field label="Nombre o correo" htmlFor="q" flush className="min-w-0">
-                                <TextInput id="q" name="q" defaultValue={filters.q} />
+                            <Field label="Buscar" htmlFor="q" flush className="min-w-0">
+                                <TextInput id="q" name="q" defaultValue={filters.q} placeholder="Nombre o correo" />
                             </Field>
                         }
                     />

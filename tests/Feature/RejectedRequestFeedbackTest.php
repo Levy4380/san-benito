@@ -28,16 +28,16 @@ class RejectedRequestFeedbackTest extends TestCase
             $logged[] = $event;
         });
 
-        $doctor = $this->makeDoctor();
+        $professional = $this->makeProfessional();
         $start = now()->next(Carbon::WEDNESDAY)->setTime(9, 0, 0);
         AvailabilityWindow::factory()->create([
-            'doctor_id' => $doctor->id,
+            'professional_id' => $professional->id,
             'starts_at' => $start,
             'ends_at' => $start->copy()->addHour(),
         ]);
 
-        $this->actingAs($doctor->user)
-            ->from('/agenda/program')
+        $this->actingAs($professional->user)
+            ->from('/profesional/programar')
             ->post('/agenda/program', [
                 'dates' => [$start->toDateString()],
                 'ranges' => [['start' => '09:00', 'end' => '10:00']],
@@ -74,7 +74,7 @@ class RejectedRequestFeedbackTest extends TestCase
                 'ranges' => [['start' => '09:00', 'end' => '10:00']],
                 'block_weekends' => false,
             ])
-            ->assertRedirect('/');
+            ->assertRedirect('/paciente');
 
         $this->assertTrue(
             collect($logged)->contains(

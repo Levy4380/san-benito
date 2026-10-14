@@ -12,15 +12,16 @@ type Props = {
     /** Patient profile URL; omit to hide «Ver paciente» */
     profileHref?: string | null;
     canCancel: boolean;
+    cancelHref: string;
     onDismiss: () => void;
 };
 
-export default function TimelineAppointmentDialog({ appointment, profileHref, canCancel, onDismiss }: Props) {
+export default function TimelineAppointmentDialog({ appointment, profileHref, canCancel, cancelHref, onDismiss }: Props) {
     const [cancelling, setCancelling] = useState(false);
     const patientName = appointment.patient?.name ?? 'Paciente';
 
     const cancel = () => {
-        router.delete(`/appointments/${appointment.id}`, {
+        router.delete(cancelHref, {
             preserveScroll: true,
             onStart: () => setCancelling(true),
             onFinish: () => setCancelling(false),

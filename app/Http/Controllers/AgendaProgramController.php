@@ -6,7 +6,7 @@ use App\Enums\Permission;
 use App\Http\Requests\ProgramAvailabilityWindowsRequest;
 use App\Services\AgendaService;
 use App\Services\AvailabilityWindowService;
-use App\Services\DoctorService;
+use App\Services\ProfessionalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,33 +14,33 @@ use Inertia\Response;
 
 class AgendaProgramController extends Controller
 {
-    public function create(Request $request, DoctorService $doctors, AgendaService $agenda): Response
+    public function create(Request $request, ProfessionalService $professionals, AgendaService $agenda): Response
     {
-        $doctor = $doctors->forUser($request->user());
+        $professional = $professionals->forUser($request->user());
 
-        return Inertia::render('Doctor/Program', [
-            'doctor' => $doctor->load(['user', 'specialties']),
-            'tones' => $agenda->tonesForNearbyMonths($doctor),
+        return Inertia::render('Professional/Program', [
+            'professional' => $professional->load(['user', 'specialties']),
+            'tones' => $agenda->tonesForNearbyMonths($professional),
         ]);
     }
 
     public function store(
         ProgramAvailabilityWindowsRequest $request,
-        DoctorService $doctors,
+        ProfessionalService $professionals,
         AvailabilityWindowService $windows,
     ): RedirectResponse {
-        $doctor = $doctors->forUser($request->user());
-        $windows->assertOwnedBy($request->user(), $doctor, Permission::AvailabilityProgram);
+        $professional = $professionals->forUser($request->user());
+        $windows->assertOwnedBy($request->user(), $professional, Permission::AvailabilityProgram);
         $data = $request->validated();
 
         $windows->program(
-            $doctor,
+            $professional,
             $data['dates'],
             $data['ranges'],
             (bool) ($data['block_weekends'] ?? false),
         );
 
-        return redirect()->route('agenda')->with('toast', [
+        return redirect()->route('professional.agenda')->with('toast', [
             'message' => 'Programaste las franjas.',
             'variant' => 'ok',
         ]);

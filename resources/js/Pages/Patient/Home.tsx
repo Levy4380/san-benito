@@ -22,13 +22,13 @@ export default function PatientHome({ upcoming }: Props) {
                 <HomeHero title={`Hola, ${firstName(auth.user?.name ?? '')}`} subtitle="¿Cómo podemos ayudarte hoy?">
                     <HomeStartPrimary>
                         <Btn prominence="cta" asChild>
-                            <Link href="/book">
+                            <Link href="/paciente/reserva">
                                 <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Reservar turno
                             </Link>
                         </Btn>
                         <Btn variant="outline" prominence="cta" asChild>
-                            <Link href="/doctors">
+                            <Link href="/paciente/profesionales">
                                 <Search className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Buscar profesionales
                             </Link>
@@ -37,7 +37,7 @@ export default function PatientHome({ upcoming }: Props) {
                     <HomeUpcoming
                         actions={
                             <Btn variant="outline" size="sm" asChild>
-                                <Link href="/my-appointments">
+                                <Link href="/paciente/mis-turnos">
                                     <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                     Ver turnos
                                 </Link>

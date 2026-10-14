@@ -17,6 +17,7 @@ class MyAppointmentsController extends Controller
         return Inertia::render('Appointments/Index', [
             'appointments' => $appointments->upcomingForPatient($patient),
             'today' => now()->toDateString(),
+            'now' => now()->format('Y-m-d H:i:s'),
         ]);
     }
 

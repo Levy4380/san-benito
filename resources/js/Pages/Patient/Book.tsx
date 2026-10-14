@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
-import { Calendar, List, NotebookPen } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar, List, NotebookPen, Search } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
@@ -8,6 +8,8 @@ import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
+import Field from '@/Components/Form/Field';
+import TextInput from '@/Components/Form/TextInput';
 import CatalogCard from '@/Components/Surfaces/CatalogCard';
 import Empty from '@/Components/Surfaces/Empty';
 import ListRow from '@/Components/Surfaces/ListRow';
@@ -18,7 +20,7 @@ import StepPills from '@/Components/Common/StepPills';
 import { wallTime } from '@/lib/datetime';
 import { specialtyNames } from '@/lib/specialties';
 import { cn } from '@/lib/utils';
-import type { DoctorRecord, Slot, Specialty } from '@/types';
+import type { ProfessionalRecord, Slot, Specialty } from '@/types';
 
 const scheduleViews: readonly ViewSwitchOption<'list' | 'cal'>[] = [
     { value: 'list', label: 'Lista', icon: List },
@@ -31,42 +33,44 @@ type Coverage = 'particular' | 'health_insurance';
 
 type Props = {
     specialties: Specialty[];
-    doctors: DoctorRecord[];
-    nearest_doctor_id: number | null;
-    doctor: DoctorRecord | null;
+    professionals: ProfessionalRecord[];
+    nearest_professional_id: number | null;
+    professional: ProfessionalRecord | null;
     slots: Slot[];
     daysWithSlots: string[];
     has_health_insurance: boolean;
-    filters: { coverage: Coverage | null; specialty_id: number | null; doctor_id: number | null; date: string | null };
+    filters: { coverage: Coverage | null; specialty_id: number | null; professional_id: number | null; date: string | null };
 };
 
 export default function Book({
     specialties,
-    doctors,
-    nearest_doctor_id,
-    doctor,
+    professionals,
+    nearest_professional_id,
+    professional,
     slots,
     daysWithSlots,
     has_health_insurance,
     filters,
 }: Props) {
-    const step = !filters.coverage ? 'coverage' : !filters.specialty_id ? 'specialty' : !filters.doctor_id ? 'doctor' : 'horario';
+    const step = !filters.coverage ? 'coverage' : !filters.specialty_id ? 'specialty' : !filters.professional_id ? 'professional' : 'horario';
+    const [specialtyQuery, setSpecialtyQuery] = useState('');
+    const [professionalQuery, setProfessionalQuery] = useState('');
     const [mode, setMode] = useState<'list' | 'cal'>(defaultScheduleView);
     const [mobileDayOpen, setMobileDayOpen] = useState(Boolean(filters.date));
     const [month, setMonth] = useState((filters.date ?? daysWithSlots[0] ?? new Date().toISOString().slice(0, 10)).slice(0, 7) + '-01');
     const tones = Object.fromEntries((daysWithSlots ?? []).map((day) => [day, 'has' as const]));
     const backHref =
         step === 'specialty'
-            ? '/book'
-            : step === 'doctor' && filters.coverage
-              ? `/book?coverage=${filters.coverage}`
+            ? '/paciente/reserva'
+            : step === 'professional' && filters.coverage
+              ? `/paciente/reserva?coverage=${filters.coverage}`
               : step === 'horario' && filters.coverage && filters.specialty_id
-                ? `/book?coverage=${filters.coverage}&specialty_id=${filters.specialty_id}`
+                ? `/paciente/reserva?coverage=${filters.coverage}&specialty_id=${filters.specialty_id}`
                 : undefined;
 
     const go = (query: Record<string, string | number>) => {
         router.get(
-            '/book',
+            '/paciente/reserva',
             {
                 ...(filters.coverage ? { coverage: filters.coverage } : {}),
                 ...query,
@@ -89,7 +93,7 @@ export default function Book({
                                 steps={[
                                     { key: 'coverage', label: 'Cobertura' },
                                     { key: 'specialty', label: 'Especialidad' },
-                                    { key: 'doctor', label: 'Doctor' },
+                                    { key: 'professional', label: 'Profesional' },
                                     { key: 'horario', label: 'Horario' },
                                 ]}
                                 current={step}
@@ -101,64 +105,79 @@ export default function Book({
                 <StageCard id="book-body">
                     {step === 'coverage' ? (
                         <Results>
-                            <ResultList>
-                                <ListRow as="button" onClick={() => go({ coverage: 'particular' })}>
-                                    Particular
-                                </ListRow>
-                                {has_health_insurance ? (
-                                    <ListRow as="button" onClick={() => go({ coverage: 'health_insurance' })}>
-                                        Obra social
-                                    </ListRow>
-                                ) : null}
-                            </ResultList>
+                            <StepTitle>Elegí qué cobertura:</StepTitle>
+                            <div className="flex min-h-0 flex-1 items-center justify-center">
+                                <div className="grid w-full max-w-[24rem] grid-cols-2 gap-[var(--space-sm)]">
+                                    <CoverageCard label="Particular" onClick={() => go({ coverage: 'particular' })} />
+                                    <CoverageCard
+                                        label="Prepaga"
+                                        disabled={!has_health_insurance}
+                                        onClick={() => go({ coverage: 'health_insurance' })}
+                                    />
+                                </div>
+                            </div>
                         </Results>
                     ) : null}
                     {step === 'specialty' ? (
                         <Results>
+                            <StepTitle>Elegí tu especialidad:</StepTitle>
                             {specialties.length === 0 ? (
                                 <Empty>No hay especialidades con profesionales.</Empty>
                             ) : (
-                                <ResultList>
-                                    {specialties.map((specialty) => (
-                                        <ListRow key={specialty.id} as="button" onClick={() => go({ specialty_id: specialty.id })}>
-                                            {specialty.name}
-                                        </ListRow>
-                                    ))}
-                                </ResultList>
+                                <>
+                                    <NameSearch id="specialty-search" value={specialtyQuery} onChange={setSpecialtyQuery} />
+                                    <FilteredList
+                                        items={specialties.filter((specialty) => matchesQuery(specialty.name, specialtyQuery))}
+                                        empty="Ninguna especialidad coincide."
+                                        render={(specialty) => (
+                                            <ListRow key={specialty.id} as="button" onClick={() => go({ specialty_id: specialty.id })}>
+                                                {specialty.name}
+                                            </ListRow>
+                                        )}
+                                    />
+                                </>
                             )}
                         </Results>
                     ) : null}
-                    {step === 'doctor' ? (
+                    {step === 'professional' ? (
                         <Results>
-                            {doctors.length === 0 ? (
+                            <StepTitle>Elegí el profesional:</StepTitle>
+                            {professionals.length === 0 ? (
                                 <Empty>No hay profesionales con turnos disponibles.</Empty>
                             ) : (
-                                <ResultList>
-                                    {doctors.map((item) => (
-                                        <CatalogCard
-                                            key={item.id}
-                                            className={cn(
-                                                'flex-row items-center justify-between gap-[var(--space-sm)]',
-                                                item.id === nearest_doctor_id && 'border-accent bg-accent/[0.06]',
-                                            )}
-                                            onClick={() => go({ specialty_id: filters.specialty_id ?? '', doctor_id: item.id })}
-                                        >
-                                            <div className="flex min-w-0 flex-1 flex-col gap-[0.65rem]">
-                                                <strong>{item.user.name}</strong>
-                                                <span>{specialtyNames(item.specialties)}</span>
-                                            </div>
-                                            {item.id === nearest_doctor_id ? (
-                                                <span className="shrink-0 self-center text-right !font-medium !text-accent">
-                                                    Turno más cercano
-                                                </span>
-                                            ) : null}
-                                        </CatalogCard>
-                                    ))}
-                                </ResultList>
+                                <>
+                                    <NameSearch id="professional-search" value={professionalQuery} onChange={setProfessionalQuery} />
+                                    <FilteredList
+                                        items={professionals.filter((item) =>
+                                            matchesQuery(`${item.user.name} ${specialtyNames(item.specialties)}`, professionalQuery),
+                                        )}
+                                        empty="Ningún profesional coincide."
+                                        render={(item) => (
+                                            <CatalogCard
+                                                key={item.id}
+                                                className={cn(
+                                                    'flex-row items-center justify-between gap-[var(--space-sm)]',
+                                                    item.id === nearest_professional_id && 'border-accent bg-accent/[0.06]',
+                                                )}
+                                                onClick={() => go({ specialty_id: filters.specialty_id ?? '', professional_id: item.id })}
+                                            >
+                                                <div className="flex min-w-0 flex-1 flex-col gap-[0.65rem]">
+                                                    <strong>{item.user.name}</strong>
+                                                    <span>{specialtyNames(item.specialties)}</span>
+                                                </div>
+                                                {item.id === nearest_professional_id ? (
+                                                    <span className="shrink-0 self-center text-right !font-medium !text-accent">
+                                                        Turno más cercano
+                                                    </span>
+                                                ) : null}
+                                            </CatalogCard>
+                                        )}
+                                    />
+                                </>
                             )}
                         </Results>
                     ) : null}
-                    {step === 'horario' && doctor ? (
+                    {step === 'horario' && professional ? (
                         <>
                             <ViewSwitch
                                 className="mb-3 self-start"
@@ -170,7 +189,7 @@ export default function Book({
                                     if (next === 'list' && filters.date) {
                                         go({
                                             specialty_id: filters.specialty_id ?? '',
-                                            doctor_id: doctor.id,
+                                            professional_id: professional.id,
                                         });
                                     }
                                 }}
@@ -183,7 +202,7 @@ export default function Book({
                                             setMobileDayOpen(false);
                                             go({
                                                 specialty_id: filters.specialty_id ?? '',
-                                                doctor_id: doctor.id,
+                                                professional_id: professional.id,
                                             });
                                         }}
                                         calendar={
@@ -195,7 +214,7 @@ export default function Book({
                                                     setMobileDayOpen(true);
                                                     go({
                                                         specialty_id: filters.specialty_id ?? '',
-                                                        doctor_id: doctor.id,
+                                                        professional_id: professional.id,
                                                         date,
                                                     });
                                                 }}
@@ -210,7 +229,7 @@ export default function Book({
                                             <Panel className="h-full min-h-0">
                                                 <SlotList
                                                     slots={filters.date ? slots : []}
-                                                    doctorId={doctor.id}
+                                                    professionalId={professional.id}
                                                     specialtyId={filters.specialty_id}
                                                 />
                                             </Panel>
@@ -224,7 +243,7 @@ export default function Book({
                                             onSelect={(date) =>
                                                 go({
                                                     specialty_id: filters.specialty_id ?? '',
-                                                    doctor_id: doctor.id,
+                                                    professional_id: professional.id,
                                                     date,
                                                 })
                                             }
@@ -237,14 +256,14 @@ export default function Book({
                                         <Panel sheet>
                                             <SlotList
                                                 slots={filters.date ? slots : []}
-                                                doctorId={doctor.id}
+                                                professionalId={professional.id}
                                                 specialtyId={filters.specialty_id}
                                             />
                                         </Panel>
                                     </StageCard>
                                 </>
                             ) : (
-                                <SlotList slots={slots.slice(0, 40)} doctorId={doctor.id} specialtyId={filters.specialty_id} />
+                                <SlotList slots={slots.slice(0, 40)} professionalId={professional.id} specialtyId={filters.specialty_id} />
                             )}
                         </>
                     ) : null}
@@ -254,7 +273,52 @@ export default function Book({
     );
 }
 
-function SlotList({ slots, doctorId, specialtyId }: { slots: Slot[]; doctorId: number; specialtyId: number | null }) {
+function CoverageCard({ label, disabled = false, onClick }: { label: string; disabled?: boolean; onClick: () => void }) {
+    return (
+        <CatalogCard
+            disabled={disabled}
+            className="aspect-square items-center justify-center text-center disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-rule"
+            onClick={onClick}
+        >
+            <strong>{label}</strong>
+        </CatalogCard>
+    );
+}
+
+function NameSearch({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
+    return (
+        <Field label="Buscar" htmlFor={id} flush className="mb-3 shrink-0">
+            <div className="relative">
+                <Search
+                    className="pointer-events-none absolute top-1/2 left-3 size-[1.05rem] -translate-y-1/2 text-ink-2"
+                    aria-hidden
+                    strokeWidth={2}
+                />
+                <TextInput id={id} value={value} placeholder="Buscar" className="pl-9" onChange={(event) => onChange(event.target.value)} />
+            </div>
+        </Field>
+    );
+}
+
+function FilteredList<T>({ items, empty, render }: { items: T[]; empty: string; render: (item: T) => ReactNode }) {
+    if (items.length === 0) {
+        return <Empty>{empty}</Empty>;
+    }
+
+    return <ResultList>{items.map(render)}</ResultList>;
+}
+
+function matchesQuery(value: string, query: string): boolean {
+    const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('es');
+
+    return normalize(value).includes(normalize(query.trim()));
+}
+
+function StepTitle({ children }: { children: string }) {
+    return <h2 className="m-0 mb-3 shrink-0 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink">{children}</h2>;
+}
+
+function SlotList({ slots, professionalId, specialtyId }: { slots: Slot[]; professionalId: number; specialtyId: number | null }) {
     if (slots.length === 0) {
         return <Empty>No hay horarios para mostrar.</Empty>;
     }
@@ -272,7 +336,7 @@ function SlotList({ slots, doctorId, specialtyId }: { slots: Slot[]; doctorId: n
                         className="shrink-0"
                         disabled={!specialtyId}
                         onClick={() =>
-                            router.post(`/doctors/${doctorId}/appointments`, {
+                            router.post(`/professionals/${professionalId}/appointments`, {
                                 starts_at: slot.starts_at,
                                 specialty_id: specialtyId,
                             })

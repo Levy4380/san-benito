@@ -24,8 +24,8 @@ class UpdateSpecialtyRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('specialties', 'name')->ignore($specialty)],
-            'doctor_ids' => ['sometimes', 'array'],
-            'doctor_ids.*' => ['integer', 'distinct', 'exists:doctors,id'],
+            'professional_ids' => ['sometimes', 'array'],
+            'professional_ids.*' => ['integer', 'distinct', 'exists:professionals,id'],
         ];
     }
 
@@ -38,10 +38,10 @@ class UpdateSpecialtyRequest extends FormRequest
             'name.required' => 'El nombre es obligatorio.',
             'name.unique' => 'Ya existe una especialidad con ese nombre.',
             'name.max' => 'El nombre no puede superar los 255 caracteres.',
-            'doctor_ids.array' => 'Los doctores asociados no son válidos.',
-            'doctor_ids.*.integer' => 'El doctor seleccionado no existe.',
-            'doctor_ids.*.distinct' => 'No repetí un doctor.',
-            'doctor_ids.*.exists' => 'El doctor seleccionado no existe.',
+            'professional_ids.array' => 'Los profesionales asociados no son válidos.',
+            'professional_ids.*.integer' => 'El profesional seleccionado no existe.',
+            'professional_ids.*.distinct' => 'No repetí un profesional.',
+            'professional_ids.*.exists' => 'El profesional seleccionado no existe.',
         ];
     }
 
@@ -53,9 +53,9 @@ class UpdateSpecialtyRequest extends FormRequest
             ]);
         }
 
-        if ($this->exists('doctor_ids') && is_array($this->input('doctor_ids'))) {
+        if ($this->exists('professional_ids') && is_array($this->input('professional_ids'))) {
             $this->merge([
-                'doctor_ids' => array_values(array_map(intval(...), $this->input('doctor_ids'))),
+                'professional_ids' => array_values(array_map(intval(...), $this->input('professional_ids'))),
             ]);
         }
     }

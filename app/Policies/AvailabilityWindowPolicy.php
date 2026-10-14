@@ -21,6 +21,6 @@ class AvailabilityWindowPolicy
         }
 
         return Permission::OwnAvailabilityDelete->allows($user)
-            && $user->doctor?->id === $window->doctor_id;
+            && $user->professional?->id === $window->professional_id;
     }
 }

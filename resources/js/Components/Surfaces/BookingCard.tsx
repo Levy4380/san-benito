@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { focusVisibleClass } from '@/lib/clinico-control';
 import { wallDate, wallTime } from '@/lib/datetime';
 import { phoneListGapClass, phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
-import { canSeeAppointmentDoctor, canSeeAppointmentPatient } from '@/lib/roles';
+import { canSeeAppointmentProfessional, canSeeAppointmentPatient } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, SharedData } from '@/types';
 
@@ -77,14 +77,14 @@ export function BookingCardActions({ children, className }: { children: ReactNod
 
 export function BookingCardFields({ appointment, className }: { appointment: AppointmentRecord; className?: string }) {
     const roles = usePage<SharedData>().props.auth.user?.roles ?? [];
-    const showDoctor = canSeeAppointmentDoctor(roles);
+    const showProfessional = canSeeAppointmentProfessional(roles);
     const showPatient = canSeeAppointmentPatient(roles);
 
     return (
         <dl className={cn('m-0 grid min-w-0 gap-[0.1rem] text-sm', className)}>
             <BookingCardField label="Fecha" value={wallDate(appointment.starts_at)} mono />
             <BookingCardField label="Hora" value={`${wallTime(appointment.starts_at)} — ${wallTime(appointment.ends_at)}`} mono />
-            {showDoctor ? <BookingCardField label="Doctor" value={appointment.doctor?.user.name} /> : null}
+            {showProfessional ? <BookingCardField label="Profesional" value={appointment.professional?.user.name} /> : null}
             <BookingCardField label="Especialidad" value={appointment.specialty?.name} />
             {showPatient ? <BookingCardField label="Paciente" value={appointment.patient?.name} /> : null}
         </dl>

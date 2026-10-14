@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
-use App\Models\Doctor;
 use App\Models\Patient;
+use App\Models\Professional;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -18,30 +18,30 @@ class AppointmentService
 {
     public function __construct(
         private readonly AvailabilityService $availability,
-        private readonly DoctorPatientService $links,
+        private readonly ProfessionalPatientService $links,
         private readonly PatientService $patients,
-        private readonly DoctorService $doctors,
+        private readonly ProfessionalService $professionals,
     ) {}
 
-    public function book(User $actor, Doctor $doctor, string $startsAt, int $specialtyId): Appointment
+    public function book(User $actor, Professional $professional, string $startsAt, int $specialtyId): Appointment
     {
         $patient = $this->patients->forUser($actor);
-        $this->assertSpecialtyOfDoctor($doctor, $specialtyId);
+        $this->assertSpecialtyOfProfessional($professional, $specialtyId);
 
         $requested = Carbon::parse($startsAt);
         $dayStart = $requested->copy()->startOfDay();
         $dayEnd = $requested->copy()->endOfDay();
 
         try {
-            return DB::transaction(function () use ($doctor, $patient, $requested, $dayStart, $dayEnd, $specialtyId) {
+            return DB::transaction(function () use ($professional, $patient, $requested, $dayStart, $dayEnd, $specialtyId) {
                 AvailabilityWindow::query()
-                    ->forDoctor($doctor)
+                    ->forProfessional($professional)
                     ->overlapping($dayStart, $dayEnd)
                     ->orderBy('id')
                     ->lockForUpdate()
                     ->get();
 
-                $first = $this->availability->nextOfferableSlotPerDay($doctor, $dayStart, $dayEnd)->first();
+                $first = $this->availability->nextOfferableSlotPerDay($professional, $dayStart, $dayEnd)->first();
 
                 if (! is_array($first)) {
                     throw ValidationException::withMessages([
@@ -57,22 +57,22 @@ class AppointmentService
                     ]);
                 }
 
-                $candidates = $this->availability->calculateSlots($doctor, $dayStart, $dayEnd);
+                $candidates = $this->availability->calculateSlots($professional, $dayStart, $dayEnd);
 
                 foreach ($candidates as $slot) {
                     $start = Carbon::parse($slot['starts_at']);
-                    $end = $start->copy()->addMinutes((int) $doctor->slot_duration_minutes);
+                    $end = $start->copy()->addMinutes((int) $professional->slot_duration_minutes);
 
                     try {
                         $appointment = Appointment::query()->create([
-                            'doctor_id' => $doctor->id,
+                            'professional_id' => $professional->id,
                             'patient_id' => $patient->id,
                             'specialty_id' => $specialtyId,
                             'starts_at' => $start,
                             'ends_at' => $end,
                         ]);
 
-                        $this->links->link($doctor, $patient);
+                        $this->links->link($professional, $patient);
 
                         return $appointment;
                     } catch (UniqueConstraintViolationException) {
@@ -91,33 +91,33 @@ class AppointmentService
         }
     }
 
-    public function assign(User $actor, Doctor $doctor, int $patientId, string $startsAt, int $specialtyId): Appointment
+    public function assign(User $actor, Professional $professional, int $patientId, string $startsAt, int $specialtyId): Appointment
     {
-        $this->doctors->forUser($actor);
+        $this->professionals->forUser($actor);
 
-        if (! $actor->doctor?->is($doctor)) {
+        if (! $actor->professional?->is($professional)) {
             abort(403);
         }
 
         $patient = Patient::query()->findOrFail($patientId);
 
-        if (! $this->links->isLinked($doctor, $patient)) {
+        if (! $this->links->isLinked($professional, $patient)) {
             throw ValidationException::withMessages([
                 'patient_id' => 'Solo podés asignar pacientes ya vinculados.',
             ]);
         }
 
-        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
+        return $this->insertReservation($professional, $patient, $startsAt, $specialtyId);
     }
 
     /**
-     * Staff books any calculated slot of any doctor for any patient; the doctor_patient link is created if missing.
+     * Staff books any calculated slot of any professional for any patient; the professional_patient link is created if missing.
      */
-    public function assignAsStaff(Doctor $doctor, int $patientId, string $startsAt, int $specialtyId): Appointment
+    public function assignAsStaff(Professional $professional, int $patientId, string $startsAt, int $specialtyId): Appointment
     {
         $patient = Patient::query()->findOrFail($patientId);
 
-        return $this->insertReservation($doctor, $patient, $startsAt, $specialtyId);
+        return $this->insertReservation($professional, $patient, $startsAt, $specialtyId);
     }
 
     public function cancel(Appointment $appointment): void
@@ -142,9 +142,9 @@ class AppointmentService
     /**
      * @return Collection<int, Appointment>
      */
-    public function upcomingThisWeekForDoctor(Doctor $doctor): Collection
+    public function upcomingThisWeekForProfessional(Professional $professional): Collection
     {
-        return $this->upcomingThisWeek(Appointment::query()->forDoctor($doctor));
+        return $this->upcomingThisWeek(Appointment::query()->forProfessional($professional));
     }
 
     /**
@@ -155,7 +155,7 @@ class AppointmentService
         return Appointment::query()
             ->forPatient($patient)
             ->upcoming()
-            ->with(['doctor.user', 'doctor.specialties', 'specialty'])
+            ->with(['professional.user', 'professional.specialties', 'specialty'])
             ->get();
     }
 
@@ -167,7 +167,7 @@ class AppointmentService
         return Appointment::query()
             ->forPatient($patient)
             ->past()
-            ->with(['doctor.user', 'doctor.specialties', 'specialty'])
+            ->with(['professional.user', 'professional.specialties', 'specialty'])
             ->get();
     }
 
@@ -181,7 +181,7 @@ class AppointmentService
         $weekEnd = now()->endOfWeek(Carbon::SUNDAY);
 
         return $query
-            ->with(['doctor.user', 'doctor.specialties', 'patient.user', 'specialty'])
+            ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty'])
             ->where('starts_at', '>', now())
             ->whereBetween('starts_at', [$weekStart, $weekEnd])
             ->orderBy('starts_at')
@@ -189,36 +189,36 @@ class AppointmentService
             ->get();
     }
 
-    private function insertReservation(Doctor $doctor, Patient $patient, string $startsAt, int $specialtyId): Appointment
+    private function insertReservation(Professional $professional, Patient $patient, string $startsAt, int $specialtyId): Appointment
     {
-        $this->assertSpecialtyOfDoctor($doctor, $specialtyId);
+        $this->assertSpecialtyOfProfessional($professional, $specialtyId);
 
         $start = Carbon::parse($startsAt);
-        $end = $start->copy()->addMinutes((int) $doctor->slot_duration_minutes);
+        $end = $start->copy()->addMinutes((int) $professional->slot_duration_minutes);
 
-        if (! $this->availability->isBookableSlot($doctor, $start)) {
+        if (! $this->availability->isBookableSlot($professional, $start)) {
             throw ValidationException::withMessages([
                 'starts_at' => 'El turno ya no está disponible',
             ]);
         }
 
         try {
-            return DB::transaction(function () use ($doctor, $patient, $start, $end, $specialtyId) {
-                if (! $this->availability->isBookableSlot($doctor, $start)) {
+            return DB::transaction(function () use ($professional, $patient, $start, $end, $specialtyId) {
+                if (! $this->availability->isBookableSlot($professional, $start)) {
                     throw ValidationException::withMessages([
                         'starts_at' => 'El turno ya no está disponible',
                     ]);
                 }
 
                 $appointment = Appointment::query()->create([
-                    'doctor_id' => $doctor->id,
+                    'professional_id' => $professional->id,
                     'patient_id' => $patient->id,
                     'specialty_id' => $specialtyId,
                     'starts_at' => $start,
                     'ends_at' => $end,
                 ]);
 
-                $this->links->link($doctor, $patient);
+                $this->links->link($professional, $patient);
 
                 return $appointment;
             });
@@ -229,9 +229,9 @@ class AppointmentService
         }
     }
 
-    private function assertSpecialtyOfDoctor(Doctor $doctor, int $specialtyId): void
+    private function assertSpecialtyOfProfessional(Professional $professional, int $specialtyId): void
     {
-        if ($doctor->specialties()->whereKey($specialtyId)->exists()) {
+        if ($professional->specialties()->whereKey($specialtyId)->exists()) {
             return;
         }
 

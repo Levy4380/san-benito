@@ -1,3 +1,4 @@
+import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
 import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
@@ -22,6 +23,7 @@ type AssignOptions = {
     slots: Slot[];
     slotMinutes: number;
     timeline: { windows: AvailabilityWindowRecord[]; appointments: AppointmentRecord[]; now: string };
+    tones: Record<string, 'empty' | 'has' | 'full'>;
     patients: { id: number; name: string; dni: string }[];
     specialties: { id: number; name: string }[];
 };
@@ -38,6 +40,7 @@ type Props = {
 
 export default function AssignModal({ date, patient, startsAt, onDismiss }: Props) {
     const [day, setDay] = useState<string | null>(date ?? null);
+    const [month, setMonth] = useState<string | null>(date ? `${date.slice(0, 7)}-01` : null);
     const [options, setOptions] = useState<AssignOptions | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadFailed, setLoadFailed] = useState(false);
@@ -51,13 +54,23 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
         setLoading(true);
         setLoadFailed(false);
 
-        fetch(`/agenda/assign-options${day ? `?date=${day}` : ''}`, {
+        const params = new URLSearchParams();
+        if (day) {
+            params.set('date', day);
+        }
+        if (month) {
+            params.set('month', month);
+        }
+        const query = params.toString();
+
+        fetch(`/agenda/assign-options${query ? `?${query}` : ''}`, {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             signal: controller.signal,
         })
             .then((response) => (response.ok ? (response.json() as Promise<AssignOptions>) : Promise.reject(response)))
             .then((data) => {
                 setOptions(data);
+                setMonth((current) => current ?? `${data.today.slice(0, 7)}-01`);
                 setSpecialtyId((current) => current || (data.specialties.length === 1 ? String(data.specialties[0].id) : ''));
                 setLoading(false);
             })
@@ -69,7 +82,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
             });
 
         return () => controller.abort();
-    }, [day]);
+    }, [day, month]);
 
     const assign = (startsAt: string) => {
         if (!patientId || !specialtyId) {
@@ -91,9 +104,10 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
 
     const shownDate = options?.date ?? date ?? null;
     const slots = startsAt ? (options?.slots ?? []).filter((slot) => slot.starts_at === startsAt) : (options?.slots ?? []);
+    const dayReady = Boolean(day && options && shownDate === day);
     const message =
-        [patient?.name, date ? formatDateLabel(date) : null, startsAt ? `${wallTime(startsAt)} hs` : null].filter(Boolean).join(' · ') ||
-        'Elegí paciente, especialidad y horario.';
+        [patient?.name, day ? formatDateLabel(day) : null, startsAt ? `${wallTime(startsAt)} hs` : null].filter(Boolean).join(' · ') ||
+        'Elegí un día en el calendario.';
 
     return (
         <ConfirmDialog title="Asignar turno" message={message} onDismiss={onDismiss} className={date ? undefined : 'w-[min(30rem,100%)]'}>
@@ -120,70 +134,98 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                         />
                     </Field>
                 ) : null}
-                <Field label="Especialidad" htmlFor="assign_specialty_id" className="shrink-0">
-                    <Combobox
-                        id="assign_specialty_id"
-                        value={specialtyId}
-                        placeholder="Elegí una especialidad"
-                        onChange={(value) => {
-                            setSpecialtyId(value);
-                            setError(null);
-                        }}
-                        disabled={!options}
-                        options={[
-                            { value: '', label: 'Elegí una especialidad' },
-                            ...(options?.specialties ?? []).map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
-                        ]}
-                    />
-                </Field>
-                {!date && options && options.days.length > 0 ? (
-                    <Field label="Día" htmlFor="assign_day" className="shrink-0">
+                {options && options.specialties.length === 1 ? null : (
+                    <Field label="Especialidad" htmlFor="assign_specialty_id" className="shrink-0">
                         <Combobox
-                            id="assign_day"
-                            value={shownDate ?? ''}
-                            placeholder="Elegí un día"
-                            onChange={(value) => value && setDay(value)}
-                            options={options.days.map((option) => ({ value: option, label: formatDateLabel(option) }))}
+                            id="assign_specialty_id"
+                            value={specialtyId}
+                            placeholder="Elegí una especialidad"
+                            onChange={(value) => {
+                                setSpecialtyId(value);
+                                setError(null);
+                            }}
+                            disabled={!options}
+                            options={[
+                                { value: '', label: 'Elegí una especialidad' },
+                                ...(options?.specialties ?? []).map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
+                            ]}
                         />
                     </Field>
-                ) : null}
+                )}
                 {error ? <FieldError className="shrink-0">{error}</FieldError> : null}
                 {!date ? (
                     loadFailed ? (
                         <Empty>No se pudieron cargar los horarios.</Empty>
-                    ) : !options ? (
-                        <Hint>Cargando horarios…</Hint>
-                    ) : options.days.length === 0 ? (
-                        <Empty>No hay huecos libres en los próximos días.</Empty>
                     ) : (
-                        <DayTimeline
-                            className={cn('min-h-[14rem] flex-1', (loading || submitting) && 'pointer-events-none opacity-60')}
-                            date={options.date}
-                            now={options.timeline.now}
-                            stepMinutes={options.slotMinutes}
-                            label="Franjas, reservas y huecos libres del día"
-                            bands={options.timeline.windows.map((window) => ({
-                                key: window.id,
-                                starts_at: window.starts_at,
-                                ends_at: window.ends_at,
-                            }))}
-                            blocks={options.timeline.appointments.map((appointment) => ({
-                                key: appointment.id,
-                                starts_at: appointment.starts_at,
-                                ends_at: appointment.ends_at,
-                                title: appointment.patient?.name ?? 'Paciente',
-                                subtitle: appointment.specialty?.name,
-                            }))}
-                            freeSlots={options.slots}
-                            onFreeSelect={(slotStartsAt) => {
-                                if (!patientId || !specialtyId) {
-                                    setError(patientId ? 'Elegí una especialidad.' : 'Elegí un paciente.');
-                                    return;
+                        <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-sm)]">
+                            <div className="h-[min(16rem,34dvh)] min-h-[12rem] shrink-0">
+                                {month ? (
+                                    <CalendarMonth
+                                        month={month}
+                                        selected={day}
+                                        tones={options?.tones ?? {}}
+                                        today={options?.today}
+                                        minDate={options?.today}
+                                        onSelect={(value) => {
+                                            setDay(value);
+                                            setError(null);
+                                        }}
+                                        onMonthChange={setMonth}
+                                        legend={[
+                                            { tone: 'empty', label: 'Sin turnos' },
+                                            { tone: 'has', label: 'Con turnos libres' },
+                                            { tone: 'full', label: 'Todo reservado' },
+                                        ]}
+                                    />
+                                ) : (
+                                    <div className="border-rule bg-paper h-full rounded-lg border" aria-hidden />
+                                )}
+                            </div>
+                            <DayTimeline
+                                className={cn('min-h-[12rem] flex-1', submitting && 'pointer-events-none opacity-60')}
+                                date={dayReady && options ? options.date : (day ?? options?.today ?? '2000-01-01')}
+                                now={dayReady && options ? options.timeline.now : undefined}
+                                stepMinutes={options?.slotMinutes ?? 20}
+                                label="Franjas, reservas y huecos libres del día"
+                                bands={
+                                    dayReady && options
+                                        ? options.timeline.windows.map((window) => ({
+                                              key: window.id,
+                                              starts_at: window.starts_at,
+                                              ends_at: window.ends_at,
+                                          }))
+                                        : []
                                 }
-                                assign(slotStartsAt);
-                            }}
-                        />
+                                blocks={
+                                    dayReady && options
+                                        ? options.timeline.appointments.map((appointment) => ({
+                                              key: appointment.id,
+                                              starts_at: appointment.starts_at,
+                                              ends_at: appointment.ends_at,
+                                              title: appointment.patient?.name ?? 'Paciente',
+                                              subtitle: appointment.specialty?.name,
+                                          }))
+                                        : []
+                                }
+                                freeSlots={dayReady && options ? options.slots : []}
+                                onFreeSelect={(slotStartsAt) => {
+                                    if (!patientId || !specialtyId) {
+                                        setError(patientId ? 'Elegí una especialidad.' : 'Elegí un paciente.');
+                                        return;
+                                    }
+                                    assign(slotStartsAt);
+                                }}
+                            />
+                        </div>
                     )
+                ) : startsAt ? (
+                    loadFailed ? (
+                        <Empty>No se pudieron cargar los horarios.</Empty>
+                    ) : loading && !options ? (
+                        <Hint>Cargando horarios…</Hint>
+                    ) : slots.length === 0 ? (
+                        <Empty>Ese horario ya no está libre.</Empty>
+                    ) : null
                 ) : (
                     <PanelScroll className="pt-0">
                         {loadFailed ? (
@@ -191,7 +233,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                         ) : loading && !options ? (
                             <Hint>Cargando horarios…</Hint>
                         ) : slots.length === 0 ? (
-                            <Empty>{startsAt ? 'Ese horario ya no está libre.' : 'No hay huecos libres este día.'}</Empty>
+                            <Empty>No hay huecos libres este día.</Empty>
                         ) : (
                             slots.map((slot) => (
                                 <SlotRow key={slot.starts_at}>
@@ -214,7 +256,18 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                     </PanelScroll>
                 )}
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-[0.55rem]">
+                {startsAt ? (
+                    <Btn
+                        type="button"
+                        className="min-w-[6.5rem]"
+                        disabled={!patientId || !specialtyId || slots.length === 0 || submitting || loading}
+                        onClick={() => assign(startsAt)}
+                    >
+                        <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                        Asignar
+                    </Btn>
+                ) : null}
                 <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>
                     <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                     Volver

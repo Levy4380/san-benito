@@ -44,27 +44,43 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/');
+        $response->assertRedirect('/paciente');
 
         $this->actingAs($user)
             ->get('/home')
+            ->assertRedirect('/paciente');
+
+        $this->actingAs($user)
+            ->get('/paciente')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Patient/Home'));
+
+        $this->actingAs($user)
+            ->get('/profesional')
+            ->assertRedirect('/paciente');
     }
 
-    public function test_doctor_login_goes_to_portal_home(): void
+    public function test_professional_login_goes_to_portal_home(): void
     {
-        $doctor = $this->makeDoctor(['email' => 'doc.login@example.com']);
+        $professional = $this->makeProfessional(['email' => 'doc.login@example.com']);
 
         $this->post('/login', [
-            'email' => $doctor->user->email,
+            'email' => $professional->user->email,
             'password' => 'password',
-        ])->assertRedirect('/');
+        ])->assertRedirect('/profesional');
 
-        $this->actingAs($doctor->user)
+        $this->actingAs($professional->user)
             ->get('/home')
+            ->assertRedirect('/profesional');
+
+        $this->actingAs($professional->user)
+            ->get('/profesional')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Doctor/Home'));
+            ->assertInertia(fn ($page) => $page->component('Professional/Home'));
+
+        $this->actingAs($professional->user)
+            ->get('/admin')
+            ->assertRedirect('/admin/reservas');
     }
 
     public function test_admin_and_super_admin_login_go_to_staff_appointments(): void
@@ -75,17 +91,19 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $admin->email,
             'password' => 'password',
-        ])->assertRedirect('/');
+        ])->assertRedirect('/admin');
 
         $this->post('/logout');
 
         $this->post('/login', [
             'email' => $super->email,
             'password' => 'password',
-        ])->assertRedirect('/');
+        ])->assertRedirect('/admin');
 
-        $this->actingAs($admin)->get('/home')->assertRedirect('/admin/appointments');
-        $this->actingAs($super)->get('/home')->assertRedirect('/admin/appointments');
+        $this->actingAs($admin)->get('/home')->assertRedirect('/admin');
+        $this->actingAs($super)->get('/home')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/reservas');
+        $this->actingAs($super)->get('/admin')->assertRedirect('/admin/reservas');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -108,12 +126,11 @@ class AuthenticationTest extends TestCase
         $this->actingAs($patient->user)->get('/login')->assertRedirect('/');
         $this->actingAs($patient->user)
             ->get('/')
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Patient/Home'));
+            ->assertRedirect('/paciente');
 
         $this->actingAs($admin)->get('/login')->assertRedirect('/');
-        $this->actingAs($admin)->get('/')->assertRedirect('/admin/appointments');
-        $this->actingAs($patient->user)->get('/admin/appointments')->assertRedirect('/');
+        $this->actingAs($admin)->get('/')->assertRedirect('/admin');
+        $this->actingAs($patient->user)->get('/admin/reservas')->assertRedirect('/paciente');
     }
 
     public function test_users_can_logout(): void

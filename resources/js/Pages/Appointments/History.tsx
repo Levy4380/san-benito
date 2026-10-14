@@ -19,7 +19,7 @@ export default function AppointmentHistory({ appointments }: Props) {
                     <PageHeader
                         title="Historial de turnos"
                         description="Tus reservas pasadas."
-                        backHref="/my-appointments"
+                        backHref="/paciente/mis-turnos"
                         backLabel="Mis turnos"
                     />
                 }

@@ -61,7 +61,13 @@ export default function Catalog({
                 ) : (
                     <CatalogGrid layout={layout}>
                         {items.map((item) => (
-                            <CatalogCard key={item.key} as="div" layout={layout} title={item.title} lines={item.lines} actions={item.actions} />
+                            <CatalogCard
+                                key={item.key}
+                                as="div"
+                                title={item.title}
+                                lines={item.lines}
+                                actions={item.actions}
+                            />
                         ))}
                     </CatalogGrid>
                 )}

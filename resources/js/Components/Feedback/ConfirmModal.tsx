@@ -15,7 +15,7 @@ type Pending = ConfirmOptions & { resolve: (value: boolean) => void };
 
 type ConfirmDialogProps = {
     title: string;
-    message: ReactNode;
+    message?: ReactNode;
     children: ReactNode;
     onDismiss: () => void;
     className?: string;
@@ -65,14 +65,16 @@ export function ConfirmDialog({ title, message, children, onDismiss, className }
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="confirm-modal-title"
-                aria-describedby="confirm-modal-msg"
+                aria-describedby={message != null && message !== '' ? 'confirm-modal-msg' : undefined}
             >
                 <h2 className="m-0 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id="confirm-modal-title">
                     {title}
                 </h2>
-                <p className="m-0 text-sm leading-[1.45] text-ink-2" id="confirm-modal-msg">
-                    {message}
-                </p>
+                {message != null && message !== '' ? (
+                    <p className="m-0 text-sm leading-[1.45] text-ink-2" id="confirm-modal-msg">
+                        {message}
+                    </p>
+                ) : null}
                 {children}
             </div>
         </div>

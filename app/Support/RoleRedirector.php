@@ -7,17 +7,23 @@ use App\Models\User;
 
 class RoleRedirector
 {
-    public static function home(): string
+    public static function home(User $user): string
     {
-        return '/';
+        return self::landing($user);
     }
 
     public static function landing(User $user): string
     {
         if (Permission::PortalHome->allows($user)) {
-            return self::home();
+            if ($user->hasRole('professional')) {
+                return '/profesional';
+            }
+
+            if ($user->hasRole('patient')) {
+                return '/paciente';
+            }
         }
 
-        return '/admin/appointments';
+        return '/admin';
     }
 }

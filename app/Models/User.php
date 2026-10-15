@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\SerializesInstitutionalDates;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -52,5 +53,10 @@ class User extends Authenticatable
     public function patient(): HasOne
     {
         return $this->hasOne(Patient::class);
+    }
+
+    public function surgeries(): HasMany
+    {
+        return $this->hasMany(Surgery::class, 'requested_by_user_id');
     }
 }

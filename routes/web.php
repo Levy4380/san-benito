@@ -3,6 +3,7 @@
 use App\Enums\Permission;
 use App\Http\Controllers\Admin\AdminController as AdminAdminController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
+use App\Http\Controllers\Admin\ClinicScheduleController as AdminClinicScheduleController;
 use App\Http\Controllers\Admin\HealthInsuranceController as AdminHealthInsuranceController;
 use App\Http\Controllers\Admin\PatientController as AdminPatientController;
 use App\Http\Controllers\Admin\ProfessionalController as AdminProfessionalController;
@@ -212,6 +213,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/configuracion/especialidades/crear', [AdminSpecialtyController::class, 'create'])->name('settings.specialties.create');
             Route::get('/configuracion/especialidades/{specialty}/editar', [AdminSpecialtyController::class, 'edit'])->name('settings.specialties.edit');
             Route::get('/profesionales/{professional}/especialidades', [ProfessionalProfileController::class, 'specialties'])->name('professionals.specialties');
+        });
+
+        Route::middleware(Permission::middleware(Permission::ClinicManage))->group(function () {
+            Route::get('/configuracion/sanatorio', [AdminClinicScheduleController::class, 'edit'])->name('settings.clinic.edit');
+            Route::patch('/configuracion/sanatorio', [AdminClinicScheduleController::class, 'update'])->name('settings.clinic.update');
         });
 
         Route::middleware(Permission::middleware(Permission::HealthInsurancesManage))->group(function () {

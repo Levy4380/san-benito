@@ -13,6 +13,7 @@ import Time24 from '@/Components/Form/Time24';
 import Hint from '@/Components/Surfaces/Hint';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
+import { clockMinutes, isClinicOpen, useClinic } from '@/lib/clinic';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, Slot } from '@/types';
@@ -51,6 +52,14 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
     const openAppointment = appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
     const { ask, dialog } = useConfirm();
+    const clinic = useClinic();
+    const openMinutes = clockMinutes(clinic.opensAt);
+    const closeMinutes = clockMinutes(clinic.closesAt);
+    const dayClosed = !isClinicOpen(selectedDate, clinic.openDays);
+    const shortFits =
+        !dayClosed &&
+        clockMinutes(start) >= openMinutes &&
+        clockMinutes(start) + professional.slot_duration_minutes <= closeMinutes;
     const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
 
     useEffect(() => {
@@ -188,14 +197,24 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
                             loadWindow();
                         }}
                     >
-                        <Field label="Hora de inicio" error={shortForm.errors.starts_at} flush className="min-w-0 flex-1">
+                        <Field
+                            label="Hora de inicio"
+                            error={shortForm.errors.starts_at || shortForm.errors.dates || shortForm.errors.ranges}
+                            flush
+                            className="min-w-0 flex-1"
+                        >
                             <Time24 value={start} onChange={setStart} />
                         </Field>
-                        <Btn type="submit" className="shrink-0" disabled={shortForm.processing}>
+                        <Btn type="submit" className="shrink-0" disabled={shortForm.processing || !shortFits}>
                             <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                             Cargar
                         </Btn>
                     </form>
+                    <Hint className="m-0 mt-[var(--space-xs)]">
+                        {dayClosed
+                            ? 'El sanatorio no abre este día.'
+                            : `El sanatorio atiende de ${clinic.opensAt} a ${clinic.closesAt}.`}
+                    </Hint>
                     {windows.length > 0 ? (
                         <PanelScroll className="pt-[var(--space-sm)]">
                             {windows.map((window) => (

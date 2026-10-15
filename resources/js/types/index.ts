@@ -18,11 +18,18 @@ export type SurgeryNavCounts = {
     history: number;
 };
 
+export type ClinicSchedule = {
+    openDays: number[];
+    opensAt: string;
+    closesAt: string;
+};
+
 export type SharedData = {
     name: string;
     auth: { user: AuthUser | null };
     flash: { toast: { message: string; variant: ToastVariant } | null };
     surgeryNavCounts?: SurgeryNavCounts | null;
+    clinic?: ClinicSchedule;
     errors?: Record<string, string | string[]>;
     [key: string]: unknown;
 };

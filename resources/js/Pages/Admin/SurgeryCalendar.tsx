@@ -9,6 +9,7 @@ import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import SurgeryDetailDialog from '@/Components/Surgeries/SurgeryDetailDialog';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Panel from '@/Components/Surfaces/Panel';
+import { clockMinutes, useClinic } from '@/lib/clinic';
 import { formatDateLabel, pad2 } from '@/lib/datetime';
 import { surgeryRange } from '@/lib/surgery';
 import { cn } from '@/lib/utils';
@@ -31,10 +32,10 @@ type Props = {
     daySurgeries: SurgeryRecord[];
 };
 
-const DAY_START = 7 * 60;
-const DAY_END = 21 * 60;
-
 export default function AdminSurgeryCalendar({ date, month, today, now, from, scheduling, surgery, suggestion, tones, daySurgeries }: Props) {
+    const clinic = useClinic();
+    const dayStart = clockMinutes(clinic.opensAt);
+    const dayEnd = clockMinutes(clinic.closesAt);
     const [mobileDayOpen, setMobileDayOpen] = useState(false);
     const [openId, setOpenId] = useState<number | null>(null);
     const [start, setStart] = useState(suggestion.starts_at);
@@ -100,7 +101,7 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                     start={start}
                     end={end}
                     check={check}
-                    gaps={freeGaps(date, now, daySurgeries)}
+                    gaps={freeGaps(date, now, daySurgeries, dayStart, dayEnd)}
                     onStart={(value) => {
                         const keep = Math.max(toMinutes(end) - toMinutes(start), 30);
                         setStart(value);
@@ -252,13 +253,16 @@ function SurgeryTimeline({
     preview: { start: string; end: string; ok: boolean } | null;
     onOpen?: (id: number) => void;
 }) {
+    const clinic = useClinic();
+    const dayStart = clockMinutes(clinic.opensAt);
+    const dayEnd = clockMinutes(clinic.closesAt);
     const previewStart = preview ? toMinutes(preview.start) : null;
     const previewEnd = preview ? toMinutes(preview.end) : null;
     const busyMinutes = surgeries.flatMap((surgery) =>
         surgery.starts_at && surgery.ends_at ? [toMinutes(surgery.starts_at.slice(11, 16)), toMinutes(surgery.ends_at.slice(11, 16))] : [],
     );
-    const firstHour = Math.floor(Math.min(DAY_START, previewStart ?? DAY_START, ...busyMinutes, DAY_START) / 60);
-    const lastHour = Math.ceil(Math.max(DAY_END, previewEnd ?? DAY_END, ...busyMinutes, DAY_END) / 60);
+    const firstHour = Math.floor(Math.min(dayStart, previewStart ?? dayStart, ...busyMinutes, dayStart) / 60);
+    const lastHour = Math.ceil(Math.max(dayEnd, previewEnd ?? dayEnd, ...busyMinutes, dayEnd) / 60);
     const span = Math.max((lastHour - firstHour) * 60, 60);
     const top = (minutes: number) => `${((minutes - firstHour * 60) / span) * 100}%`;
     const height = (minutes: number) => `${(Math.max(minutes, 0) / span) * 100}%`;
@@ -359,13 +363,13 @@ function scheduleCheck(date: string, start: string, end: string, now: string, bu
     return { ok: true, message: `Libre · ${endMin - startMin} min.` };
 }
 
-function freeGaps(date: string, now: string, busy: SurgeryRecord[]): Array<[number, number]> {
-    let cursor = DAY_START;
+function freeGaps(date: string, now: string, busy: SurgeryRecord[], dayStart: number, dayEnd: number): Array<[number, number]> {
+    let cursor = dayStart;
 
     if (date < now.slice(0, 10)) {
         cursor = 24 * 60;
     } else if (date === now.slice(0, 10)) {
-        cursor = Math.max(DAY_START, Math.ceil(toMinutes(now.slice(11, 16)) / 5) * 5);
+        cursor = Math.max(dayStart, Math.ceil(toMinutes(now.slice(11, 16)) / 5) * 5);
     }
 
     const ranges = busy
@@ -382,8 +386,8 @@ function freeGaps(date: string, now: string, busy: SurgeryRecord[]): Array<[numb
         cursor = Math.max(cursor, end);
     });
 
-    if (DAY_END - cursor >= 30) {
-        gaps.push([cursor, DAY_END]);
+    if (dayEnd - cursor >= 30) {
+        gaps.push([cursor, dayEnd]);
     }
 
     return gaps;

@@ -25,6 +25,7 @@ const PRODUCT_PAGES = new Set([
     'Admin/AdminCreate',
     'Admin/UserPatient',
     'Admin/Settings',
+    'Admin/Clinic',
     'Admin/Specialties',
     'Admin/SpecialtyCreate',
     'Admin/SpecialtyEdit',

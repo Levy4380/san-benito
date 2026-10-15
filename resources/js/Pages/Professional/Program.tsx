@@ -14,6 +14,7 @@ import Hint from '@/Components/Surfaces/Hint';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
+import { clockMinutes, closedWeekdays, isClinicOpen, useClinic } from '@/lib/clinic';
 import { formatDateLabel, isWeekendKey, minutesBetween, pad2, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { ProfessionalRecord } from '@/types';
@@ -93,9 +94,14 @@ function eraseRange(ranges: Range[], start: number, end: number, minLength: numb
 }
 
 export default function Program({ professional, month: initialMonth, today, tones, blockedDates }: Props) {
+    const clinic = useClinic();
+    const openMinutes = clockMinutes(clinic.opensAt);
+    const closeMinutes = clockMinutes(clinic.closesAt);
+    const shutWeekdays = closedWeekdays(clinic.openDays);
+    const dayClosed = (key: string) => !isClinicOpen(key, clinic.openDays);
     const [step, setStep] = useState<'when' | 'hours'>('when');
     const [month, setMonth] = useState(initialMonth);
-    const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(today) ? [] : [today]));
+    const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(today) || dayClosed(today) ? [] : [today]));
     const [blockWeekends, setBlockWeekends] = useState(false);
     const [start, setStart] = useState('09:00');
     const [end, setEnd] = useState('12:00');
@@ -106,8 +112,8 @@ export default function Program({ professional, month: initialMonth, today, tone
     const requestedMonth = useRef(initialMonth);
 
     useEffect(() => {
-        setDates((current) => current.filter((key) => key >= today && !blocked.has(key)));
-    }, [blocked, today]);
+        setDates((current) => current.filter((key) => key >= today && !blocked.has(key) && isClinicOpen(key, clinic.openDays)));
+    }, [blocked, today, clinic.openDays]);
 
     useEffect(() => {
         if (initialMonth === requestedMonth.current) {
@@ -122,7 +128,7 @@ export default function Program({ professional, month: initialMonth, today, tone
     }, [dates, blockWeekends]);
 
     const paintDay = (key: string, on: boolean) => {
-        if (blocked.has(key) || (on && blockWeekends && isWeekendKey(key))) {
+        if (blocked.has(key) || dayClosed(key) || (on && blockWeekends && isWeekendKey(key))) {
             return;
         }
         setDates((current) => {
@@ -142,18 +148,19 @@ export default function Program({ professional, month: initialMonth, today, tone
         setBlockWeekends(checked);
         if (checked) {
             setDates((current) => {
-                const next = current.filter((key) => key >= today && !isWeekendKey(key) && !blocked.has(key));
+                const next = current.filter((key) => key >= today && !isWeekendKey(key) && !blocked.has(key) && !dayClosed(key));
 
                 if (next.length) {
                     return next;
                 }
 
-                return !isWeekendKey(today) && !blocked.has(today) ? [today] : [];
+                return !isWeekendKey(today) && !blocked.has(today) && !dayClosed(today) ? [today] : [];
             });
         }
     };
 
-    const draftOk = Boolean(start && end && minutesBetween(start, end) >= duration);
+    const withinClinic = toMinutes(start) >= openMinutes && toMinutes(end) <= closeMinutes;
+    const draftOk = Boolean(start && end && withinClinic && minutesBetween(start, end) >= duration);
 
     const addRange = () => {
         if (!draftOk) {
@@ -177,14 +184,16 @@ export default function Program({ professional, month: initialMonth, today, tone
         if (selectedDays.length === 0) {
             return;
         }
-        setStart('09:00');
-        setEnd('12:00');
+        const defaultStart = Math.max(9 * 60, openMinutes);
+        const defaultEnd = Math.min(12 * 60, closeMinutes);
+        setStart(toTime(defaultEnd > defaultStart ? defaultStart : openMinutes));
+        setEnd(toTime(defaultEnd > defaultStart ? defaultEnd : closeMinutes));
         setRanges([]);
         setStep('hours');
     };
 
     const selectWorkdaysOfMonth = () => {
-        const keys = weekdayKeysOfMonth(month).filter((key) => key >= today && !blocked.has(key));
+        const keys = weekdayKeysOfMonth(month).filter((key) => key >= today && !blocked.has(key) && !dayClosed(key));
         if (keys.length === 0) {
             return;
         }
@@ -221,7 +230,7 @@ export default function Program({ professional, month: initialMonth, today, tone
     };
 
     const resetDays = () => {
-        setDates(blocked.has(today) ? [] : [today]);
+        setDates(blocked.has(today) || dayClosed(today) ? [] : [today]);
     };
 
     const renderCalendar = () => (
@@ -232,6 +241,7 @@ export default function Program({ professional, month: initialMonth, today, tone
             paint
             blockWeekends={blockWeekends}
             disabledDates={blockedDates}
+            closedWeekdays={shutWeekdays}
             minDate={today}
             onPaint={paintDay}
             onMonthChange={changeMonth}
@@ -322,7 +332,8 @@ export default function Program({ professional, month: initialMonth, today, tone
                         <Results className="relative gap-[var(--space-md)] pb-[calc(var(--control-h)+1.75rem)]">
                             <Hint className="m-0 shrink-0">{hoursMeta}</Hint>
                             <Hint id="program-paint-hint" className="m-0 shrink-0">
-                                Arrastrá sobre la línea de tiempo para pintar una franja; arrastrá sobre una franja para borrarla.
+                                Arrastrá sobre la línea de tiempo para pintar una franja; arrastrá sobre una franja para borrarla. El sanatorio atiende de{' '}
+                                {clinic.opensAt} a {clinic.closesAt}.
                             </Hint>
                             <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-md)] md:flex-row">
                                 <DayTimeline

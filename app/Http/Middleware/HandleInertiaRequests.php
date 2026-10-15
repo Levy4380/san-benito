@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\Permission;
 use App\Services\AdminSurgeryService;
+use App\Services\ClinicScheduleService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +43,7 @@ class HandleInertiaRequests extends Middleware
             'surgeryNavCounts' => $user !== null && Permission::SurgeriesCatalogView->allows($user)
                 ? app(AdminSurgeryService::class)->counts()
                 : null,
+            'clinic' => app(ClinicScheduleService::class)->share(),
         ];
     }
 }

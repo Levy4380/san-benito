@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
+use App\Models\Patient;
 use App\Models\Professional;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -149,6 +150,49 @@ class AgendaService
         return [
             'timeline' => $this->dayTimeline($professional, $day),
             'bookingTones' => $bookingTones,
+        ];
+    }
+
+    /**
+     * One patient's bookings for a day, plus month tones (has = at least one booking).
+     *
+     * @return array{selectedDate: string, bookingTones: array<string, string>, timeline: array{appointments: Collection<int, Appointment>, now: string}}
+     */
+    public function patientDayTimeline(Patient $patient, string $date): array
+    {
+        $day = Carbon::parse($date);
+        $monthStart = $day->copy()->startOfMonth()->startOfDay();
+        $monthEnd = $day->copy()->endOfMonth()->endOfDay();
+
+        $appointments = Appointment::query()
+            ->forPatient($patient)
+            ->whereBetween('starts_at', [$monthStart, $monthEnd])
+            ->with(['professional.user', 'specialty'])
+            ->orderBy('starts_at')
+            ->get();
+
+        $bookedDays = $appointments
+            ->map(fn (Appointment $appointment) => $appointment->starts_at->toDateString())
+            ->unique()
+            ->flip();
+
+        $bookingTones = [];
+        for ($cursor = $monthStart->copy(); $cursor->lte($monthEnd); $cursor->addDay()) {
+            $key = $cursor->toDateString();
+            $bookingTones[$key] = $bookedDays->has($key) ? 'has' : 'empty';
+        }
+
+        $dayKey = $day->toDateString();
+
+        return [
+            'selectedDate' => $dayKey,
+            'bookingTones' => $bookingTones,
+            'timeline' => [
+                'appointments' => $appointments
+                    ->filter(fn (Appointment $appointment) => $appointment->starts_at->toDateString() === $dayKey)
+                    ->values(),
+                'now' => now()->format('Y-m-d H:i:s'),
+            ],
         ];
     }
 

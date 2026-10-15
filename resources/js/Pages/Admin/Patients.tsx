@@ -1,4 +1,6 @@
 import CreatePatientModal from '@/Components/Admin/CreatePatientModal';
+import PatientAgendaModal from '@/Components/Admin/PatientAgendaModal';
+import PatientInfoModal from '@/Components/Admin/PatientInfoModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -21,7 +23,11 @@ type Props = {
 
 export default function AdminPatients({ patients, healthInsurances, filters }: Props) {
     const [creating, setCreating] = useState(false);
+    const [infoId, setInfoId] = useState<number | null>(null);
+    const [agendaId, setAgendaId] = useState<number | null>(null);
     const hasFilters = filters.q.trim() !== '' || (filters.health_insurance_id !== '' && filters.health_insurance_id !== 'all');
+
+    const agenda = patients.find((patient) => patient.id === agendaId) ?? null;
 
     const apply = (data: FilterValues) => {
         router.get('/admin/pacientes', data, { preserveState: true });
@@ -53,7 +59,10 @@ export default function AdminPatients({ patients, healthInsurances, filters }: P
                             key: patient.id,
                             title: patient.name,
                             lines: [patient.email, `DNI ${patient.dni}`, patient.health_insurance ?? 'Particular'],
-                            actions: [{ kind: 'info', href: `/admin/pacientes/${patient.id}`, name: patient.name }],
+                            actions: [
+                                { kind: 'info', name: patient.name, onClick: () => setInfoId(patient.id) },
+                                { kind: 'agenda', name: patient.name, onClick: () => setAgendaId(patient.id) },
+                            ],
                         }))}
                         primary={
                             <Field label="Buscar" htmlFor="q" flush className="min-w-0">
@@ -80,6 +89,17 @@ export default function AdminPatients({ patients, healthInsurances, filters }: P
                 </StageCard>
             </PageScreen>
             {creating ? <CreatePatientModal onDismiss={() => setCreating(false)} /> : null}
+            {infoId !== null ? (
+                <PatientInfoModal
+                    patientId={infoId}
+                    onDismiss={() => setInfoId(null)}
+                    onOpenAgenda={() => {
+                        setAgendaId(infoId);
+                        setInfoId(null);
+                    }}
+                />
+            ) : null}
+            {agenda ? <PatientAgendaModal patientId={agenda.id} name={agenda.name} onDismiss={() => setAgendaId(null)} /> : null}
         </>
     );
 }

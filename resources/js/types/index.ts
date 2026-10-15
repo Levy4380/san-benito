@@ -50,6 +50,7 @@ export type ProfessionalRecord = {
     slot_duration_minutes: number;
     user: { id: number; name: string; email: string; phone: string | null };
     specialties: Specialty[];
+    health_insurances?: HealthInsurance[];
 };
 
 export type PatientRecord = {

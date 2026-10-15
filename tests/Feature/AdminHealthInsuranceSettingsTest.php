@@ -277,6 +277,11 @@ class AdminHealthInsuranceSettingsTest extends TestCase
                 ->has('healthInsurances', HealthInsurance::query()->count()));
 
         $this->actingAs($super)
+            ->getJson('/admin/profesionales/'.$professional->id.'/obras-sociales')
+            ->assertOk()
+            ->assertJsonCount(HealthInsurance::query()->count(), 'healthInsurances');
+
+        $this->actingAs($super)
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [$added->id],
             ])
@@ -288,6 +293,14 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         );
 
         $this->actingAs($super)
+            ->withHeader('referer', url('/admin/profesionales?q=Ana'))
+            ->patch('/professionals/'.$professional->id.'/health-insurances', [
+                'health_insurance_ids' => [$kept->id],
+            ])
+            ->assertRedirect('/admin/profesionales?q=Ana');
+
+        $this->actingAs($super)
+            ->withHeader('referer', url('/admin/profesionales/'.$professional->id.'/obras-sociales'))
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [],
             ])

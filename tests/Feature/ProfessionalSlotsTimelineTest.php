@@ -182,4 +182,36 @@ class ProfessionalSlotsTimelineTest extends TestCase
                 ->missing('timeline')
                 ->missing('bookingTones'));
     }
+
+    public function test_staff_agenda_json_matches_the_staff_day_and_rejects_other_roles(): void
+    {
+        $admin = $this->makeAdmin();
+        $professional = $this->makeProfessional();
+        $patient = $this->makePatient();
+
+        Appointment::factory()->create([
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+            'starts_at' => '2026-10-07 09:00:00',
+            'ends_at' => '2026-10-07 09:20:00',
+        ]);
+
+        $this->actingAs($patient->user)
+            ->getJson('/professionals/'.$professional->id.'/agenda')
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->getJson('/professionals/'.$professional->id.'/agenda')
+            ->assertOk()
+            ->assertJsonPath('selectedDate', '2026-10-07')
+            ->assertJsonPath('timeline.now', '2026-10-07 10:30:00')
+            ->assertJsonPath('bookingTones.2026-10-07', 'has')
+            ->assertJsonCount(1, 'timeline.appointments');
+
+        $this->actingAs($admin)
+            ->getJson('/professionals/'.$professional->id.'/agenda?date=2026-10-08')
+            ->assertOk()
+            ->assertJsonPath('selectedDate', '2026-10-08')
+            ->assertJsonCount(0, 'timeline.appointments');
+    }
 }

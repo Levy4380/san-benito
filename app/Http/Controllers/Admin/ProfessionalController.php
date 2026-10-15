@@ -20,8 +20,11 @@ class ProfessionalController extends Controller
         $specialty = $search->parseSpecialtyFilter($request->input('specialty_id'));
         $name = $request->input('q');
 
+        $professionals = $search->search($specialty['id'], is_string($name) ? $name : null, true);
+        $professionals->load('healthInsurances');
+
         return Inertia::render('Admin/Professionals', [
-            'professionals' => $search->search($specialty['id'], is_string($name) ? $name : null, true),
+            'professionals' => $professionals,
             'specialties' => $search->specialties(),
             'filters' => [
                 'specialty_id' => $specialty['value'],

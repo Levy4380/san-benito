@@ -110,6 +110,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/patients', [AdminPatientController::class, 'store'])->name('patients.store');
     });
 
+    Route::middleware(Permission::middleware(Permission::AppointmentsCatalogView))->group(function () {
+        Route::get('/professionals/{professional}/agenda', [ProfessionalSlotsController::class, 'agenda'])
+            ->whereNumber('professional')
+            ->name('professionals.agenda');
+    });
+
+    Route::middleware(Permission::middleware(Permission::PatientsCatalogView))->group(function () {
+        Route::get('/patients/{patient}', [AdminPatientController::class, 'profile'])
+            ->whereNumber('patient')
+            ->name('patients.profile');
+        Route::get('/patients/{patient}/agenda', [AdminPatientController::class, 'agenda'])
+            ->whereNumber('patient')
+            ->name('patients.agenda');
+    });
+
     Route::middleware(Permission::middleware(Permission::AdminsManage))->group(function () {
         Route::post('/admins', [AdminAdminController::class, 'store'])->name('admins.store');
     });

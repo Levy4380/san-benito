@@ -245,6 +245,14 @@ class AdminSpecialtySettingsTest extends TestCase
         );
 
         $this->actingAs($super)
+            ->withHeader('referer', url('/admin/profesionales?q=Ana'))
+            ->patch('/professionals/'.$professional->id.'/specialties', [
+                'specialty_ids' => [$kept->id],
+            ])
+            ->assertRedirect('/admin/profesionales?q=Ana');
+
+        $this->actingAs($super)
+            ->withHeader('referer', url('/admin/profesionales/'.$professional->id.'/especialidades'))
             ->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [],
             ])

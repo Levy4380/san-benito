@@ -33,6 +33,7 @@ class AdminCatalogFiltersTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Professionals')
                 ->has('professionals', 3)
+                ->where('professionals.0.health_insurances', [])
                 ->where('filters.specialty_id', 'all')
                 ->where('filters.q', ''))
             ->assertDontSee('Matrícula');

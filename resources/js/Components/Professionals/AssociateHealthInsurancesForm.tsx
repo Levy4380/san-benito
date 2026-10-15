@@ -8,9 +8,10 @@ import { Save } from 'lucide-react';
 type Props = {
     professional: ProfessionalRecord & { health_insurances: HealthInsurance[] };
     healthInsurances: HealthInsurance[];
+    onSaved?: () => void;
 };
 
-export default function AssociateHealthInsurancesForm({ professional, healthInsurances }: Props) {
+export default function AssociateHealthInsurancesForm({ professional, healthInsurances, onSaved }: Props) {
     const form = useForm({
         health_insurance_ids: professional.health_insurances.map((healthInsurance) => healthInsurance.id),
     });
@@ -20,7 +21,11 @@ export default function AssociateHealthInsurancesForm({ professional, healthInsu
             className="grid min-h-0 flex-1 content-start gap-[var(--space-md)] overflow-auto"
             onSubmit={(event) => {
                 event.preventDefault();
-                form.patch(`/admin/profesionales/${professional.id}/obras-sociales`);
+                form.patch(`/professionals/${professional.id}/health-insurances`, {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => onSaved?.(),
+                });
             }}
         >
             <Field label="Obras sociales" htmlFor="health_insurance_ids" error={form.errors.health_insurance_ids}>

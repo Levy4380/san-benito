@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
-use App\Enums\SurgeryStatus;
 use App\Models\Surgery;
 use App\Models\User;
 
@@ -21,19 +20,16 @@ class SurgeryPolicy
 
     public function markRequested(User $user, Surgery $surgery): bool
     {
-        return Permission::SurgeriesRequest->allows($user)
-            && $surgery->status === SurgeryStatus::Pending;
+        return Permission::SurgeriesRequest->allows($user);
     }
 
     public function approve(User $user, Surgery $surgery): bool
     {
-        return Permission::SurgeriesApprove->allows($user)
-            && $surgery->status === SurgeryStatus::Requested;
+        return Permission::SurgeriesApprove->allows($user);
     }
 
     public function schedule(User $user, Surgery $surgery): bool
     {
-        return Permission::SurgeriesSchedule->allows($user)
-            && $surgery->status === SurgeryStatus::ToSchedule;
+        return Permission::SurgeriesSchedule->allows($user);
     }
 }

@@ -36,7 +36,7 @@ type Props = {
     section: SurgerySection;
     surgeries: Paginator;
     filters: FiltersState;
-    openSurgeryId: number | null;
+    openSurgery: SurgeryRecord | null;
     professionals: ProfessionalRecord[];
     specialties: Specialty[];
     healthInsurances: HealthInsurance[];
@@ -65,7 +65,7 @@ export default function AdminSurgeries({
     section,
     surgeries,
     filters,
-    openSurgeryId,
+    openSurgery,
     professionals,
     specialties,
     healthInsurances,
@@ -73,9 +73,10 @@ export default function AdminSurgeries({
     const page = usePage<SharedData>();
     const copy = SECTIONS[section];
     const { ask, dialog } = useConfirm();
-    const [openId, setOpenId] = useState<number | null>(openSurgeryId);
+    const [openId, setOpenId] = useState<number | null>(openSurgery?.id ?? null);
     const [requesting, setRequesting] = useState(false);
-    const openSurgery = surgeries.data.find((surgery) => surgery.id === openId) ?? null;
+    const listed = surgeries.data.find((surgery) => surgery.id === openId) ?? null;
+    const openRecord = listed ?? (openSurgery?.id === openId ? openSurgery : null);
     const canCreate = hasPermission(page.props.auth.user?.permissions, Permission.SurgeriesCreate);
     const hasFilters =
         filters.q.trim() !== '' ||
@@ -97,7 +98,7 @@ export default function AdminSurgeries({
         });
 
         if (ok) {
-            router.post(`/admin/cirugias/${surgery.id}/aprobar`);
+            router.post(`/admin/cirugias/${surgery.id}/aprobar`, {}, { preserveState: false });
         } else {
             setOpenId(surgery.id);
         }
@@ -264,8 +265,8 @@ export default function AdminSurgeries({
                     </Results>
                 </StageCard>
             </PageScreen>
-            {openSurgery ? (
-                <SurgeryDetailDialog surgery={openSurgery} section={section} onDismiss={() => setOpenId(null)} onApprove={approve} />
+            {openRecord ? (
+                <SurgeryDetailDialog surgery={openRecord} section={section} onDismiss={() => setOpenId(null)} onApprove={approve} />
             ) : null}
             {requesting ? <RequestSurgeryModal onDismiss={() => setRequesting(false)} /> : null}
             {dialog}

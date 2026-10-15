@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ScheduleSurgeryRequest;
 use App\Http\Requests\Admin\StoreSurgeryRequest;
 use App\Models\Surgery;
 use App\Services\AdminSurgeryService;
+use App\Services\ClinicScheduleService;
 use App\Services\SurgeryService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,8 @@ class SurgeryController extends Controller
 {
     public function index(Request $request, AdminSurgeryService $surgeries): Response
     {
+        $this->authorize('viewAny', Surgery::class);
+
         $section = $this->section($request->string('section')->toString());
 
         $filters = [
@@ -36,13 +39,15 @@ class SurgeryController extends Controller
             'section' => $section,
             'surgeries' => $surgeries->paginate($section, $filters),
             'filters' => $filters,
-            'openSurgeryId' => $request->integer('surgery') ?: null,
+            'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery')),
             ...$surgeries->filterOptions(),
         ]);
     }
 
     public function create(AdminSurgeryService $surgeries): JsonResponse
     {
+        $this->authorize('create', Surgery::class);
+
         $options = $surgeries->filterOptions();
 
         return response()->json([
@@ -53,6 +58,8 @@ class SurgeryController extends Controller
 
     public function store(StoreSurgeryRequest $request, SurgeryService $surgeries): RedirectResponse
     {
+        $this->authorize('create', Surgery::class);
+
         $insurance = $request->validated('health_insurance_id');
 
         $surgery = $surgeries->request(
@@ -77,14 +84,18 @@ class SurgeryController extends Controller
 
     public function patients(Request $request, AdminSurgeryService $surgeries): JsonResponse
     {
+        $this->authorize('create', Surgery::class);
+
         return response()->json([
             'patients' => $surgeries->searchPatients($request->string('q')->toString()),
         ]);
     }
 
-    public function markRequested(Request $request, Surgery $surgery, SurgeryService $surgeries): RedirectResponse
+    public function markRequested(Surgery $surgery, SurgeryService $surgeries): RedirectResponse
     {
-        $surgeries->markRequested($request->user(), $surgery);
+        $this->authorize('markRequested', $surgery);
+
+        $surgeries->markRequested($surgery);
 
         return redirect()
             ->route('admin.surgeries.index', ['section' => 'requested', 'surgery' => $surgery->id])
@@ -94,9 +105,11 @@ class SurgeryController extends Controller
             ]);
     }
 
-    public function approve(Request $request, Surgery $surgery, SurgeryService $surgeries): RedirectResponse
+    public function approve(Surgery $surgery, SurgeryService $surgeries): RedirectResponse
     {
-        $surgeries->approve($request->user(), $surgery);
+        $this->authorize('approve', $surgery);
+
+        $surgeries->approve($surgery);
 
         return redirect()
             ->route('admin.surgeries.index', ['section' => 'approved', 'surgery' => $surgery->id])
@@ -106,13 +119,17 @@ class SurgeryController extends Controller
             ]);
     }
 
-    public function calendar(Request $request): Response
+    public function calendar(Request $request, ClinicScheduleService $clinic): Response
     {
-        return Inertia::render('Admin/SurgeryCalendar', $this->calendarProps($request, null));
+        $this->authorize('viewAny', Surgery::class);
+
+        return Inertia::render('Admin/SurgeryCalendar', $this->calendarProps($request, null, $clinic));
     }
 
-    public function schedule(Request $request, Surgery $surgery): Response
+    public function schedule(Request $request, Surgery $surgery, ClinicScheduleService $clinic): Response
     {
+        $this->authorize('schedule', $surgery);
+
         if ($surgery->status !== SurgeryStatus::ToSchedule) {
             throw ValidationException::withMessages([
                 'status' => 'Solo se puede programar una cirugía a programar.',
@@ -121,13 +138,14 @@ class SurgeryController extends Controller
 
         $surgery->load(['patient', 'professional.user', 'professional.specialties', 'healthInsurance']);
 
-        return Inertia::render('Admin/SurgeryCalendar', $this->calendarProps($request, $surgery));
+        return Inertia::render('Admin/SurgeryCalendar', $this->calendarProps($request, $surgery, $clinic));
     }
 
     public function storeSchedule(ScheduleSurgeryRequest $request, Surgery $surgery, SurgeryService $surgeries): RedirectResponse
     {
+        $this->authorize('schedule', $surgery);
+
         $saved = $surgeries->schedule(
-            $request->user(),
             $surgery,
             (string) $request->validated('starts_at'),
             (string) $request->validated('ends_at'),
@@ -149,7 +167,7 @@ class SurgeryController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function calendarProps(Request $request, ?Surgery $scheduling): array
+    private function calendarProps(Request $request, ?Surgery $scheduling, ClinicScheduleService $clinic): array
     {
         $today = now()->toDateString();
         $defaultDate = $scheduling === null ? $today : now()->addDay()->toDateString();
@@ -194,7 +212,8 @@ class SurgeryController extends Controller
             'from' => $from,
             'scheduling' => $scheduling !== null,
             'surgery' => $scheduling,
-            'suggestion' => $this->suggestion($date, $daySurgeries),
+            'suggestion' => $this->suggestion($date, $daySurgeries, $clinic),
+            'gaps' => $this->freeGaps($date, $daySurgeries, $clinic),
             'tones' => $tones,
             'daySurgeries' => $daySurgeries,
         ];
@@ -202,21 +221,21 @@ class SurgeryController extends Controller
 
     /**
      * @param  Collection<int, Surgery>  $busy
-     * @return array{starts_at: string, ends_at: string}
+     * @return array{starts_at: string, ends_at: string}|null
      */
-    private function suggestion(string $date, $busy): array
+    private function suggestion(string $date, $busy, ClinicScheduleService $clinic): ?array
     {
-        $gaps = $this->freeGaps($date, $busy);
+        $gaps = $this->freeGaps($date, $busy, $clinic);
 
         if ($gaps === []) {
-            return ['starts_at' => '09:00', 'ends_at' => '10:00'];
+            return null;
         }
 
         [$from, $to] = $gaps[0];
         $end = min($from + 60, $to);
 
         if ($end - $from < 30) {
-            return ['starts_at' => '09:00', 'ends_at' => '10:00'];
+            return null;
         }
 
         return [
@@ -229,10 +248,11 @@ class SurgeryController extends Controller
      * @param  Collection<int, Surgery>  $busy
      * @return list<array{0: int, 1: int}>
      */
-    private function freeGaps(string $date, $busy): array
+    private function freeGaps(string $date, $busy, ClinicScheduleService $clinic): array
     {
-        $dayStart = 7 * 60;
-        $dayEnd = 21 * 60;
+        $hours = $clinic->share();
+        $dayStart = $this->clockMinutes($hours['opensAt']);
+        $dayEnd = $this->clockMinutes($hours['closesAt']);
         $today = now()->toDateString();
 
         if ($date < $today) {
@@ -275,6 +295,13 @@ class SurgeryController extends Controller
         $minutes = max(0, min($minutes, (23 * 60) + 55));
 
         return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+    }
+
+    private function clockMinutes(string $clock): int
+    {
+        [$hour, $minute] = array_map(intval(...), explode(':', $clock));
+
+        return ($hour * 60) + $minute;
     }
 
     private function wallDate(string $value, string $fallback): string

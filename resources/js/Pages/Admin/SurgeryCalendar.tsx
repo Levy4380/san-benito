@@ -27,26 +27,24 @@ type Props = {
     from: SurgerySection;
     scheduling: boolean;
     surgery: SurgeryRecord | null;
-    suggestion: Suggestion;
+    suggestion: Suggestion | null;
+    gaps: Array<[number, number]>;
     tones: Record<string, 'empty' | 'has' | 'full'>;
     daySurgeries: SurgeryRecord[];
 };
 
-export default function AdminSurgeryCalendar({ date, month, today, now, from, scheduling, surgery, suggestion, tones, daySurgeries }: Props) {
-    const clinic = useClinic();
-    const dayStart = clockMinutes(clinic.opensAt);
-    const dayEnd = clockMinutes(clinic.closesAt);
+export default function AdminSurgeryCalendar({ date, month, today, now, from, scheduling, surgery, suggestion, gaps, tones, daySurgeries }: Props) {
     const [mobileDayOpen, setMobileDayOpen] = useState(false);
     const [openId, setOpenId] = useState<number | null>(null);
-    const [start, setStart] = useState(suggestion.starts_at);
-    const [end, setEnd] = useState(suggestion.ends_at);
+    const [start, setStart] = useState(suggestion?.starts_at ?? '');
+    const [end, setEnd] = useState(suggestion?.ends_at ?? '');
     const seenDate = useRef(date);
     const { ask, dialog } = useConfirm();
 
     if (seenDate.current !== date) {
         seenDate.current = date;
-        setStart(suggestion.starts_at);
-        setEnd(suggestion.ends_at);
+        setStart(suggestion?.starts_at ?? '');
+        setEnd(suggestion?.ends_at ?? '');
     }
 
     const visit = (next: { date?: string; month?: string }) => {
@@ -101,9 +99,9 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                     start={start}
                     end={end}
                     check={check}
-                    gaps={freeGaps(date, now, daySurgeries, dayStart, dayEnd)}
+                    gaps={gaps}
                     onStart={(value) => {
-                        const keep = Math.max(toMinutes(end) - toMinutes(start), 30);
+                        const keep = start !== '' && end !== '' ? Math.max(toMinutes(end) - toMinutes(start), 30) : 60;
                         setStart(value);
                         setEnd(fromMinutes(toMinutes(value) + keep));
                     }}
@@ -130,7 +128,7 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                 date={date}
                 now={now}
                 surgeries={daySurgeries}
-                preview={scheduling && check ? { start, end, ok: check.ok } : null}
+                preview={scheduling && start !== '' && end !== '' && check ? { start, end, ok: check.ok } : null}
                 onOpen={scheduling ? undefined : setOpenId}
             />
         </Panel>
@@ -171,7 +169,7 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                             confirmLabel: 'Aprobar',
                         });
                         if (ok) {
-                            router.post(`/admin/cirugias/${item.id}/aprobar`);
+                            router.post(`/admin/cirugias/${item.id}/aprobar`, {}, { preserveState: false });
                         }
                     }}
                 />
@@ -206,10 +204,10 @@ function ScheduleControls({
         <div className="grid gap-[var(--space-sm)]">
             <div className="flex flex-wrap gap-[var(--space-sm)]">
                 <Field label="Hora de inicio" htmlFor="schedule-start" flush>
-                    <Time24 id="schedule-start" value={start} onChange={onStart} />
+                    <Time24 id="schedule-start" value={start} onChange={onStart} blank={start === ''} />
                 </Field>
                 <Field label="Hora de fin" htmlFor="schedule-end" flush>
-                    <Time24 id="schedule-end" value={end} onChange={onEnd} />
+                    <Time24 id="schedule-end" value={end} onChange={onEnd} blank={end === ''} />
                 </Field>
             </div>
             <p className={cn('m-0 text-sm', check.ok ? 'text-[oklch(36%_0.1_150)]' : 'text-[oklch(42%_0.14_25)]')} role="status">
@@ -335,6 +333,10 @@ function SurgeryTimeline({
 }
 
 function scheduleCheck(date: string, start: string, end: string, now: string, busy: SurgeryRecord[]): { ok: boolean; message: string } {
+    if (start === '' || end === '') {
+        return { ok: false, message: 'Elegí la hora de inicio y de fin.' };
+    }
+
     const startMin = toMinutes(start);
     const endMin = toMinutes(end);
 
@@ -361,36 +363,6 @@ function scheduleCheck(date: string, start: string, end: string, now: string, bu
     }
 
     return { ok: true, message: `Libre · ${endMin - startMin} min.` };
-}
-
-function freeGaps(date: string, now: string, busy: SurgeryRecord[], dayStart: number, dayEnd: number): Array<[number, number]> {
-    let cursor = dayStart;
-
-    if (date < now.slice(0, 10)) {
-        cursor = 24 * 60;
-    } else if (date === now.slice(0, 10)) {
-        cursor = Math.max(dayStart, Math.ceil(toMinutes(now.slice(11, 16)) / 5) * 5);
-    }
-
-    const ranges = busy
-        .filter((surgery) => surgery.starts_at && surgery.ends_at)
-        .map((surgery) => [toMinutes(surgery.starts_at!.slice(11, 16)), toMinutes(surgery.ends_at!.slice(11, 16))] as [number, number])
-        .sort((left, right) => left[0] - right[0]);
-
-    const gaps: Array<[number, number]> = [];
-
-    ranges.forEach(([start, end]) => {
-        if (start - cursor >= 30) {
-            gaps.push([cursor, start]);
-        }
-        cursor = Math.max(cursor, end);
-    });
-
-    if (dayEnd - cursor >= 30) {
-        gaps.push([cursor, dayEnd]);
-    }
-
-    return gaps;
 }
 
 function toMinutes(time: string): number {

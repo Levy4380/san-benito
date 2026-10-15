@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Enums\Permission;
 use App\Enums\SurgeryStatus;
+use App\Models\ClinicSchedule;
 use App\Models\HealthInsurance;
 use App\Models\Patient;
 use App\Models\Professional;
@@ -17,10 +17,6 @@ class SurgeryService
 {
     public function request(User $actor, int $patientId, int $professionalId, ?int $healthInsuranceId, string $note): Surgery
     {
-        if (! Permission::SurgeriesCreate->allows($actor)) {
-            abort(403);
-        }
-
         $note = trim($note);
 
         if ($note === '') {
@@ -59,51 +55,49 @@ class SurgeryService
         ]);
     }
 
-    public function markRequested(User $actor, Surgery $surgery): Surgery
+    public function markRequested(Surgery $surgery): Surgery
     {
-        if (! Permission::SurgeriesRequest->allows($actor)) {
-            abort(403);
-        }
+        return DB::transaction(function () use ($surgery): Surgery {
+            $locked = Surgery::query()->whereKey($surgery->id)->lockForUpdate()->firstOrFail();
 
-        if ($surgery->status !== SurgeryStatus::Pending || $surgery->health_insurance_id === null) {
-            throw ValidationException::withMessages([
-                'status' => 'Solo se puede marcar como solicitada una cirugía pendiente de obra social.',
-            ]);
-        }
+            if ($locked->status !== SurgeryStatus::Pending || $locked->health_insurance_id === null) {
+                throw ValidationException::withMessages([
+                    'status' => 'Solo se puede marcar como solicitada una cirugía pendiente de obra social.',
+                ]);
+            }
 
-        $surgery->status = SurgeryStatus::Requested;
-        $surgery->save();
+            $locked->status = SurgeryStatus::Requested;
+            $locked->save();
 
-        return $surgery;
+            return $locked;
+        });
     }
 
-    public function approve(User $actor, Surgery $surgery): Surgery
+    public function approve(Surgery $surgery): Surgery
     {
-        if (! Permission::SurgeriesApprove->allows($actor)) {
-            abort(403);
-        }
+        return DB::transaction(function () use ($surgery): Surgery {
+            $locked = Surgery::query()->whereKey($surgery->id)->lockForUpdate()->firstOrFail();
 
-        if ($surgery->status !== SurgeryStatus::Requested) {
-            throw ValidationException::withMessages([
-                'status' => 'Solo se puede aprobar una cirugía solicitada.',
-            ]);
-        }
+            if ($locked->status !== SurgeryStatus::Requested) {
+                throw ValidationException::withMessages([
+                    'status' => 'Solo se puede aprobar una cirugía solicitada.',
+                ]);
+            }
 
-        $surgery->status = SurgeryStatus::ToSchedule;
-        $surgery->starts_at = null;
-        $surgery->ends_at = null;
-        $surgery->save();
+            $locked->status = SurgeryStatus::ToSchedule;
+            $locked->starts_at = null;
+            $locked->ends_at = null;
+            $locked->save();
 
-        return $surgery;
+            return $locked;
+        });
     }
 
-    public function schedule(User $actor, Surgery $surgery, string $startsAt, string $endsAt): Surgery
+    public function schedule(Surgery $surgery, string $startsAt, string $endsAt): Surgery
     {
-        if (! Permission::SurgeriesSchedule->allows($actor)) {
-            abort(403);
-        }
-
         return DB::transaction(function () use ($surgery, $startsAt, $endsAt): Surgery {
+            $this->lockOperatingRoom();
+
             $locked = Surgery::query()->whereKey($surgery->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== SurgeryStatus::ToSchedule) {
@@ -173,5 +167,22 @@ class SurgeryService
 
             return $locked;
         });
+    }
+
+    /**
+     * Serializes institutional scheduling. A lock of scheduled rows does not
+     * block anything when that day has none, so two overlapping writes can both pass.
+     * The single clinic_schedules row is the sentinel for the operating room.
+     */
+    private function lockOperatingRoom(): void
+    {
+        $schedule = ClinicSchedule::query()->orderBy('id')->lockForUpdate()->first();
+
+        if ($schedule instanceof ClinicSchedule) {
+            return;
+        }
+
+        app(ClinicScheduleService::class)->current();
+        ClinicSchedule::query()->orderBy('id')->lockForUpdate()->first();
     }
 }

@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('surgeries', function (Blueprint $table) {
             $table->id();
             $table->foreignId('patient_id')->constrained('patients')->restrictOnDelete();
-            $table->foreignId('professional_id')->constrained('professionals')->cascadeOnDelete();
+            $table->foreignId('professional_id')->constrained('professionals')->restrictOnDelete();
             $table->foreignId('health_insurance_id')->nullable()->constrained('health_insurances')->restrictOnDelete();
             $table->foreignId('requested_by_user_id')->constrained('users')->restrictOnDelete();
             $table->string('status');

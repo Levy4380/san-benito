@@ -77,7 +77,7 @@ export default function SurgeryDetailDialog({ surgery, section, onDismiss, onApp
                     Cerrar
                 </Btn>
                 {hasPermission(permissions, Permission.SurgeriesRequest) && surgery.status === 'pending' ? (
-                    <Btn type="button" onClick={() => router.post(`/admin/cirugias/${surgery.id}/solicitar`)}>
+                    <Btn type="button" onClick={() => router.post(`/admin/cirugias/${surgery.id}/solicitar`, {}, { preserveState: false })}>
                         Marcar como solicitada
                     </Btn>
                 ) : null}

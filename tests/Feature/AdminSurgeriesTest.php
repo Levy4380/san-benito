@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Enums\Permission;
 use App\Enums\SurgeryStatus;
 use App\Models\Appointment;
+use App\Models\ClinicSchedule;
 use App\Models\Patient;
 use App\Models\Specialty;
 use App\Models\Surgery;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Concerns\CreatesDomainUsers;
@@ -146,7 +148,8 @@ class AdminSurgeriesTest extends TestCase
         $surgery->refresh();
         $this->assertSame(SurgeryStatus::Requested, $surgery->status);
         $this->assertTrue($admin->can('approve', $surgery));
-        $this->assertFalse($admin->can('schedule', $surgery));
+        $this->assertTrue($admin->can('schedule', $surgery));
+        $this->assertFalse($this->makeProfessional()->user->can('schedule', $surgery));
 
         $this->actingAs($admin)
             ->postJson('/admin/cirugias/'.$surgery->id.'/programar', [
@@ -374,6 +377,91 @@ class AdminSurgeriesTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/admin/cirugias/'.$surgery->id.'/solicitar')
             ->assertStatus(405);
+    }
+
+    public function test_suggestion_uses_clinic_hours_and_is_empty_when_the_day_is_full(): void
+    {
+        $admin = $this->makeAdmin();
+        ClinicSchedule::query()->firstOrFail()->update([
+            'opens_at' => '08:00:00',
+            'closes_at' => '18:00:00',
+        ]);
+        $surgery = $this->toSchedule($admin->id);
+
+        $this->actingAs($admin)
+            ->get('/admin/cirugias/'.$surgery->id.'/programar')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('suggestion.starts_at', '08:00')
+                ->where('suggestion.ends_at', '09:00')
+                ->where('gaps.0.0', 8 * 60)
+                ->where('gaps.0.1', 18 * 60));
+
+        Surgery::factory()->scheduled(Carbon::parse('2026-10-15 08:00:00'))->create([
+            'patient_id' => $this->makePatient()->id,
+            'professional_id' => $this->makeProfessional()->id,
+            'requested_by_user_id' => $admin->id,
+            'starts_at' => '2026-10-15 08:00:00',
+            'ends_at' => '2026-10-15 18:00:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/cirugias/'.$surgery->id.'/programar')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('suggestion', null)
+                ->where('gaps', []));
+    }
+
+    public function test_open_surgery_is_loaded_when_it_is_not_on_the_first_page(): void
+    {
+        $admin = $this->makeAdmin();
+
+        foreach (range(1, 25) as $ignored) {
+            $this->toSchedule($admin->id);
+        }
+
+        $scheduled = Surgery::factory()->scheduled(Carbon::parse('2026-10-20 14:00:00'))->create([
+            'patient_id' => $this->makePatient()->id,
+            'professional_id' => $this->makeProfessional()->id,
+            'requested_by_user_id' => $admin->id,
+            'note' => 'Fuera de la primera página.',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/cirugias?section=approved&surgery='.$scheduled->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('openSurgery.id', $scheduled->id)
+                ->where('openSurgery.note', 'Fuera de la primera página.')
+                ->where('surgeries.data', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($scheduled->id)));
+    }
+
+    public function test_portals_cannot_move_a_surgery_and_deleting_a_professional_keeps_it(): void
+    {
+        $admin = $this->makeAdmin();
+        $patient = $this->makePatient();
+        $professional = $this->makeProfessional();
+        $surgery = $this->toSchedule($admin->id, $professional->id, $patient->id);
+
+        foreach ([$patient->user, $professional->user] as $user) {
+            $this->actingAs($user)->getJson('/admin/cirugias/pacientes?q=ana')->assertForbidden();
+            $this->actingAs($user)->postJson('/admin/cirugias/'.$surgery->id.'/solicitar')->assertForbidden();
+            $this->actingAs($user)->postJson('/admin/cirugias/'.$surgery->id.'/aprobar')->assertForbidden();
+            $this->actingAs($user)->getJson('/admin/cirugias/'.$surgery->id.'/programar')->assertForbidden();
+            $this->actingAs($user)->postJson('/admin/cirugias/'.$surgery->id.'/programar', [
+                'starts_at' => '2026-10-16 09:00:00',
+                'ends_at' => '2026-10-16 10:00:00',
+            ])->assertForbidden();
+        }
+
+        try {
+            $professional->delete();
+            $this->fail('Borrar el profesional no tiene que borrar la cirugía.');
+        } catch (QueryException) {
+            $this->assertModelExists($surgery);
+            $this->assertModelExists($professional);
+        }
     }
 
     public function test_mark_requested_rejects_a_surgery_without_insurance(): void

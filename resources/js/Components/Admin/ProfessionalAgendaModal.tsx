@@ -67,7 +67,6 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
         return () => controller.abort();
     }, [professionalId, date]);
 
-    const canViewPatient = hasPermission(auth.user?.permissions, Permission.PatientsCatalogView);
     const canCancel = hasPermission(auth.user?.permissions, Permission.AppointmentsCancel);
     const selectedDate = data?.selectedDate ?? null;
     const openAppointment = data?.timeline.appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
@@ -254,7 +253,6 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
             {openAppointment ? (
                 <TimelineAppointmentDialog
                     appointment={openAppointment}
-                    profileHref={canViewPatient ? `/admin/pacientes/${openAppointment.patient_id}` : null}
                     canCancel={canCancel}
                     cancelHref={`/appointments/${openAppointment.id}`}
                     onDismiss={() => setOpenAppointmentId(null)}

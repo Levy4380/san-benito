@@ -83,4 +83,4 @@ Transición inválida → 422. Sin permiso, o rol patient/professional → 403. 
 
 ## Columnas `surgeries`
 
-`patient_id` (restrict), `professional_id` (cascade, not null), `health_insurance_id` (nullable, restrict), `requested_by_user_id` (restrict, not null), `status`, `note` (text, not null), `starts_at` / `ends_at` (nullable; not null solo si `scheduled`; `ends_at` posterior a `starts_at`), timestamps, índice `(status, starts_at)`. Sin `unique(professional_id, starts_at)`. Sin columna de procedimiento.
+`patient_id` (restrict), `professional_id` (restrict, not null), `health_insurance_id` (nullable, restrict), `requested_by_user_id` (restrict, not null), `status`, `note` (text, not null), `starts_at` / `ends_at` (nullable; not null solo si `scheduled`; `ends_at` posterior a `starts_at`), timestamps, índice `(status, starts_at)`. Sin `unique(professional_id, starts_at)`. Sin columna de procedimiento.

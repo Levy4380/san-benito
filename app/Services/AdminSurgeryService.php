@@ -154,6 +154,19 @@ class AdminSurgeryService
         return $query;
     }
 
+    public function findInSection(string $section, int $id): ?Surgery
+    {
+        if ($id < 1) {
+            return null;
+        }
+
+        return Surgery::query()
+            ->with(['patient', 'professional.user', 'professional.specialties', 'healthInsurance'])
+            ->inSection($this->section($section))
+            ->whereKey($id)
+            ->first();
+    }
+
     private function section(string $section): string
     {
         return in_array($section, ['pending', 'requested', 'approved', 'history'], true) ? $section : 'pending';

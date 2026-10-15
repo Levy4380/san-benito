@@ -30,6 +30,11 @@ enum Permission: string
     case AvailabilityDelete = 'availability.delete';
     case ProfessionalsCatalogView = 'professionals.catalog.view';
     case ProfessionalsCreate = 'professionals.create';
+    case SurgeriesCatalogView = 'surgeries.catalog.view';
+    case SurgeriesCreate = 'surgeries.create';
+    case SurgeriesRequest = 'surgeries.request';
+    case SurgeriesApprove = 'surgeries.approve';
+    case SurgeriesSchedule = 'surgeries.schedule';
     case PatientsCatalogView = 'patients.catalog.view';
     case PatientsCreate = 'patients.create';
     case AdminsManage = 'admins.manage';
@@ -74,6 +79,11 @@ enum Permission: string
             self::AppointmentsCatalogView,
             self::ProfessionalsCatalogView,
             self::ProfessionalsCreate,
+            self::SurgeriesCatalogView,
+            self::SurgeriesCreate,
+            self::SurgeriesRequest,
+            self::SurgeriesApprove,
+            self::SurgeriesSchedule,
         ];
 
         return match ($role) {

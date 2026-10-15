@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Permission;
+use App\Services\AdminSurgeryService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,6 +39,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'toast' => $request->session()->get('toast'),
             ],
+            'surgeryNavCounts' => $user !== null && Permission::SurgeriesCatalogView->allows($user)
+                ? app(AdminSurgeryService::class)->counts()
+                : null,
         ];
     }
 }

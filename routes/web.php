@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ProfessionalSpecialtyController as AdminProfessio
 use App\Http\Controllers\Admin\ProfessionalWindowController as AdminProfessionalWindowController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\SpecialtyController as AdminSpecialtyController;
+use App\Http\Controllers\Admin\SurgeryController as AdminSurgeryController;
 use App\Http\Controllers\AgendaAssignController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\AgendaProgramController;
@@ -162,6 +163,30 @@ Route::middleware('auth')->group(function () {
         Route::middleware(Permission::middleware(Permission::AppointmentsCatalogView))->group(function () {
             Route::get('/reservas', [AdminAppointmentController::class, 'index'])->name('appointments.index');
             Route::get('/profesionales/{professional}/horarios', [ProfessionalSlotsController::class, 'index'])->name('professionals.slots');
+        });
+
+        Route::middleware(Permission::middleware(Permission::SurgeriesCatalogView))->group(function () {
+            Route::get('/cirugias', [AdminSurgeryController::class, 'index'])->name('surgeries.index');
+            Route::get('/cirugias/calendario', [AdminSurgeryController::class, 'calendar'])->name('surgeries.calendar');
+        });
+
+        Route::middleware(Permission::middleware(Permission::SurgeriesCreate))->group(function () {
+            Route::get('/cirugias/crear', [AdminSurgeryController::class, 'create'])->name('surgeries.create');
+            Route::post('/cirugias', [AdminSurgeryController::class, 'store'])->name('surgeries.store');
+            Route::get('/cirugias/pacientes', [AdminSurgeryController::class, 'patients'])->name('surgeries.patients');
+        });
+
+        Route::middleware(Permission::middleware(Permission::SurgeriesRequest))->group(function () {
+            Route::post('/cirugias/{surgery}/solicitar', [AdminSurgeryController::class, 'markRequested'])->name('surgeries.request');
+        });
+
+        Route::middleware(Permission::middleware(Permission::SurgeriesApprove))->group(function () {
+            Route::post('/cirugias/{surgery}/aprobar', [AdminSurgeryController::class, 'approve'])->name('surgeries.approve');
+        });
+
+        Route::middleware(Permission::middleware(Permission::SurgeriesSchedule))->group(function () {
+            Route::get('/cirugias/{surgery}/programar', [AdminSurgeryController::class, 'schedule'])->name('surgeries.schedule');
+            Route::post('/cirugias/{surgery}/programar', [AdminSurgeryController::class, 'storeSchedule'])->name('surgeries.schedule.store');
         });
 
         Route::middleware(Permission::middleware(Permission::ProfessionalsCatalogView))->group(function () {

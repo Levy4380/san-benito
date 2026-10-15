@@ -11,10 +11,18 @@ export type AuthUser = {
     permissions: string[];
 };
 
+export type SurgeryNavCounts = {
+    pending: number;
+    requested: number;
+    approved: number;
+    history: number;
+};
+
 export type SharedData = {
     name: string;
     auth: { user: AuthUser | null };
     flash: { toast: { message: string; variant: ToastVariant } | null };
+    surgeryNavCounts?: SurgeryNavCounts | null;
     errors?: Record<string, string | string[]>;
     [key: string]: unknown;
 };
@@ -63,6 +71,26 @@ export type AppointmentRecord = {
     professional?: ProfessionalRecord;
     patient?: PatientRecord;
     specialty?: Specialty;
+};
+
+export type SurgeryStatusName = 'pending' | 'requested' | 'to_schedule' | 'scheduled';
+
+export type SurgerySection = 'pending' | 'requested' | 'approved' | 'history';
+
+export type SurgeryRecord = {
+    id: number;
+    patient_id: number;
+    professional_id: number;
+    health_insurance_id: number | null;
+    requested_by_user_id: number;
+    status: SurgeryStatusName;
+    note: string;
+    starts_at: string | null;
+    ends_at: string | null;
+    opens_scheduled_group?: boolean;
+    patient?: PatientRecord;
+    professional?: ProfessionalRecord;
+    health_insurance?: HealthInsurance | null;
 };
 
 export type AvailabilityWindowRecord = {

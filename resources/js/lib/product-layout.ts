@@ -17,6 +17,8 @@ const PRODUCT_PAGES = new Set([
     'Settings/Profile',
     'Settings/Password',
     'Admin/Appointments',
+    'Admin/Surgeries',
+    'Admin/SurgeryCalendar',
     'Admin/Professionals',
     'Admin/Patients',
     'Admin/Admins',

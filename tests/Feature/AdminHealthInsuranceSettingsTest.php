@@ -93,9 +93,9 @@ class AdminHealthInsuranceSettingsTest extends TestCase
                 ->has('healthInsurances'));
 
         $this->actingAs($super)
-            ->get('/admin/configuracion/obras-sociales/crear')
+            ->getJson('/admin/configuracion/obras-sociales/crear')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Admin/HealthInsuranceCreate'));
+            ->assertExactJson([]);
 
         $this->actingAs($super)
             ->post('/health-insurances', ['name' => '  Galeno  '])

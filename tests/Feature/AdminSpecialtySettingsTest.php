@@ -67,9 +67,9 @@ class AdminSpecialtySettingsTest extends TestCase
                 ->has('specialties'));
 
         $this->actingAs($super)
-            ->get('/admin/configuracion/especialidades/crear')
+            ->getJson('/admin/configuracion/especialidades/crear')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Admin/SpecialtyCreate'));
+            ->assertExactJson([]);
 
         $this->actingAs($super)
             ->post('/specialties', ['name' => '  Oftalmología  '])

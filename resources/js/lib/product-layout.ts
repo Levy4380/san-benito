@@ -27,10 +27,8 @@ const PRODUCT_PAGES = new Set([
     'Admin/Settings',
     'Admin/Clinic',
     'Admin/Specialties',
-    'Admin/SpecialtyCreate',
     'Admin/SpecialtyEdit',
     'Admin/HealthInsurances',
-    'Admin/HealthInsuranceCreate',
     'Admin/HealthInsuranceEdit',
 ]);
 

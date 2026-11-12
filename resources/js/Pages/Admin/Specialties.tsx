@@ -1,3 +1,4 @@
+import CreateNameModal from '@/Components/Admin/CreateNameModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -8,6 +9,7 @@ import ListRow from '@/Components/Surfaces/ListRow';
 import Results, { ResultList } from '@/Components/Surfaces/Results';
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 type CatalogSpecialty = {
     id: number;
@@ -21,6 +23,7 @@ type Props = {
 
 export default function AdminSpecialties({ specialties }: Props) {
     const { ask, dialog } = useConfirm();
+    const [creating, setCreating] = useState(false);
 
     const remove = async (specialty: CatalogSpecialty) => {
         const ok = await ask({
@@ -49,11 +52,9 @@ export default function AdminSpecialties({ specialties }: Props) {
                         backHref="/admin/configuracion"
                         backLabel="Configuración"
                         actions={
-                            <Btn asChild>
-                                <Link href="/admin/configuracion/especialidades/crear">
-                                    <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Crear especialidad
-                                </Link>
+                            <Btn type="button" onClick={() => setCreating(true)}>
+                                <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Crear especialidad
                             </Btn>
                         }
                     />
@@ -74,6 +75,16 @@ export default function AdminSpecialties({ specialties }: Props) {
                 </StageCard>
             </PageScreen>
             {dialog}
+            {creating ? (
+                <CreateNameModal
+                    title="Crear especialidad"
+                    message="Catálogo de especialidades. Solo super admin."
+                    submitLabel="Crear especialidad"
+                    loadUrl="/admin/configuracion/especialidades/crear"
+                    storeUrl="/specialties"
+                    onDismiss={() => setCreating(false)}
+                />
+            ) : null}
         </>
     );
 }

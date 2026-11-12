@@ -3,6 +3,7 @@ import { PointerEvent, useRef } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarDay from '@/Components/Calendar/CalendarDay';
 import CalendarLegendSwatch from '@/Components/Calendar/CalendarLegendSwatch';
+import { isoWeekday } from '@/lib/clinic';
 import { addMonths, isWeekendKey, lastDateOfMonth, monthGrid, monthTitle, wallDate } from '@/lib/datetime';
 import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,8 @@ type Props = {
     blockWeekends?: boolean;
     /** Y-m-d days that cannot be painted or selected. */
     disabledDates?: string[];
+    /** ISO weekdays (1 = lunes … 7 = domingo) the sanatorium does not open. */
+    closedWeekdays?: number[];
     minDate?: string;
     /** Y-m-d (or wall datetime) from the server. Days before it stay clickable, at lower opacity. */
     today?: string;
@@ -42,6 +45,7 @@ export default function CalendarMonth({
     selectedDates,
     blockWeekends,
     disabledDates,
+    closedWeekdays,
     minDate,
     today,
     legend,
@@ -151,7 +155,11 @@ export default function CalendarMonth({
                 ))}
                 {days.map((day) => {
                     const tone = tones?.[day.key] ?? 'empty';
-                    const blocked = Boolean((blockWeekends && isWeekendKey(day.key)) || disabledDates?.includes(day.key));
+                    const blocked = Boolean(
+                        (blockWeekends && isWeekendKey(day.key)) ||
+                            disabledDates?.includes(day.key) ||
+                            closedWeekdays?.includes(isoWeekday(day.key)),
+                    );
                     const isPast = Boolean(minDate && day.key < minDate);
                     const isDimmed = Boolean(todayKey && day.inMonth && day.key < todayKey);
                     const isMuted = !day.inMonth || blocked || isPast;

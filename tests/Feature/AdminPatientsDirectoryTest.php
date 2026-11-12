@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Appointment;
 use App\Models\HealthInsurance;
 use App\Models\User;
 use App\Support\RoleRedirector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
 
@@ -145,5 +147,41 @@ class AdminPatientsDirectoryTest extends TestCase
                 ->where('patient.dni', '33999888'));
 
         $this->actingAs($super)->get('/admin/pacientes/999999')->assertNotFound();
+    }
+
+    public function test_patient_profile_and_agenda_json_are_super_admin_only(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-07 10:30:00'));
+        $super = $this->makeSuperAdmin();
+        $admin = $this->makeAdmin();
+        $patient = $this->makePatient(['name' => 'Nora Ficha']);
+        $professional = $this->makeProfessional();
+
+        Appointment::factory()->create([
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+            'starts_at' => '2026-10-07 11:00:00',
+            'ends_at' => '2026-10-07 11:20:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/patients/'.$patient->id)
+            ->assertForbidden();
+
+        $this->actingAs($super)
+            ->getJson('/patients/'.$patient->id)
+            ->assertOk()
+            ->assertJsonPath('patient.name', 'Nora Ficha')
+            ->assertJsonPath('patient.dni', $patient->dni);
+
+        $this->actingAs($super)
+            ->getJson('/patients/'.$patient->id.'/agenda')
+            ->assertOk()
+            ->assertJsonPath('selectedDate', '2026-10-07')
+            ->assertJsonPath('bookingTones.2026-10-07', 'has')
+            ->assertJsonCount(1, 'timeline.appointments')
+            ->assertJsonPath('timeline.appointments.0.professional.user.name', $professional->user->name);
+
+        $this->actingAs($super)->getJson('/patients/999999')->assertNotFound();
     }
 }

@@ -64,6 +64,11 @@ class Professional extends Model
         return $this->hasMany(Appointment::class);
     }
 
+    public function surgeries(): HasMany
+    {
+        return $this->hasMany(Surgery::class);
+    }
+
     public function patients(): BelongsToMany
     {
         return $this->belongsToMany(Patient::class, 'professional_patient')->withTimestamps();

@@ -1,9 +1,8 @@
+import { clockMinutes, useClinic } from '@/lib/clinic';
 import { pad2, wallDate, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import { type CSSProperties, type PointerEvent, useRef, useState } from 'react';
 
-const DAY_START = 7 * 60;
-const DAY_END = 21 * 60;
 const DAY_MINUTES = 24 * 60;
 /** New windows can start on any 5-minute mark. Their slots then step from that start. */
 const PAINT_SNAP = 5;
@@ -94,6 +93,9 @@ export default function DayTimeline({
     onFreeSelect,
     onPaint,
 }: Props) {
+    const clinic = useClinic();
+    const dayStart = clockMinutes(clinic.opensAt);
+    const dayEnd = clockMinutes(clinic.closesAt);
     const step = Math.max(STEP_MIN, Math.min(stepMinutes, STEP_MAX));
     const [paint, setPaint] = useState<PaintDraft | null>(null);
     const paintRef = useRef<PaintDraft | null>(null);
@@ -101,8 +103,8 @@ export default function DayTimeline({
     const clippedBlocks = blocks.map((block) => ({ block, range: clipToDay(date, block.starts_at, block.ends_at) }));
     const ranges = [...clippedBands, ...clippedBlocks].map((item) => item.range);
 
-    const firstHour = Math.floor(Math.min(DAY_START, ...ranges.map(([start]) => start)) / 60);
-    const lastHour = Math.ceil(Math.max(DAY_END, ...ranges.map(([, end]) => end)) / 60);
+    const firstHour = Math.floor(Math.min(dayStart, ...ranges.map(([start]) => start)) / 60);
+    const lastHour = Math.ceil(Math.max(dayEnd, ...ranges.map(([, end]) => end)) / 60);
     const span = (lastHour - firstHour) * 60;
     const top = (minutes: number) => `${((minutes - firstHour * 60) / span) * 100}%`;
     const height = (minutes: number) => `${(minutes / span) * 100}%`;
@@ -110,10 +112,10 @@ export default function DayTimeline({
     const today = now ? wallDate(now) : null;
     const nowMin = !now || !today ? 0 : date < today ? lastHour * 60 : date > today ? 0 : Math.min(minutesOf(now), lastHour * 60);
 
-    /* H:i ranges can't end at 24:00 */
-    const paintMaxEnd = lastHour * 60 >= DAY_MINUTES ? DAY_MINUTES - step : lastHour * 60;
+    /* Painting stays inside the sanatorium hours, even if a stored band stretches the scale. */
+    const paintMaxEnd = Math.min(dayEnd, DAY_MINUTES);
 
-    const clampMinute = (minute: number) => Math.max(firstHour * 60, Math.min(minute, paintMaxEnd - step));
+    const clampMinute = (minute: number) => Math.max(dayStart, Math.min(minute, paintMaxEnd - step));
 
     const rawMinute = (event: PointerEvent<HTMLDivElement>) => {
         const rect = event.currentTarget.getBoundingClientRect();

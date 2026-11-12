@@ -1,3 +1,4 @@
+import CreateNameModal from '@/Components/Admin/CreateNameModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -8,6 +9,7 @@ import ListRow from '@/Components/Surfaces/ListRow';
 import Results, { ResultList } from '@/Components/Surfaces/Results';
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 type CatalogHealthInsurance = {
     id: number;
@@ -21,6 +23,7 @@ type Props = {
 
 export default function AdminHealthInsurances({ healthInsurances }: Props) {
     const { ask, dialog } = useConfirm();
+    const [creating, setCreating] = useState(false);
 
     const remove = async (healthInsurance: CatalogHealthInsurance) => {
         const ok = await ask({
@@ -49,11 +52,9 @@ export default function AdminHealthInsurances({ healthInsurances }: Props) {
                         backHref="/admin/configuracion"
                         backLabel="Configuración"
                         actions={
-                            <Btn asChild>
-                                <Link href="/admin/configuracion/obras-sociales/crear">
-                                    <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Crear obra social
-                                </Link>
+                            <Btn type="button" onClick={() => setCreating(true)}>
+                                <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Crear obra social
                             </Btn>
                         }
                     />
@@ -78,6 +79,16 @@ export default function AdminHealthInsurances({ healthInsurances }: Props) {
                 </StageCard>
             </PageScreen>
             {dialog}
+            {creating ? (
+                <CreateNameModal
+                    title="Crear obra social"
+                    message="Catálogo de obras sociales. Solo super admin."
+                    submitLabel="Crear obra social"
+                    loadUrl="/admin/configuracion/obras-sociales/crear"
+                    storeUrl="/health-insurances"
+                    onDismiss={() => setCreating(false)}
+                />
+            ) : null}
         </>
     );
 }

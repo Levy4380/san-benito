@@ -1,12 +1,11 @@
 import { Btn } from '@/Components/Form/Btn';
+import { clockMinutes, isClinicOpen, useClinic } from '@/lib/clinic';
 import { pad2, wallDate, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
 
-const DAY_START = 7 * 60;
-const DAY_END = 21 * 60;
 const DAY_MINUTES = 24 * 60;
 const STEP = 60;
 
@@ -75,6 +74,39 @@ function wallParts(dateKey: string): Date {
     return new Date(year, (month ?? 1) - 1, day);
 }
 
+function openDaySpan(origin: string, count: number, openDays: number[]): string[] {
+    const days: string[] = [];
+    let cursor = origin;
+    let guard = 0;
+
+    while (days.length < count && guard < 400) {
+        if (isClinicOpen(cursor, openDays)) {
+            days.push(cursor);
+        }
+        cursor = addDays(cursor, 1);
+        guard += 1;
+    }
+
+    return days;
+}
+
+function shiftOpenDays(from: string, delta: number, openDays: number[]): string {
+    let cursor = from;
+    let remaining = Math.abs(delta);
+    const direction = delta < 0 ? -1 : 1;
+    let guard = 0;
+
+    while (remaining > 0 && guard < 400) {
+        cursor = addDays(cursor, direction);
+        if (isClinicOpen(cursor, openDays)) {
+            remaining -= 1;
+        }
+        guard += 1;
+    }
+
+    return cursor;
+}
+
 function visibleDayCount(width: number): number {
     if (width >= 960) {
         return 7;
@@ -102,14 +134,18 @@ export function blocksOnDay(appointments: AppointmentRecord[], date: string) {
 }
 
 export default function WeekTimeline({ today, now, appointments, onSelect }: Props) {
+    const clinic = useClinic();
+    const dayStart = clockMinutes(clinic.opensAt);
+    const dayEnd = clockMinutes(clinic.closesAt);
     const todayKey = wallDate(today);
     const nowKey = wallDate(now);
+    const earliest = openDaySpan(todayKey, 1, clinic.openDays)[0] ?? todayKey;
     const frameRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const scaleRef = useRef<HTMLDivElement>(null);
     const [visible, setVisible] = useState(7);
-    const [start, setStart] = useState(todayKey);
-    const days = Array.from({ length: visible }, (_, index) => addDays(start, index));
+    const [start, setStart] = useState(earliest);
+    const days = openDaySpan(start, visible, clinic.openDays);
     const columns = days.map((date) => {
         const blocks: Block[] = blocksOnDay(appointments, date).map((block) => ({
             ...block,
@@ -119,13 +155,14 @@ export default function WeekTimeline({ today, now, appointments, onSelect }: Pro
         return { date, blocks };
     });
     const ranges = columns.flatMap((column) => column.blocks.map((block) => block.range));
-    const firstHour = Math.floor(Math.min(DAY_START, ...ranges.map(([from]) => from)) / 60);
-    const lastHour = Math.ceil(Math.max(DAY_END, ...ranges.map(([, to]) => to)) / 60);
+    const firstHour = Math.floor(Math.min(dayStart, ...ranges.map(([from]) => from)) / 60);
+    const lastHour = Math.ceil(Math.max(dayEnd, ...ranges.map(([, to]) => to)) / 60);
     const span = (lastHour - firstHour) * 60;
     const hours = Array.from({ length: lastHour - firstHour + 1 }, (_, index) => firstHour + index);
     const top = (minutes: number) => `${((minutes - firstHour * 60) / span) * 100}%`;
     const height = (minutes: number) => `${(minutes / span) * 100}%`;
-    const prevDisabled = start <= todayKey;
+    const firstDay = days[0] ?? earliest;
+    const prevDisabled = firstDay <= earliest;
     const columnsTemplate = `var(--tl-gutter) repeat(${visible}, minmax(0, 1fr))`;
 
     useLayoutEffect(() => {
@@ -170,7 +207,10 @@ export default function WeekTimeline({ today, now, appointments, onSelect }: Pro
                     className="shrink-0"
                     aria-label="Días anteriores"
                     disabled={prevDisabled}
-                    onClick={() => setStart(addDays(start, -visible) < todayKey ? todayKey : addDays(start, -visible))}
+                    onClick={() => {
+                        const previous = shiftOpenDays(firstDay, -visible, clinic.openDays);
+                        setStart(previous < earliest ? earliest : previous);
+                    }}
                 >
                     <ChevronLeft className="size-[1.35rem] shrink-0" aria-hidden strokeWidth={2} />
                 </Btn>
@@ -183,7 +223,7 @@ export default function WeekTimeline({ today, now, appointments, onSelect }: Pro
                     size="icon"
                     className="shrink-0"
                     aria-label="Días siguientes"
-                    onClick={() => setStart(addDays(start, visible))}
+                    onClick={() => setStart(addDays(days[days.length - 1] ?? firstDay, 1))}
                 >
                     <ChevronRight className="size-[1.35rem] shrink-0" aria-hidden strokeWidth={2} />
                 </Btn>

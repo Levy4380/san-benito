@@ -6,6 +6,7 @@ use Database\Factories\HealthInsuranceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HealthInsurance extends Model
 {
@@ -27,5 +28,10 @@ class HealthInsurance extends Model
     public function patients(): BelongsToMany
     {
         return $this->belongsToMany(Patient::class, 'patient_health_insurance')->withTimestamps();
+    }
+
+    public function surgeries(): HasMany
+    {
+        return $this->hasMany(Surgery::class);
     }
 }

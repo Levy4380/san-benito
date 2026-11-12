@@ -252,6 +252,8 @@ class AvailabilityWindowService
 
         $minutes = (int) $start->diffInMinutes($end, false);
 
+        app(ClinicScheduleService::class)->assertWindow($start, $end);
+
         if ($minutes < (int) $professional->slot_duration_minutes) {
             throw ValidationException::withMessages([
                 'ends_at' => sprintf(

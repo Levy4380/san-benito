@@ -1,4 +1,6 @@
 import CreateProfessionalModal from '@/Components/Admin/CreateProfessionalModal';
+import ProfessionalAgendaModal from '@/Components/Admin/ProfessionalAgendaModal';
+import ProfessionalInfoModal from '@/Components/Admin/ProfessionalInfoModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -22,7 +24,12 @@ type Props = {
 
 export default function AdminProfessionals({ professionals, specialties, filters }: Props) {
     const [creating, setCreating] = useState(false);
+    const [infoId, setInfoId] = useState<number | null>(null);
+    const [agendaId, setAgendaId] = useState<number | null>(null);
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
+
+    const info = professionals.find((professional) => professional.id === infoId) ?? null;
+    const agenda = professionals.find((professional) => professional.id === agendaId) ?? null;
 
     const apply = (data: FilterValues) => {
         router.get('/admin/profesionales', data, { preserveState: true });
@@ -55,8 +62,8 @@ export default function AdminProfessionals({ professionals, specialties, filters
                             title: professional.user.name,
                             lines: [specialtyNames(professional.specialties), professional.license_number],
                             actions: [
-                                { kind: 'info', href: `/admin/profesionales/${professional.id}`, name: professional.user.name },
-                                { kind: 'agenda', href: `/admin/profesionales/${professional.id}/horarios`, name: professional.user.name },
+                                { kind: 'info', name: professional.user.name, onClick: () => setInfoId(professional.id) },
+                                { kind: 'agenda', name: professional.user.name, onClick: () => setAgendaId(professional.id) },
                             ],
                         }))}
                         primary={
@@ -81,6 +88,18 @@ export default function AdminProfessionals({ professionals, specialties, filters
                 </StageCard>
             </PageScreen>
             {creating ? <CreateProfessionalModal onDismiss={() => setCreating(false)} /> : null}
+            {info ? (
+                <ProfessionalInfoModal
+                    professional={info}
+                    specialties={specialties}
+                    onDismiss={() => setInfoId(null)}
+                    onOpenAgenda={() => {
+                        setInfoId(null);
+                        setAgendaId(info.id);
+                    }}
+                />
+            ) : null}
+            {agenda ? <ProfessionalAgendaModal professionalId={agenda.id} name={agenda.user.name} onDismiss={() => setAgendaId(null)} /> : null}
         </>
     );
 }

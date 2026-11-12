@@ -16,8 +16,10 @@ const catalogCardInteractive = cn('cursor-pointer hover:border-accent', focusVis
 
 export type CatalogAction =
     | { kind: 'info'; href: string; name?: string }
+    | { kind: 'info'; onClick: () => void; name?: string }
     | { kind: 'slots'; href: string }
     | { kind: 'agenda'; href: string; name?: string }
+    | { kind: 'agenda'; onClick: () => void; name?: string }
     | { kind: 'assign'; onClick: () => void }
     | { kind: 'link'; onClick: () => void };
 
@@ -51,11 +53,21 @@ function CatalogActionButtons({ actions, className }: { actions: CatalogAction[]
             {actions.map((action) => {
                 if (action.kind === 'info') {
                     const aria = action.name ? `Más información de ${action.name}` : 'Más información';
+                    const icon = <Info className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />;
+
+                    if ('onClick' in action) {
+                        return (
+                            <Btn key="info" type="button" size="sm" variant="outline" aria-label={aria} title={aria} onClick={action.onClick}>
+                                {icon}
+                                Más información
+                            </Btn>
+                        );
+                    }
 
                     return (
                         <Btn key={`info-${action.href}`} size="sm" variant="outline" asChild>
                             <Link href={action.href} aria-label={aria} title={aria}>
-                                <Info className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                {icon}
                                 Más información
                             </Link>
                         </Btn>
@@ -75,11 +87,21 @@ function CatalogActionButtons({ actions, className }: { actions: CatalogAction[]
 
                 if (action.kind === 'agenda') {
                     const aria = action.name ? `Ver agenda de ${action.name}` : 'Ver agenda';
+                    const icon = <CalendarDays className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />;
+
+                    if ('onClick' in action) {
+                        return (
+                            <Btn key="agenda" type="button" size="sm" aria-label={aria} title={aria} onClick={action.onClick}>
+                                {icon}
+                                Ver agenda
+                            </Btn>
+                        );
+                    }
 
                     return (
                         <Btn key={`agenda-${action.href}`} size="sm" asChild>
                             <Link href={action.href} aria-label={aria} title={aria}>
-                                <CalendarDays className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                {icon}
                                 Ver agenda
                             </Link>
                         </Btn>

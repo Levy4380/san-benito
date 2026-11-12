@@ -16,6 +16,8 @@ type Pending = ConfirmOptions & { resolve: (value: boolean) => void };
 type ConfirmDialogProps = {
     title: string;
     message?: ReactNode;
+    messageClassName?: string;
+    headerAction?: ReactNode;
     children: ReactNode;
     onDismiss: () => void;
     className?: string;
@@ -24,7 +26,7 @@ type ConfirmDialogProps = {
 /** Open dialogs, innermost last: only the top one reacts to Escape. */
 const openDialogs: symbol[] = [];
 
-export function ConfirmDialog({ title, message, children, onDismiss, className }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, message, messageClassName, headerAction, children, onDismiss, className }: ConfirmDialogProps) {
     const dismissRef = useRef(onDismiss);
 
     useEffect(() => {
@@ -67,11 +69,14 @@ export function ConfirmDialog({ title, message, children, onDismiss, className }
                 aria-labelledby="confirm-modal-title"
                 aria-describedby={message != null && message !== '' ? 'confirm-modal-msg' : undefined}
             >
-                <h2 className="m-0 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id="confirm-modal-title">
-                    {title}
-                </h2>
+                <div className="flex items-start justify-between gap-[var(--space-sm)]">
+                    <h2 className="m-0 min-w-0 flex-1 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id="confirm-modal-title">
+                        {title}
+                    </h2>
+                    {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
+                </div>
                 {message != null && message !== '' ? (
-                    <p className="m-0 text-sm leading-[1.45] text-ink-2" id="confirm-modal-msg">
+                    <p className={cn('m-0 text-sm leading-[1.45] text-ink-2', messageClassName)} id="confirm-modal-msg">
                         {message}
                     </p>
                 ) : null}

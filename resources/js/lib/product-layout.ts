@@ -6,6 +6,8 @@ const PRODUCT_PAGES = new Set([
     'Professional/Program',
     'Professional/MyPatients',
     'Professional/PatientProfile',
+    'Professional/Surgeries',
+    'Professional/SurgeryCalendar',
     'Professionals/Index',
     'Professionals/Show',
     'Professionals/Specialties',

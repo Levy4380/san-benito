@@ -4,10 +4,12 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
 {
+    use CreatesDomainUsers;
     use RefreshDatabase;
 
     public function test_profile_page_is_displayed()
@@ -19,6 +21,46 @@ class ProfileUpdateTest extends TestCase
             ->get('/settings/profile');
 
         $response->assertOk();
+    }
+
+    public function test_professional_profile_embeds_agenda_settings_and_old_route_redirects(): void
+    {
+        $this->seedCatalog();
+        $professional = $this->makeProfessional(['email' => 'doc.profile@example.com'], [
+            'slot_duration_minutes' => 25,
+        ]);
+
+        $this->actingAs($professional->user)
+            ->get('/settings/profile')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/Profile')
+                ->where('slot_duration_minutes', 25));
+
+        $this->actingAs($professional->user)
+            ->get('/profesional/configuracion/agenda')
+            ->assertRedirect('/settings/profile');
+
+        $this->actingAs($professional->user)
+            ->from('/settings/profile')
+            ->patch('/agenda/settings', ['slot_duration_minutes' => 40])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/settings/profile');
+
+        $this->assertSame(40, $professional->fresh()->slot_duration_minutes);
+    }
+
+    public function test_non_professional_profile_omits_agenda_settings(): void
+    {
+        $this->seedCatalog();
+        $patient = $this->makePatient();
+
+        $this->actingAs($patient->user)
+            ->get('/settings/profile')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Settings/Profile')
+                ->where('slot_duration_minutes', null));
     }
 
     public function test_profile_information_can_be_updated()

@@ -9,7 +9,11 @@ type Props = {
     surgery: SurgeryRecord;
     section: SurgerySection;
     onDismiss: () => void;
-    onApprove: (surgery: SurgeryRecord) => void;
+    onApprove?: (surgery: SurgeryRecord) => void;
+    basePath?: string;
+    canMarkRequested?: boolean;
+    canApprove?: boolean;
+    canSchedule?: boolean;
 };
 
 export function SurgeryStatusBadge({ status }: { status: SurgeryRecord['status'] }) {
@@ -24,9 +28,24 @@ export function SurgeryStatusBadge({ status }: { status: SurgeryRecord['status']
     );
 }
 
-export default function SurgeryDetailDialog({ surgery, section, onDismiss, onApprove }: Props) {
+export default function SurgeryDetailDialog({
+    surgery,
+    section,
+    onDismiss,
+    onApprove,
+    basePath = '/admin/cirugias',
+    canMarkRequested,
+    canApprove,
+    canSchedule,
+}: Props) {
     const { auth } = usePage<SharedData>().props;
     const permissions = auth.user?.permissions;
+    const allowMarkRequested = canMarkRequested ?? hasPermission(permissions, Permission.SurgeriesRequest);
+    const allowApprove = canApprove ?? hasPermission(permissions, Permission.SurgeriesApprove);
+    const allowSchedule = canSchedule ?? hasPermission(permissions, Permission.SurgeriesSchedule);
+    const showMarkRequested = allowMarkRequested && surgery.status === 'pending';
+    const showApprove = allowApprove && surgery.status === 'requested';
+    const showSchedule = allowSchedule && surgery.status === 'to_schedule';
     const patient = surgery.patient;
     const professional = surgery.professional;
     const schedule =
@@ -76,18 +95,18 @@ export default function SurgeryDetailDialog({ surgery, section, onDismiss, onApp
                 <Btn type="button" variant="outline" onClick={onDismiss}>
                     Cerrar
                 </Btn>
-                {hasPermission(permissions, Permission.SurgeriesRequest) && surgery.status === 'pending' ? (
-                    <Btn type="button" onClick={() => router.post(`/admin/cirugias/${surgery.id}/solicitar`, {}, { preserveState: false })}>
+                {showMarkRequested ? (
+                    <Btn type="button" onClick={() => router.post(`${basePath}/${surgery.id}/solicitar`, {}, { preserveState: false })}>
                         Marcar como solicitada
                     </Btn>
                 ) : null}
-                {hasPermission(permissions, Permission.SurgeriesApprove) && surgery.status === 'requested' ? (
+                {showApprove && onApprove ? (
                     <Btn type="button" onClick={() => onApprove(surgery)}>
                         Aprobar
                     </Btn>
                 ) : null}
-                {hasPermission(permissions, Permission.SurgeriesSchedule) && surgery.status === 'to_schedule' ? (
-                    <Btn type="button" onClick={() => router.visit(`/admin/cirugias/${surgery.id}/programar?from=${section}`)}>
+                {showSchedule ? (
+                    <Btn type="button" onClick={() => router.visit(`${basePath}/${surgery.id}/programar?from=${section}`)}>
                         Programar
                     </Btn>
                 ) : null}

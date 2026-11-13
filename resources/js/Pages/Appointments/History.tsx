@@ -8,9 +8,15 @@ import type { AppointmentRecord } from '@/types';
 
 type Props = {
     appointments: AppointmentRecord[];
+    backHref?: string;
+    backLabel?: string;
 };
 
-export default function AppointmentHistory({ appointments }: Props) {
+export default function AppointmentHistory({
+    appointments,
+    backHref = '/paciente/mis-turnos',
+    backLabel = 'Mis turnos',
+}: Props) {
     return (
         <>
             <Head title="Historial de turnos" />
@@ -19,8 +25,8 @@ export default function AppointmentHistory({ appointments }: Props) {
                     <PageHeader
                         title="Historial de turnos"
                         description="Tus reservas pasadas."
-                        backHref="/paciente/mis-turnos"
-                        backLabel="Mis turnos"
+                        backHref={backHref}
+                        backLabel={backLabel}
                     />
                 }
             >

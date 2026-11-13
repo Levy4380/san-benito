@@ -21,27 +21,24 @@ use Inertia\Response;
 
 class SurgeryController extends Controller
 {
-    public function index(Request $request, AdminSurgeryService $surgeries): Response
+    public function index(Request $request, AdminSurgeryService $surgeries): Response|RedirectResponse
     {
         $this->authorize('viewAny', Surgery::class);
 
+        if ($request->string('section')->toString() === 'history') {
+            return redirect()->route('admin.historial.cirugias', $request->except('section'));
+        }
+
         $section = $this->section($request->string('section')->toString());
 
-        $filters = [
-            'q' => trim($request->string('q')->toString()),
-            'specialty_id' => $request->integer('specialty_id') ?: null,
-            'professional_id' => $request->integer('professional_id') ?: null,
-            'health_insurance_id' => $this->insuranceFilter($request),
-            'status' => $section === 'approved' ? $this->statusFilter($request) : null,
-        ];
+        return Inertia::render('Admin/Surgeries', $this->listProps($request, $surgeries, $section));
+    }
 
-        return Inertia::render('Admin/Surgeries', [
-            'section' => $section,
-            'surgeries' => $surgeries->paginate($section, $filters),
-            'filters' => $filters,
-            'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery')),
-            ...$surgeries->filterOptions(),
-        ]);
+    public function history(Request $request, AdminSurgeryService $surgeries): Response
+    {
+        $this->authorize('viewAny', Surgery::class);
+
+        return Inertia::render('Admin/Surgeries', $this->listProps($request, $surgeries, 'history'));
     }
 
     public function create(AdminSurgeryService $surgeries): JsonResponse
@@ -162,6 +159,28 @@ class SurgeryController extends Controller
                 ),
                 'variant' => 'ok',
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function listProps(Request $request, AdminSurgeryService $surgeries, string $section): array
+    {
+        $filters = [
+            'q' => trim($request->string('q')->toString()),
+            'specialty_id' => $request->integer('specialty_id') ?: null,
+            'professional_id' => $request->integer('professional_id') ?: null,
+            'health_insurance_id' => $this->insuranceFilter($request),
+            'status' => $section === 'approved' ? $this->statusFilter($request) : null,
+        ];
+
+        return [
+            'section' => $section,
+            'surgeries' => $surgeries->paginate($section, $filters),
+            'filters' => $filters,
+            'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery')),
+            ...$surgeries->filterOptions(),
+        ];
     }
 
     /**

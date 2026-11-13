@@ -56,7 +56,7 @@ const SECTIONS: Record<SurgerySection, { title: string; subtitle: string }> = {
         subtitle: 'A programar y programadas que todavía no terminaron.',
     },
     history: {
-        title: 'Historial',
+        title: 'Historial de cirugías',
         subtitle: 'Cirugías programadas que ya pasaron.',
     },
 };
@@ -85,8 +85,9 @@ export default function AdminSurgeries({
         (filters.health_insurance_id != null && filters.health_insurance_id !== '') ||
         (section === 'approved' && filters.status != null && filters.status !== '');
 
+    const listPath = section === 'history' ? '/admin/historial/cirugias' : '/admin/cirugias';
     const apply = (data: FilterValues) => {
-        router.get('/admin/cirugias', { section, ...data }, { preserveState: true });
+        router.get(listPath, section === 'history' ? data : { section, ...data }, { preserveState: true });
     };
 
     const approve = async (surgery: SurgeryRecord) => {

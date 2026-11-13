@@ -6,13 +6,20 @@ import PageScreen from '@/Components/Common/PageScreen';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import DeleteUser from '@/Components/Settings/delete-user';
+import UpdateAgenda from '@/Components/Settings/update-agenda';
 import UpdatePassword from '@/Components/Settings/update-password';
 import Hint from '@/Components/Surfaces/Hint';
 import Surface from '@/Components/Surfaces/Surface';
 import TextInput from '@/Components/Form/TextInput';
 import { type SharedData } from '@/types';
 
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
+type Props = {
+    mustVerifyEmail: boolean;
+    status?: string;
+    slot_duration_minutes?: number | null;
+};
+
+export default function Profile({ mustVerifyEmail, status, slot_duration_minutes = null }: Props) {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user;
 
@@ -70,6 +77,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                             {recentlySuccessful ? <Hint>Guardado.</Hint> : null}
                         </div>
                     </Surface>
+                    {slot_duration_minutes != null ? <UpdateAgenda slotDurationMinutes={slot_duration_minutes} /> : null}
                     <UpdatePassword />
                     <DeleteUser />
                 </div>

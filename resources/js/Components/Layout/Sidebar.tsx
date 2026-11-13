@@ -31,50 +31,81 @@ type NavGroup = {
     label: string;
     icon: LucideIcon;
     permission: PermissionName | null;
+    href?: string;
     children: Array<SurgeryChild | RouteChild>;
 };
-type NavEntry = NavLink | NavGroup;
+type NavSection = {
+    kind: 'section';
+    id: string;
+    label: string;
+    items: NavLink[];
+};
+type NavEntry = NavLink | NavGroup | NavSection;
 
-const portalNav: NavLink[] = [
+const surgeryChildren: SurgeryChild[] = [
+    { section: 'pending', label: 'Pendientes' },
+    { section: 'requested', label: 'Solicitadas' },
+    { section: 'approved', label: 'Aprobadas' },
+];
+
+const portalNav: NavEntry[] = [
     { href: '/paciente/profesionales', label: 'Profesionales', icon: Stethoscope, permission: Permission.ProfessionalsBrowse },
     { href: '/paciente/mis-turnos', label: 'Mis turnos', icon: CalendarClock, permission: Permission.OwnAppointmentsView },
     { href: '/paciente/reserva', label: 'Reservar turno', icon: NotebookPen, permission: Permission.AppointmentsBook },
     { href: '/profesional/agenda', label: 'Mi agenda', icon: Calendar, permission: Permission.OwnAgendaView },
     { href: '/profesional/programar', label: 'Programar turnos', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
     { href: '/profesional/mis-pacientes', label: 'Mis pacientes', icon: Users, permission: Permission.OwnPatientsView },
-    { href: '/profesional/configuracion/agenda', label: 'Config. agenda', icon: Settings, permission: Permission.OwnAgendaSettingsUpdate },
-];
-
-const surgeryChildren: SurgeryChild[] = [
-    { section: 'pending', label: 'Pendientes' },
-    { section: 'requested', label: 'Solicitadas' },
-    { section: 'approved', label: 'Aprobadas' },
-    { section: 'history', label: 'Historial' },
+    {
+        id: 'mis-cirugias',
+        label: 'Mis Cirugías',
+        icon: ClipboardPlus,
+        permission: Permission.OwnSurgeriesView,
+        href: '/profesional/cirugias/calendario',
+        children: surgeryChildren,
+    },
+    {
+        id: 'historial-portal',
+        label: 'Historial',
+        icon: ClipboardList,
+        permission: null,
+        children: [
+            { href: '/profesional/historial/mis-turnos', label: 'Mis turnos', permission: Permission.OwnAgendaView },
+            { href: '/profesional/historial/mis-cirugias', label: 'Mis cirugías', permission: Permission.OwnSurgeriesView },
+        ],
+    },
 ];
 
 const staffNav: NavEntry[] = [
-    { href: '/admin/reservas', label: 'Reservas', icon: ClipboardList, permission: Permission.AppointmentsCatalogView },
     {
         id: 'cirugias',
         label: 'Cirugías',
         icon: ClipboardPlus,
         permission: Permission.SurgeriesCatalogView,
+        href: '/admin/cirugias/calendario',
         children: surgeryChildren,
     },
     { href: '/admin/profesionales', label: 'Profesionales', icon: Stethoscope, permission: Permission.ProfessionalsCatalogView },
     { href: '/admin/pacientes', label: 'Pacientes', icon: Users, permission: Permission.PatientsCatalogView },
     {
-        id: 'administracion',
-        label: 'Administración',
-        icon: Shield,
+        id: 'historial',
+        label: 'Historial',
+        icon: ClipboardList,
         permission: null,
         children: [
-            { href: '/admin/administradores', label: 'Administradores', permission: Permission.AdminsManage },
-            { href: '/admin/configuracion', label: 'Configuración', permission: Permission.SpecialtiesManage },
+            { href: '/admin/historial/turnos', label: 'Turnos', permission: Permission.AppointmentsCatalogView },
+            { href: '/admin/historial/cirugias', label: 'Cirugías', permission: Permission.SurgeriesCatalogView },
+        ],
+    },
+    {
+        kind: 'section',
+        id: 'administracion',
+        label: 'Administración',
+        items: [
+            { href: '/admin/administradores', label: 'Administradores', icon: Shield, permission: Permission.AdminsManage },
+            { href: '/admin/configuracion', label: 'Configuración', icon: Settings, permission: Permission.SpecialtiesManage },
         ],
     },
 ];
-
 const rowClass =
     'flex w-full min-w-0 items-center gap-[0.35rem] overflow-hidden rounded-md text-left text-ink-2 max-[1199px]:min-h-[var(--control-h)] max-[1199px]:text-[length:var(--text-md)]';
 
@@ -169,6 +200,37 @@ export default function Sidebar({ isHome, navOpen, userOpen }: Props) {
                     )}
                 >
                     {nav.map((item) => {
+                        if ('kind' in item && item.kind === 'section') {
+                            return (
+                                <div key={item.id} className="mt-[var(--space-md)] grid min-w-0 gap-[0.2rem]">
+                                    <p className="px-[0.65rem] pt-[0.2rem] pb-[0.1rem] text-[0.7rem] font-semibold tracking-[0.04em] text-ink-2 uppercase">
+                                        {item.label}
+                                    </p>
+                                    {item.items.map((link) => {
+                                        const active = isActiveRoute(path, link.href);
+
+                                        return (
+                                            <Link
+                                                key={link.href}
+                                                href={link.href}
+                                                className={cn(
+                                                    rowClass,
+                                                    'min-h-[var(--control-h-sm)] px-[0.65rem] py-[0.55rem] whitespace-nowrap no-underline hover:bg-paper hover:text-ink',
+                                                    'max-[1199px]:px-[0.85rem] max-[1199px]:py-[0.75rem] max-[1199px]:hover:bg-paper-2',
+                                                    focusVisibleClass,
+                                                    active &&
+                                                        'bg-accent text-accent-ink hover:bg-accent hover:text-accent-ink max-[1199px]:hover:bg-accent',
+                                                )}
+                                            >
+                                                <link.icon className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                                <span className="min-w-0 flex-1 truncate">{link.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
                         if ('children' in item) {
                             return (
                                 <SidebarGroup
@@ -248,33 +310,67 @@ function SidebarGroup({
     const current = groupIsCurrent(group, path);
     const panelId = `nav-${group.id}-links`;
 
+    const parentClass = cn(
+        rowClass,
+        'min-h-[var(--control-h-sm)] cursor-pointer border-0 bg-transparent px-[0.65rem] py-[0.55rem] hover:bg-paper hover:text-ink',
+        'max-[1199px]:px-[0.85rem] max-[1199px]:py-[0.75rem] max-[1199px]:hover:bg-paper-2',
+        focusVisibleClass,
+        current && 'font-semibold text-ink',
+    );
+    const caret = (
+        <ChevronDown
+            className={cn(
+                'size-[1.05rem] shrink-0 transition-transform duration-[220ms] ease-[var(--ease-out)] motion-reduce:transition-none',
+                !open && '-rotate-90',
+            )}
+            aria-hidden
+            strokeWidth={2}
+        />
+    );
+
     return (
         <div className="grid min-w-0 gap-0">
-            <button
-                type="button"
-                id={`nav-${group.id}`}
-                aria-expanded={open}
-                aria-controls={panelId}
-                className={cn(
-                    rowClass,
-                    'min-h-[var(--control-h-sm)] cursor-pointer border-0 bg-transparent px-[0.65rem] py-[0.55rem] hover:bg-paper hover:text-ink',
-                    'max-[1199px]:px-[0.85rem] max-[1199px]:py-[0.75rem] max-[1199px]:hover:bg-paper-2',
-                    focusVisibleClass,
-                    current && 'font-semibold text-ink',
-                )}
-                onClick={onToggle}
-            >
-                <group.icon className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                <span className="min-w-0 flex-1 truncate">{group.label}</span>
-                <ChevronDown
-                    className={cn(
-                        'size-[1.05rem] shrink-0 transition-transform duration-[220ms] ease-[var(--ease-out)] motion-reduce:transition-none',
-                        !open && '-rotate-90',
-                    )}
-                    aria-hidden
-                    strokeWidth={2}
-                />
-            </button>
+            {group.href ? (
+                <div className="flex min-w-0 items-stretch">
+                    <Link
+                        id={`nav-${group.id}`}
+                        href={group.href}
+                        aria-current={path === group.href ? 'page' : undefined}
+                        className={cn(parentClass, 'min-w-0 flex-1 no-underline')}
+                    >
+                        <group.icon className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                        <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                    </Link>
+                    <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        aria-label={open ? `Cerrar ${group.label}` : `Abrir ${group.label}`}
+                        className={cn(
+                            'inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-[0.55rem] text-ink-2 hover:bg-paper hover:text-ink',
+                            'max-[1199px]:hover:bg-paper-2',
+                            focusVisibleClass,
+                            current && 'text-ink',
+                        )}
+                        onClick={onToggle}
+                    >
+                        {caret}
+                    </button>
+                </div>
+            ) : (
+                <button
+                    type="button"
+                    id={`nav-${group.id}`}
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    className={parentClass}
+                    onClick={onToggle}
+                >
+                    <group.icon className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                    <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                    {caret}
+                </button>
+            )}
             <div
                 id={panelId}
                 className={cn(
@@ -287,11 +383,12 @@ function SidebarGroup({
                         {group.children.map((child) => {
                             if ('section' in child) {
                                 const active = listSection === child.section;
+                                const listBase = surgeryListBase(group);
 
                                 return (
                                     <Link
                                         key={child.section}
-                                        href={`/admin/cirugias?section=${child.section}`}
+                                        href={`${listBase}?section=${child.section}`}
                                         aria-current={active ? 'page' : undefined}
                                         tabIndex={open ? undefined : -1}
                                         className={cn(
@@ -463,6 +560,15 @@ function navFor(permissions: string[]): NavEntry[] {
     const visible: NavEntry[] = [];
 
     for (const item of source) {
+        if ('kind' in item && item.kind === 'section') {
+            const items = item.items.filter((link) => hasPermission(permissions, link.permission));
+
+            if (items.length > 0) {
+                visible.push({ ...item, items });
+            }
+            continue;
+        }
+
         if (!('children' in item)) {
             if (hasPermission(permissions, item.permission)) {
                 visible.push(item);
@@ -488,33 +594,61 @@ function navFor(permissions: string[]): NavEntry[] {
 }
 
 function groupForPath(path: string): string | null {
+    if (path === '/admin/historial' || path.startsWith('/admin/historial/')) {
+        return 'historial';
+    }
+
+    if (path === '/profesional/historial' || path.startsWith('/profesional/historial/')) {
+        return 'historial-portal';
+    }
+
     if (path === '/admin/cirugias' || path.startsWith('/admin/cirugias/')) {
         return 'cirugias';
     }
 
-    if (path === '/admin/administradores' || path.startsWith('/admin/administradores/') || path === '/admin/configuracion' || path.startsWith('/admin/configuracion/')) {
-        return 'administracion';
+    if (path === '/profesional/cirugias' || path.startsWith('/profesional/cirugias/')) {
+        return 'mis-cirugias';
     }
 
     return null;
 }
 
 function groupIsCurrent(group: NavGroup, path: string): boolean {
+    if (group.id === 'historial') {
+        return path === '/admin/historial' || path.startsWith('/admin/historial/');
+    }
+
+    if (group.id === 'historial-portal') {
+        return path === '/profesional/historial' || path.startsWith('/profesional/historial/');
+    }
+
     if (group.id === 'cirugias') {
         return path === '/admin/cirugias' || path.startsWith('/admin/cirugias/');
+    }
+
+    if (group.id === 'mis-cirugias') {
+        return path === '/profesional/cirugias' || path.startsWith('/profesional/cirugias/');
     }
 
     return group.children.some((child) => 'href' in child && isActiveRoute(path, child.href));
 }
 
+function surgeryListBase(group: NavGroup): string {
+    if (group.href?.endsWith('/calendario')) {
+        return group.href.slice(0, -'/calendario'.length);
+    }
+
+    return group.id === 'mis-cirugias' ? '/profesional/cirugias' : '/admin/cirugias';
+}
+
 function surgerySection(url: string, path: string): SurgerySection | null {
-    if (path !== '/admin/cirugias') {
+    if (path !== '/admin/cirugias' && path !== '/profesional/cirugias') {
         return null;
     }
 
     const section = new URLSearchParams(url.split('?')[1] ?? '').get('section');
 
-    if (section === 'requested' || section === 'approved' || section === 'history') {
+    if (section === 'requested' || section === 'approved') {
         return section;
     }
 

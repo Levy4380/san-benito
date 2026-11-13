@@ -6,20 +6,23 @@ import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import Time24 from '@/Components/Form/Time24';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
+import RequestSurgeryModal from '@/Components/Surgeries/RequestSurgeryModal';
 import SurgeryDetailDialog from '@/Components/Surgeries/SurgeryDetailDialog';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Panel from '@/Components/Surfaces/Panel';
 import { clockMinutes, useClinic } from '@/lib/clinic';
 import { formatDateLabel, pad2 } from '@/lib/datetime';
+import { hasPermission, Permission, type PermissionName } from '@/lib/permissions';
 import { surgeryRange } from '@/lib/surgery';
 import { cn } from '@/lib/utils';
-import type { SurgeryRecord, SurgerySection } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import type { SharedData, SurgeryRecord, SurgerySection } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { type CSSProperties, useRef, useState } from 'react';
 
 type Suggestion = { starts_at: string; ends_at: string };
 
-type Props = {
+export type SurgeryCalendarProps = {
     date: string;
     month: string;
     today: string;
@@ -31,15 +34,48 @@ type Props = {
     gaps: Array<[number, number]>;
     tones: Record<string, 'empty' | 'has' | 'full'>;
     daySurgeries: SurgeryRecord[];
+    /** Institutional busy for client clash checks; defaults to daySurgeries. */
+    busySurgeries?: SurgeryRecord[];
+    basePath?: string;
+    createPermission?: PermissionName;
+    hideProfessional?: boolean;
+    canMarkRequested?: boolean;
+    canApprove?: boolean;
+    canSchedule?: boolean;
+    calendarDescription?: string;
 };
 
-export default function AdminSurgeryCalendar({ date, month, today, now, from, scheduling, surgery, suggestion, gaps, tones, daySurgeries }: Props) {
+export default function AdminSurgeryCalendar({
+    date,
+    month,
+    today,
+    now,
+    from,
+    scheduling,
+    surgery,
+    suggestion,
+    gaps,
+    tones,
+    daySurgeries,
+    busySurgeries,
+    basePath = '/admin/cirugias',
+    createPermission = Permission.SurgeriesCreate,
+    hideProfessional = false,
+    canMarkRequested,
+    canApprove,
+    canSchedule,
+    calendarDescription = 'Cirugías programadas en el sanatorio.',
+}: SurgeryCalendarProps) {
+    const page = usePage<SharedData>();
     const [mobileDayOpen, setMobileDayOpen] = useState(false);
     const [openId, setOpenId] = useState<number | null>(null);
+    const [requesting, setRequesting] = useState(false);
     const [start, setStart] = useState(suggestion?.starts_at ?? '');
     const [end, setEnd] = useState(suggestion?.ends_at ?? '');
     const seenDate = useRef(date);
     const { ask, dialog } = useConfirm();
+    const canCreate = !scheduling && hasPermission(page.props.auth.user?.permissions, createPermission);
+    const clashBusy = busySurgeries ?? daySurgeries;
 
     if (seenDate.current !== date) {
         seenDate.current = date;
@@ -48,7 +84,7 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
     }
 
     const visit = (next: { date?: string; month?: string }) => {
-        const path = scheduling && surgery ? `/admin/cirugias/${surgery.id}/programar` : '/admin/cirugias/calendario';
+        const path = scheduling && surgery ? `${basePath}/${surgery.id}/programar` : `${basePath}/calendario`;
         router.get(
             path,
             { date: next.date ?? date, month: next.month ?? month, from },
@@ -56,17 +92,18 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
         );
     };
 
-    const check = scheduling ? scheduleCheck(date, start, end, now, daySurgeries) : null;
+    const check = scheduling ? scheduleCheck(date, start, end, now, clashBusy) : null;
     const openSurgery = daySurgeries.find((item) => item.id === openId) ?? null;
     const panelTitle = capitalize(formatDateLabel(date));
-    const subtitle = scheduling && surgery ? (
-        <>
-            <strong>Programar: {surgery.patient?.name}</strong>
-            {` · Solicita ${surgery.professional?.user.name}. Elegí un día y un horario libre.`}
-        </>
-    ) : (
-        'Calendario de cirugías programadas.'
-    );
+    const subtitle =
+        scheduling && surgery ? (
+            <>
+                <strong>Programar: {surgery.patient?.name}</strong>
+                {` · Solicita ${surgery.professional?.user.name}. Elegí un día y un horario libre.`}
+            </>
+        ) : (
+            calendarDescription
+        );
 
     const calendar = (
         <CalendarMonth
@@ -111,13 +148,13 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                         setStart(fromMinutes(fromMinute));
                         setEnd(fromMinutes(Math.min(fromMinute + duration, toMinute)));
                     }}
-                    onCancel={() => router.visit(`/admin/cirugias?section=${from}&surgery=${surgery.id}`)}
+                    onCancel={() => router.visit(`${basePath}?section=${from}&surgery=${surgery.id}`)}
                     onSubmit={() => {
                         if (!check.ok) {
                             return;
                         }
 
-                        router.post(`/admin/cirugias/${surgery.id}/programar`, {
+                        router.post(`${basePath}/${surgery.id}/programar`, {
                             starts_at: `${date} ${start}:00`,
                             ends_at: `${date} ${end}:00`,
                         });
@@ -136,15 +173,21 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
 
     return (
         <>
-            <Head title="Cirugías" />
+            <Head title="Calendario de cirugías" />
             <PageScreen
                 layout="split"
                 header={
                     <PageHeader
-                        title="Cirugías"
+                        title="Calendario de cirugías"
                         description={subtitle}
-                        backHref={`/admin/cirugias?section=${from}`}
-                        backLabel="Cirugías"
+                        actions={
+                            canCreate ? (
+                                <Btn type="button" onClick={() => setRequesting(true)}>
+                                    <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                    Solicitar cirugía
+                                </Btn>
+                            ) : null
+                        }
                     />
                 }
             >
@@ -161,6 +204,10 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                     surgery={openSurgery}
                     section={from}
                     onDismiss={() => setOpenId(null)}
+                    basePath={basePath}
+                    canMarkRequested={canMarkRequested}
+                    canApprove={canApprove}
+                    canSchedule={canSchedule}
                     onApprove={async (item) => {
                         setOpenId(null);
                         const ok = await ask({
@@ -169,10 +216,13 @@ export default function AdminSurgeryCalendar({ date, month, today, now, from, sc
                             confirmLabel: 'Aprobar',
                         });
                         if (ok) {
-                            router.post(`/admin/cirugias/${item.id}/aprobar`, {}, { preserveState: false });
+                            router.post(`${basePath}/${item.id}/aprobar`, {}, { preserveState: false });
                         }
                     }}
                 />
+            ) : null}
+            {requesting ? (
+                <RequestSurgeryModal onDismiss={() => setRequesting(false)} basePath={basePath} hideProfessional={hideProfessional} />
             ) : null}
             {dialog}
         </>

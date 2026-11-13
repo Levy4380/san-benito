@@ -38,12 +38,27 @@ class AdminSurgeriesTest extends TestCase
         $this->assertContains('surgeries.catalog.view', Permission::namesForRole('admin'));
         $this->assertContains('surgeries.schedule', Permission::namesForRole('super_admin'));
         $this->assertNotContains('surgeries.catalog.view', Permission::namesForRole('patient'));
+        $this->assertNotContains('surgeries.catalog.view', Permission::namesForRole('professional'));
         $this->assertNotContains('surgeries.create', Permission::namesForRole('professional'));
+        $this->assertNotContains('surgeries.request', Permission::namesForRole('professional'));
+        $this->assertNotContains('surgeries.approve', Permission::namesForRole('professional'));
+        $this->assertNotContains('surgeries.schedule', Permission::namesForRole('professional'));
         $this->assertNotContains('surgeries.manage', Permission::names());
-        $this->assertFalse(collect(Permission::names())->contains(fn (string $name): bool => str_starts_with($name, 'own.surgeries.') || str_starts_with($name, 'doctors.')));
+        $this->assertFalse(collect(Permission::names())->contains(fn (string $name): bool => str_starts_with($name, 'doctors.')));
+
+        foreach (['own.surgeries.view', 'own.surgeries.create', 'own.surgeries.schedule'] as $own) {
+            $this->assertContains($own, Permission::names());
+            $this->assertContains($own, Permission::namesForRole('professional'));
+            $this->assertNotContains($own, Permission::namesForRole('patient'));
+            $this->assertNotContains($own, Permission::namesForRole('admin'));
+            $this->assertNotContains($own, Permission::namesForRole('super_admin'));
+        }
+
+        $this->assertNotContains('own.surgeries.request', Permission::names());
+        $this->assertNotContains('own.surgeries.approve', Permission::names());
     }
 
-    public function test_staff_sees_counts_and_portals_do_not(): void
+    public function test_staff_sees_global_counts_professional_sees_scoped_patient_null(): void
     {
         $admin = $this->makeAdmin();
         $super = $this->makeSuperAdmin();
@@ -82,7 +97,11 @@ class AdminSurgeriesTest extends TestCase
         $this->actingAs($professional->user)
             ->get('/profesional')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->where('surgeryNavCounts', null));
+            ->assertInertia(fn ($page) => $page
+                ->where('surgeryNavCounts.pending', 0)
+                ->where('surgeryNavCounts.requested', 0)
+                ->where('surgeryNavCounts.approved', 0)
+                ->where('surgeryNavCounts.history', 0));
     }
 
     public function test_particular_goes_to_schedule_and_insurance_stays_pending(): void

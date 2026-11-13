@@ -1,17 +1,15 @@
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
-import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
-import BookingCard, { BookingCardActions, BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
+import BookingCard, { BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
 import Results from '@/Components/Surfaces/Results';
 import type { AppointmentRecord, ProfessionalRecord, PatientRecord, Specialty } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { X } from 'lucide-react';
 
 type Paginator = {
     data: AppointmentRecord[];
@@ -27,13 +25,13 @@ type Props = {
 
 export default function AdminAppointments({ appointments, filters, professionals, patients, specialties }: Props) {
     const apply = (data: FilterValues) => {
-        router.get('/admin/reservas', data, { preserveState: true });
+        router.get('/admin/historial/turnos', data, { preserveState: true });
     };
 
     return (
         <>
-            <Head title="Reservas" />
-            <PageScreen header={<PageHeader title="Reservas" description="Todas las reservas de la institución." />}>
+            <Head title="Historial de turnos" />
+            <PageScreen header={<PageHeader title="Historial de turnos" description="Turnos cuyo horario de inicio ya pasó." />}>
                 <StageCard>
                     <Results>
                         <Filters
@@ -90,24 +88,13 @@ export default function AdminAppointments({ appointments, filters, professionals
                             }
                         >
                             {appointments.data.length === 0 ? (
-                                <Empty>No hay reservas con esos filtros.</Empty>
+                                <Empty>No hay turnos pasados con esos filtros.</Empty>
                             ) : (
                                 <BookingList className="mt-0">
                                     {appointments.data.map((appointment) => (
                                         <BookingCard key={appointment.id}>
                                             <BookingCardRow>
                                                 <BookingCardFields appointment={appointment} />
-                                                <BookingCardActions>
-                                                    <Btn
-                                                        type="button"
-                                                        variant="danger"
-                                                        size="xs"
-                                                        onClick={() => router.delete(`/appointments/${appointment.id}`)}
-                                                    >
-                                                        <X className="size-3 shrink-0" aria-hidden strokeWidth={2} />
-                                                        Cancelar
-                                                    </Btn>
-                                                </BookingCardActions>
                                             </BookingCardRow>
                                         </BookingCard>
                                     ))}

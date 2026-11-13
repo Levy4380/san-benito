@@ -80,7 +80,6 @@ let selectedPatientId = null;
 let view = 'list';
 let modalMode = null;
 let modalSurgeryId = null;
-let detailSurgeryId = null;
 let selectedDate = todayKey();
 let visibleMonth = `${selectedDate.slice(0, 7)}-01`;
 let mobileDayOpen = false;
@@ -988,7 +987,6 @@ function openDetail(id) {
         ? el('span', { class: 'mono', text: `${surgery.starts_at.slice(0, 10)} · ${timeRange(surgery)}` })
         : 'Sin horario';
 
-    detailSurgeryId = id;
     document.getElementById('detail-title').textContent = 'Detalle de la cirugía';
     document.getElementById('detail-status').replaceChildren(statusBadge(surgery.status));
     document.getElementById('detail-body').replaceChildren(
@@ -1037,7 +1035,6 @@ function openDetail(id) {
 }
 
 function closeDetail() {
-    detailSurgeryId = null;
     document.getElementById('detail-modal').hidden = true;
 }
 

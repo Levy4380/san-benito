@@ -26,6 +26,7 @@ use App\Http\Controllers\MyAppointmentsController;
 use App\Http\Controllers\MyPatientProfileController;
 use App\Http\Controllers\MyPatientsController;
 use App\Http\Controllers\PatientHomeController;
+use App\Http\Controllers\Professional\AppointmentHistoryController as ProfessionalAppointmentHistoryController;
 use App\Http\Controllers\Professional\SurgeryController as ProfessionalSurgeryController;
 use App\Http\Controllers\ProfessionalHomeController;
 use App\Http\Controllers\ProfessionalProfileController;
@@ -158,6 +159,8 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware(Permission::middleware(Permission::OwnAgendaView))->group(function () {
             Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda');
+            Route::get('/historial/mis-turnos', ProfessionalAppointmentHistoryController::class)
+                ->name('historial.mis-turnos');
         });
 
         Route::middleware(Permission::middleware(Permission::OwnAvailabilityProgram))->group(function () {
@@ -174,6 +177,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::middleware(Permission::middleware(Permission::OwnSurgeriesView))->group(function () {
+            Route::get('/historial/mis-cirugias', [ProfessionalSurgeryController::class, 'history'])
+                ->name('historial.mis-cirugias');
             Route::get('/cirugias', [ProfessionalSurgeryController::class, 'index'])->name('surgeries.index');
             Route::get('/cirugias/calendario', [ProfessionalSurgeryController::class, 'calendar'])->name('surgeries.calendar');
         });
@@ -191,14 +196,16 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', fn () => redirect()->route('admin.appointments.index'))->name('home');
+        Route::get('/', fn () => redirect()->route('admin.surgeries.calendar'))->name('home');
 
         Route::middleware(Permission::middleware(Permission::AppointmentsCatalogView))->group(function () {
-            Route::get('/reservas', [AdminAppointmentController::class, 'index'])->name('appointments.index');
+            Route::get('/historial/turnos', [AdminAppointmentController::class, 'index'])->name('historial.turnos');
+            Route::get('/reservas', fn () => redirect()->route('admin.historial.turnos'))->name('appointments.index');
             Route::get('/profesionales/{professional}/horarios', [ProfessionalSlotsController::class, 'index'])->name('professionals.slots');
         });
 
         Route::middleware(Permission::middleware(Permission::SurgeriesCatalogView))->group(function () {
+            Route::get('/historial/cirugias', [AdminSurgeryController::class, 'history'])->name('historial.cirugias');
             Route::get('/cirugias', [AdminSurgeryController::class, 'index'])->name('surgeries.index');
             Route::get('/cirugias/calendario', [AdminSurgeryController::class, 'calendar'])->name('surgeries.calendar');
         });

@@ -65,10 +65,10 @@ class AdminSurgeriesTest extends TestCase
         $patient = $this->makePatient();
         $professional = $this->makeProfessional();
 
-        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/reservas');
+        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/cirugias/calendario');
 
         $this->actingAs($admin)
-            ->get('/admin/reservas')
+            ->get('/admin/historial/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('surgeryNavCounts.pending', 0)
@@ -349,8 +349,20 @@ class AdminSurgeriesTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=history')
+            ->assertRedirect(route('admin.historial.cirugias'));
+
+        $this->actingAs($admin)
+            ->get('/admin/cirugias?section=history&q=44556677')
+            ->assertRedirect(route('admin.historial.cirugias', ['q' => '44556677']));
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/cirugias')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('surgeries.data', 1)->where('surgeries.data.0.note', 'Pasada.'));
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Surgeries')
+                ->where('section', 'history')
+                ->has('surgeries.data', 1)
+                ->where('surgeries.data.0.note', 'Pasada.'));
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=pending&q=44556677')

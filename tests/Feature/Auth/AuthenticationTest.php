@@ -80,10 +80,10 @@ class AuthenticationTest extends TestCase
 
         $this->actingAs($professional->user)
             ->get('/admin')
-            ->assertRedirect('/admin/reservas');
+            ->assertRedirect('/admin/cirugias/calendario');
     }
 
-    public function test_admin_and_super_admin_login_go_to_staff_appointments(): void
+    public function test_admin_and_super_admin_login_go_to_staff_surgery_calendar(): void
     {
         $admin = $this->makeAdmin(['email' => 'admin.login@example.com']);
         $super = $this->makeSuperAdmin(['email' => 'super.login@example.com']);
@@ -102,8 +102,8 @@ class AuthenticationTest extends TestCase
 
         $this->actingAs($admin)->get('/home')->assertRedirect('/admin');
         $this->actingAs($super)->get('/home')->assertRedirect('/admin');
-        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/reservas');
-        $this->actingAs($super)->get('/admin')->assertRedirect('/admin/reservas');
+        $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/cirugias/calendario');
+        $this->actingAs($super)->get('/admin')->assertRedirect('/admin/cirugias/calendario');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

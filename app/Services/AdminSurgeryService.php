@@ -11,17 +11,16 @@ use App\Models\Surgery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 
 class AdminSurgeryService
 {
     /**
      * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null}  $filters
      */
-    public function paginate(string $section, array $filters, ?int $professionalId = null): LengthAwarePaginator
+    public function paginate(string $section, array $filters): LengthAwarePaginator
     {
         $section = $this->section($section);
-        $paginator = $this->filtered($section, $filters, $professionalId)->paginate(25)->withQueryString();
+        $paginator = $this->filtered($section, $filters)->paginate(25)->withQueryString();
 
         if ($section !== 'approved') {
             return $paginator;
@@ -30,7 +29,7 @@ class AdminSurgeryService
         $previousStatus = null;
 
         if ($paginator->currentPage() > 1) {
-            $previous = $this->filtered($section, $filters, $professionalId)
+            $previous = $this->filtered($section, $filters)
                 ->skip(($paginator->currentPage() - 1) * 25 - 1)
                 ->first();
             $previousStatus = $previous?->status->value;
@@ -53,13 +52,13 @@ class AdminSurgeryService
     /**
      * @return array{pending: int, requested: int, approved: int, history: int}
      */
-    public function counts(?int $professionalId = null): array
+    public function counts(): array
     {
         return [
-            'pending' => $this->sectionQuery('pending', $professionalId)->count(),
-            'requested' => $this->sectionQuery('requested', $professionalId)->count(),
-            'approved' => $this->sectionQuery('approved', $professionalId)->count(),
-            'history' => $this->sectionQuery('history', $professionalId)->count(),
+            'pending' => Surgery::query()->inSection('pending')->count(),
+            'requested' => Surgery::query()->inSection('requested')->count(),
+            'approved' => Surgery::query()->inSection('approved')->count(),
+            'history' => Surgery::query()->inSection('history')->count(),
         ];
     }
 
@@ -71,18 +70,6 @@ class AdminSurgeryService
         return [
             'professionals' => Professional::query()->with(['user', 'specialties'])->orderBy('id')->get(),
             'specialties' => Specialty::query()->orderBy('name')->get(),
-            'healthInsurances' => HealthInsurance::query()->orderBy('name')->get(),
-        ];
-    }
-
-    /**
-     * Portal create JSON: obras sociales only (no professionals list).
-     *
-     * @return array{healthInsurances: Collection<int, HealthInsurance>}
-     */
-    public function createOptionsForProfessional(): array
-    {
-        return [
             'healthInsurances' => HealthInsurance::query()->orderBy('name')->get(),
         ];
     }
@@ -116,43 +103,14 @@ class AdminSurgeryService
     }
 
     /**
-     * Portal create search: only patients linked to the professional.
-     *
-     * @return Collection<int, Patient>
-     */
-    public function searchLinkedPatients(Professional $professional, string $term): Collection
-    {
-        $term = trim($term);
-
-        if (mb_strlen($term) < 2) {
-            return new Collection;
-        }
-
-        $like = '%'.$term.'%';
-
-        return $professional->patients()
-            ->with('healthInsurances')
-            ->where(function (Builder $patients) use ($like): void {
-                $patients->where('patients.name', 'like', $like)
-                    ->orWhere('patients.dni', 'like', $like)
-                    ->orWhere('patients.email', 'like', $like);
-            })
-            ->orderBy('patients.id')
-            ->limit(25)
-            ->get()
-            ->each(function (Patient $patient): void {
-                $patient->setAttribute('health_insurance_id', $patient->healthInsurances->first()?->id);
-            });
-    }
-
-    /**
      * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null}  $filters
      * @return Builder<Surgery>
      */
-    private function filtered(string $section, array $filters, ?int $professionalId = null): Builder
+    private function filtered(string $section, array $filters): Builder
     {
-        $query = $this->sectionQuery($section, $professionalId)
-            ->with(['patient', 'professional.user', 'professional.specialties', 'healthInsurance']);
+        $query = Surgery::query()
+            ->with(['patient', 'professional.user', 'professional.specialties', 'healthInsurance'])
+            ->inSection($section);
 
         $term = trim((string) ($filters['q'] ?? ''));
 
@@ -164,7 +122,7 @@ class AdminSurgeryService
             });
         }
 
-        if ($professionalId === null && ! empty($filters['professional_id'])) {
+        if (! empty($filters['professional_id'])) {
             $query->where('professional_id', (int) $filters['professional_id']);
         }
 
@@ -196,74 +154,17 @@ class AdminSurgeryService
         return $query;
     }
 
-    public function findInSection(string $section, int $id, ?int $professionalId = null): ?Surgery
+    public function findInSection(string $section, int $id): ?Surgery
     {
         if ($id < 1) {
             return null;
         }
 
-        return $this->sectionQuery($this->section($section), $professionalId)
+        return Surgery::query()
             ->with(['patient', 'professional.user', 'professional.specialties', 'healthInsurance'])
+            ->inSection($this->section($section))
             ->whereKey($id)
             ->first();
-    }
-
-    /**
-     * @return Collection<int, Surgery>
-     */
-    public function scheduledOnDate(string $date, ?int $professionalId = null): Collection
-    {
-        $query = Surgery::query()
-            ->with(['patient', 'professional.user', 'professional.specialties', 'healthInsurance'])
-            ->scheduledOnDate($date);
-
-        $this->constrainProfessional($query, $professionalId);
-
-        return $query->get();
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    public function monthScheduledCounts(Carbon|string $monthStart, Carbon|string $monthEnd, ?int $professionalId = null): array
-    {
-        $start = $monthStart instanceof Carbon ? $monthStart : Carbon::parse($monthStart);
-        $end = $monthEnd instanceof Carbon ? $monthEnd : Carbon::parse($monthEnd);
-
-        $query = Surgery::query()
-            ->where('status', SurgeryStatus::Scheduled)
-            ->whereDate('starts_at', '>=', $start->toDateString())
-            ->whereDate('starts_at', '<=', $end->toDateString());
-
-        $this->constrainProfessional($query, $professionalId);
-
-        return $query
-            ->selectRaw('DATE(starts_at) as day, COUNT(*) as total')
-            ->groupByRaw('DATE(starts_at)')
-            ->pluck('total', 'day')
-            ->map(fn ($total): int => (int) $total)
-            ->all();
-    }
-
-    /**
-     * @return Builder<Surgery>
-     */
-    private function sectionQuery(string $section, ?int $professionalId = null): Builder
-    {
-        $query = Surgery::query()->inSection($section);
-        $this->constrainProfessional($query, $professionalId);
-
-        return $query;
-    }
-
-    /**
-     * @param  Builder<Surgery>  $query
-     */
-    private function constrainProfessional(Builder $query, ?int $professionalId): void
-    {
-        if ($professionalId !== null) {
-            $query->where('professional_id', $professionalId);
-        }
     }
 
     private function section(string $section): string

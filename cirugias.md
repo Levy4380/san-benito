@@ -1,6 +1,6 @@
 # Cirugías
 
-Gestor de staff (`/admin/cirugias`) y portal del professional (`/profesional/cirugias`), aparte de Reservas. La demo `demo/cirugias/cirugias-diseno-v1.html` manda la UI staff, con dos deltas: el estado **Solicitada** y **Particular** que no pasa por pendiente. El portal espeja chrome/nav/headers de staff (parity); no reutiliza la demo HTML.
+Gestor de staff, aparte de Reservas. La demo `demo/cirugias/cirugias-diseno-v1.html` manda la UI, con dos deltas: el estado **Solicitada** y **Particular** que no pasa por pendiente.
 
 La entidad es `Professional` (tabla `professionals`, rol `professional`, FK `professional_id`). No existe Doctor ni el rol `doctor`.
 
@@ -32,9 +32,7 @@ Formulario: paciente, obra social, profesional, nota. Sin horario.
 
 ## Actores
 
-Dos brazos en `Permission::forRole`. No hay `surgeries.manage`. No hay `own.surgeries.request` ni `own.surgeries.approve`. Patient no tiene permisos de cirugías. No hay páginas bajo `/paciente`.
-
-**Staff** (`$staff`: admin y super_admin) — catálogo institucional:
+Permisos solo en `$staff` de `Permission::forRole` (admin y super_admin). No van a patient ni a professional. No hay `own.surgeries.*` ni `surgeries.manage`.
 
 - `surgeries.catalog.view`
 - `surgeries.create`
@@ -42,17 +40,7 @@ Dos brazos en `Permission::forRole`. No hay `surgeries.manage`. No hay `own.surg
 - `surgeries.approve`
 - `surgeries.schedule`
 
-En alta staff: `professional_id` obligatorio (el admin lo elige; es quien «solicita»); `requested_by_user_id` = user que crea la fila. No se escribe `professional_patient` ni `patient_health_insurance`.
-
-**Professional** (portal propio) — solo `own.surgeries.*`:
-
-- `own.surgeries.view`
-- `own.surgeries.create`
-- `own.surgeries.schedule`
-
-Sin `surgeries.catalog.view` ni `surgeries.create|request|approve|schedule` en el rol professional. El professional **nunca** marca solicitada, aprueba, rechaza, cancela, edita nota ni reprograma.
-
-En alta portal («Solicitar cirugía» = `SurgeryService::request`, no `markRequested`): `professional_id` = Professional del actor (ignorar body); `requested_by_user_id` = actor; 403 sin ficha professional. Pacientes solo del pivote `professional_patient`; sin vínculo → 422; el alta **no** escribe pivote ni `patient_health_insurance`. Pending y requested son solo lectura; approved permite Programar; historial RO.
+`professional_id` es obligatorio: es quien «solicita». El admin lo elige. `requested_by_user_id` es el user que crea la fila. No hay páginas bajo `/profesional` ni `/paciente`. No se escribe `professional_patient`.
 
 ## Calendario
 
@@ -64,9 +52,9 @@ Programar abre el calendario (no un modal), día = mañana, primer hueco o 09:00
 
 La vista calendario sin programar también muestra días pasados. Tonos: 0 sin cirugías, 1–2 con cirugías, ≥3 «3 o más».
 
-## Lista (staff)
+## Lista
 
-Padre «Cirugías» en `staffNav`, después de Reservas. Grupo: `href` → `/admin/cirugias/calendario`. Hijos, todos con `surgeries.catalog.view` y contador:
+Padre «Cirugías» en `staffNav`, después de Reservas. Hijos, todos con `surgeries.catalog.view` y contador:
 
 - Pendientes → `pending`. Cirugías de obra social que todavía no se solicitaron a la obra social. `id` descendente.
 - Solicitadas → `requested`. Enviadas a la obra social; la respuesta se carga a mano. `id` descendente.
@@ -75,27 +63,11 @@ Padre «Cirugías» en `staffNav`, después de Reservas. Grupo: `href` → `/adm
 
 `GET /admin/cirugias?section=pending|requested|approved|history`. Default `pending`. Cambiar de sección limpia filtros. `isActiveRoute` compara el path y no el query; los hijos comparan `section`.
 
-Header lista: actions outline **Calendario** → `/admin/cirugias/calendario?from={section}` + CTA **Solicitar cirugía** (`surgeries.create`). Header calendario (sin programar): CTA **Solicitar cirugía**.
-
 Filtros con el modal (no el panel inline de la demo). Primario = nombre o DNI. Modal: especialidad (`whereHas` professional.specialties), profesional, obra social. Estado (A programar | Programada | Todos) solo en `approved`. Particular en el filtro = `whereNull('health_insurance_id')`.
 
-Contadores = totales de la sección. `surgeryNavCounts` global si el user tiene `surgeries.catalog.view`.
-
-## Portal professional (`/profesional/cirugias`)
-
-Parity de nav/UI con staff: mismo patrón de grupo + 4 hijos + counts + headers/chrome/botones. **Única diferencia de copy del grupo:** label **«Mis Cirugías»** (no «Cirugías»). Paths bajo `/profesional/cirugias…`. `groupForPath` / active state reconocen el prefijo portal. Agenda de turnos sigue en `/profesional/agenda` (fuera de este recurso).
-
-Grupo en `portalNav`: `label: 'Mis Cirugías'`, `permission: own.surgeries.view`, `href: '/profesional/cirugias/calendario'`, mismos 4 hijos (Pendientes / Solicitadas / Aprobadas / Historial) con `?section=` y counts scoped a `professional_id` del actor vía la misma prop `surgeryNavCounts` cuando tiene `own.surgeries.view` (patient sigue `null`; staff global con `catalog.view`).
-
-`GET /profesional/cirugias?section=pending|requested|approved|history`. Default `pending`. Redirect post-alta: Particular → `approved`; obra social → `pending`.
-
-Header lista: outline **Calendario** → `/profesional/cirugias/calendario?from={section}` + CTA **Solicitar cirugía** (`own.surgeries.create`). Header calendario: **Solicitar cirugía**. Alta modal: sin selector de profesional (fijado al actor); JSON create sin listar professionals ajenos. Pacientes del create: solo vinculados.
-
-Secciones UI: pending RO, requested RO (sin Marcar como solicitada / Aprobar), approved con **Programar** (`own.surgeries.schedule` + ownership), history RO. CTAs staff de solicitar/aprobar intactos en `/admin/cirugias`.
+Contadores = totales de la sección. `surgeryNavCounts` solo si el user tiene `surgeries.catalog.view`.
 
 ## Rutas
-
-Staff:
 
 - `GET /admin/cirugias`
 - `GET /admin/cirugias/crear` JSON del modal (`surgeries.create`)
@@ -107,17 +79,7 @@ Staff:
 - `GET /admin/cirugias/{surgery}/programar`
 - `POST /admin/cirugias/{surgery}/programar`
 
-Portal (GET Inertia en español; mutaciones bajo el mismo prefijo `/profesional/cirugias/…`, espejo admin — excepción D9 alineada a este recurso; no reusar POST `/admin/cirugias`):
-
-- `GET /profesional/cirugias`
-- `GET /profesional/cirugias/crear` JSON del modal (`own.surgeries.create`)
-- `POST /profesional/cirugias`
-- `GET /profesional/cirugias/pacientes?q=` JSON (`own.surgeries.create`)
-- `GET /profesional/cirugias/calendario`
-- `GET /profesional/cirugias/{surgery}/programar`
-- `POST /profesional/cirugias/{surgery}/programar`
-
-Sin rutas portal de solicitar/aprobar. Transición inválida → 422. Sin permiso → 403. Staff endpoints siguen 403 para patient/professional. El post-login del admin sigue en `/admin/reservas`.
+Transición inválida → 422. Sin permiso, o rol patient/professional → 403. El post-login del admin sigue en `/admin/reservas`.
 
 ## Columnas `surgeries`
 

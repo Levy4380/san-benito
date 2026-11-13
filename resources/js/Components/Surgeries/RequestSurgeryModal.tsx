@@ -19,17 +19,15 @@ type PatientHit = {
 };
 
 type CreateOptions = {
-    professionals?: ProfessionalRecord[];
+    professionals: ProfessionalRecord[];
     healthInsurances: HealthInsurance[];
 };
 
 type Props = {
     onDismiss: () => void;
-    basePath?: string;
-    hideProfessional?: boolean;
 };
 
-export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/cirugias', hideProfessional = false }: Props) {
+export default function RequestSurgeryModal({ onDismiss }: Props) {
     const form = useForm({
         patient_id: '' as number | '',
         health_insurance_id: 'particular',
@@ -51,7 +49,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
         setLoading(true);
         setLoadFailed(false);
 
-        fetch(`${basePath}/crear`, {
+        fetch('/admin/cirugias/crear', {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             signal: controller.signal,
         })
@@ -68,7 +66,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
             });
 
         return () => controller.abort();
-    }, [basePath]);
+    }, []);
 
     useEffect(() => {
         if (tooShort) {
@@ -80,7 +78,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
 
         const controller = new AbortController();
         const handle = window.setTimeout(() => {
-            fetch(`${basePath}/pacientes?q=${encodeURIComponent(needle)}`, {
+            fetch(`/admin/cirugias/pacientes?q=${encodeURIComponent(needle)}`, {
                 headers: { Accept: 'application/json' },
                 signal: controller.signal,
             })
@@ -96,7 +94,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
             window.clearTimeout(handle);
             controller.abort();
         };
-    }, [basePath, needle, tooShort]);
+    }, [needle, tooShort]);
 
     const choose = (patient: PatientHit) => {
         setPicked(patient);
@@ -110,11 +108,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
     return (
         <ConfirmDialog
             title="Solicitar cirugía"
-            message={
-                hideProfessional
-                    ? 'Paciente, obra social y nota. Sin horario.'
-                    : 'Paciente, obra social, profesional y nota. Sin horario.'
-            }
+            message="Paciente, obra social, profesional y nota. Sin horario."
             onDismiss={onDismiss}
             className="w-[min(40rem,100%)]"
         >
@@ -122,23 +116,16 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
                 className="grid min-h-0"
                 onSubmit={(event) => {
                     event.preventDefault();
-                    form.transform((data) => {
-                        const payload: Record<string, unknown> = {
-                            patient_id: data.patient_id,
-                            health_insurance_id:
-                                data.health_insurance_id === '' || data.health_insurance_id === 'particular'
-                                    ? null
-                                    : Number(data.health_insurance_id),
-                            note: data.note,
-                        };
-
-                        if (!hideProfessional) {
-                            payload.professional_id = data.professional_id;
-                        }
-
-                        return payload;
-                    });
-                    form.post(basePath, {
+                    form.transform((data) => ({
+                        patient_id: data.patient_id,
+                        professional_id: data.professional_id,
+                        health_insurance_id:
+                            data.health_insurance_id === '' || data.health_insurance_id === 'particular'
+                                ? null
+                                : Number(data.health_insurance_id),
+                        note: data.note,
+                    }));
+                    form.post('/admin/cirugias', {
                         preserveScroll: true,
                         onSuccess: () => onDismiss(),
                     });
@@ -195,26 +182,23 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
                             ]}
                         />
                     </Field>
-                    {hideProfessional ? null : (
-                        <Field
-                            label="Profesional"
-                            htmlFor="professional-id"
-                            error={loadFailed ? 'No se pudieron cargar los datos.' : form.errors.professional_id}
-                        >
-                            <Combobox
-                                id="professional-id"
-                                disabled={loading || loadFailed}
-                                value={form.data.professional_id}
-                                onChange={(value) => form.setData('professional_id', value)}
-                                placeholder={loading ? 'Cargando…' : 'Elegí un profesional'}
-                                options={(options?.professionals ?? []).map((professional) => ({
-                                    value: String(professional.id),
-                                    label: professional.user.name,
-                                }))}
-                            />
-                        </Field>
-                    )}
-                    {hideProfessional && loadFailed ? <p className="m-0 text-sm text-danger">No se pudieron cargar los datos.</p> : null}
+                    <Field
+                        label="Profesional"
+                        htmlFor="professional-id"
+                        error={loadFailed ? 'No se pudieron cargar los datos.' : form.errors.professional_id}
+                    >
+                        <Combobox
+                            id="professional-id"
+                            disabled={loading || loadFailed}
+                            value={form.data.professional_id}
+                            onChange={(value) => form.setData('professional_id', value)}
+                            placeholder={loading ? 'Cargando…' : 'Elegí un profesional'}
+                            options={(options?.professionals ?? []).map((professional) => ({
+                                value: String(professional.id),
+                                label: professional.user.name,
+                            }))}
+                        />
+                    </Field>
                     <Field label="Nota" htmlFor="surgery-note" error={form.errors.note}>
                         <textarea
                             id="surgery-note"

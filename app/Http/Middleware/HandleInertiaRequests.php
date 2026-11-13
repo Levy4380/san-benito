@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Permission;
-use App\Models\User;
 use App\Services\AdminSurgeryService;
 use App\Services\ClinicScheduleService;
 use Illuminate\Http\Request;
@@ -41,37 +40,10 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'toast' => $request->session()->get('toast'),
             ],
-            'surgeryNavCounts' => $this->surgeryNavCounts($user),
+            'surgeryNavCounts' => $user !== null && Permission::SurgeriesCatalogView->allows($user)
+                ? app(AdminSurgeryService::class)->counts()
+                : null,
             'clinic' => app(ClinicScheduleService::class)->share(),
         ];
-    }
-
-    /**
-     * Staff catalog.view → global counts. Own view → scoped to the actor's professional.
-     * Staff wins if both (should not happen). Patient / no perm → null.
-     *
-     * @return array{pending: int, requested: int, approved: int, history: int}|null
-     */
-    private function surgeryNavCounts(?User $user): ?array
-    {
-        if ($user === null) {
-            return null;
-        }
-
-        $surgeries = app(AdminSurgeryService::class);
-
-        if (Permission::SurgeriesCatalogView->allows($user)) {
-            return $surgeries->counts();
-        }
-
-        if (! Permission::OwnSurgeriesView->allows($user)) {
-            return null;
-        }
-
-        $professionalId = $user->professional?->id;
-
-        return $professionalId === null
-            ? ['pending' => 0, 'requested' => 0, 'approved' => 0, 'history' => 0]
-            : $surgeries->counts($professionalId);
     }
 }

@@ -56,7 +56,7 @@ const SECTIONS: Record<SurgerySection, { title: string; subtitle: string }> = {
         subtitle: 'A programar y programadas que todavía no terminaron.',
     },
     history: {
-        title: 'Historial',
+        title: 'Historial de cirugías',
         subtitle: 'Cirugías programadas que ya pasaron.',
     },
 };
@@ -84,8 +84,9 @@ export default function ProfessionalSurgeries({
         (filters.health_insurance_id != null && filters.health_insurance_id !== '') ||
         (section === 'approved' && filters.status != null && filters.status !== '');
 
+    const listPath = section === 'history' ? '/profesional/historial/mis-cirugias' : BASE_PATH;
     const apply = (data: FilterValues) => {
-        router.get(BASE_PATH, { section, ...data }, { preserveState: true });
+        router.get(listPath, section === 'history' ? data : { section, ...data }, { preserveState: true });
     };
 
     const applied: FilterValues = {

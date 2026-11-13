@@ -23,32 +23,33 @@ use Inertia\Response;
 
 class SurgeryController extends Controller
 {
-    public function index(Request $request, AdminSurgeryService $surgeries, ProfessionalService $professionals): Response
+    public function index(Request $request, AdminSurgeryService $surgeries, ProfessionalService $professionals): Response|RedirectResponse
     {
         $this->authorize('viewAny', Surgery::class);
+
+        if ($request->string('section')->toString() === 'history') {
+            return redirect()->route('professional.historial.mis-cirugias', $request->except('section'));
+        }
 
         $professional = $professionals->forUser($request->user());
         $section = $this->section($request->string('section')->toString());
 
-        $filters = [
-            'q' => trim($request->string('q')->toString()),
-            'specialty_id' => $request->integer('specialty_id') ?: null,
-            'professional_id' => null,
-            'health_insurance_id' => $this->insuranceFilter($request),
-            'status' => $section === 'approved' ? $this->statusFilter($request) : null,
-        ];
+        return Inertia::render(
+            'Professional/Surgeries',
+            $this->listProps($request, $surgeries, $professional, $section),
+        );
+    }
 
-        $options = $surgeries->filterOptions();
+    public function history(Request $request, AdminSurgeryService $surgeries, ProfessionalService $professionals): Response
+    {
+        $this->authorize('viewAny', Surgery::class);
 
-        return Inertia::render('Professional/Surgeries', [
-            'section' => $section,
-            'surgeries' => $surgeries->paginate($section, $filters, $professional->id),
-            'filters' => $filters,
-            'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery'), $professional->id),
-            'professionals' => [],
-            'specialties' => $options['specialties'],
-            'healthInsurances' => $options['healthInsurances'],
-        ]);
+        $professional = $professionals->forUser($request->user());
+
+        return Inertia::render(
+            'Professional/Surgeries',
+            $this->listProps($request, $surgeries, $professional, 'history'),
+        );
     }
 
     public function create(AdminSurgeryService $surgeries): JsonResponse
@@ -166,6 +167,36 @@ class SurgeryController extends Controller
                 ),
                 'variant' => 'ok',
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function listProps(
+        Request $request,
+        AdminSurgeryService $surgeries,
+        Professional $professional,
+        string $section,
+    ): array {
+        $filters = [
+            'q' => trim($request->string('q')->toString()),
+            'specialty_id' => $request->integer('specialty_id') ?: null,
+            'professional_id' => null,
+            'health_insurance_id' => $this->insuranceFilter($request),
+            'status' => $section === 'approved' ? $this->statusFilter($request) : null,
+        ];
+
+        $options = $surgeries->filterOptions();
+
+        return [
+            'section' => $section,
+            'surgeries' => $surgeries->paginate($section, $filters, $professional->id),
+            'filters' => $filters,
+            'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery'), $professional->id),
+            'professionals' => [],
+            'specialties' => $options['specialties'],
+            'healthInsurances' => $options['healthInsurances'],
+        ];
     }
 
     /**

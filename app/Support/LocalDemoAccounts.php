@@ -14,7 +14,7 @@ final class LocalDemoAccounts
         return [
             ['role' => 'Super admin', 'name' => 'Administrador General', 'email' => 'superadmin@test.test'],
             ['role' => 'Admin', 'name' => 'Cuenta de Secretaria', 'email' => 'admin@test.test'],
-            ['role' => 'Profesional', 'name' => 'Cuenta de Doctor', 'email' => 'Doctor@test.test'],
+            ['role' => 'Profesional', 'name' => 'Cuenta de Profesional', 'email' => 'professional@test.test'],
             ['role' => 'Paciente', 'name' => 'Cuenta de Paciente', 'email' => 'paciente@test.test'],
         ];
     }

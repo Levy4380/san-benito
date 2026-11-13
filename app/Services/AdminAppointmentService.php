@@ -16,9 +16,8 @@ class AdminAppointmentService
      */
     public function paginate(array $filters): LengthAwarePaginator
     {
-        $query = Appointment::query()
-            ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty'])
-            ->orderBy('starts_at');
+        $query = Appointment::past()
+            ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty']);
 
         if (! empty($filters['professional_id'])) {
             $query->forProfessional((int) $filters['professional_id']);

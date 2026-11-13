@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Enums\Permission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Services\PatientService;
@@ -19,9 +20,17 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $slotDuration = null;
+
+        if (Permission::OwnAgendaSettingsUpdate->allows($user) && $user->professional !== null) {
+            $slotDuration = $user->professional->slot_duration_minutes;
+        }
+
         return Inertia::render('Settings/Profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'slot_duration_minutes' => $slotDuration,
         ]);
     }
 

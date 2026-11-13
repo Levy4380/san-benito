@@ -537,37 +537,61 @@ class ProductRequirementsTest extends TestCase
         $this->assertDatabaseHas('appointments', ['id' => $appointment->id]);
     }
 
-    public function test_12_admin_lists_and_filters_all_reservations(): void
+    public function test_12_admin_lists_and_filters_past_appointments_historial(): void
     {
-        [$patient, $professional, $start, $appointment] = $this->bookedSetup();
         $admin = $this->makeAdmin();
+        $patient = $this->makePatient();
+        $professional = $this->makeProfessional();
+        $past = now()->subDay()->setTime(10, 0, 0);
+        $future = $this->nextWeekdayNine();
+
+        $appointment = Appointment::factory()->create([
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+            'starts_at' => $past,
+            'ends_at' => $past->copy()->addMinutes(20),
+        ]);
+        Appointment::factory()->create([
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+            'starts_at' => $future,
+            'ends_at' => $future->copy()->addMinutes(20),
+        ]);
 
         $this->actingAs($admin)
-            ->get('/admin/reservas')
+            ->get('/admin/historial/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Appointments')
                 ->has('appointments.data', 1));
 
         $this->actingAs($admin)
-            ->get('/admin/reservas?professional_id='.$professional->id)
+            ->get('/admin/reservas')
+            ->assertRedirect(route('admin.historial.turnos'));
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertRedirect(route('admin.surgeries.calendar'));
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/turnos?professional_id='.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
 
         $this->actingAs($admin)
-            ->get('/admin/reservas?date='.$start->copy()->addYear()->toDateString())
+            ->get('/admin/historial/turnos?date='.$past->copy()->addYear()->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
 
         $this->actingAs($admin)
-            ->get('/admin/reservas?specialty_id='.$appointment->specialty_id)
+            ->get('/admin/historial/turnos?specialty_id='.$appointment->specialty_id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
 
         $other = Specialty::factory()->create(['name' => 'Oftalmología']);
 
         $this->actingAs($admin)
-            ->get('/admin/reservas?specialty_id='.$other->id)
+            ->get('/admin/historial/turnos?specialty_id='.$other->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
     }

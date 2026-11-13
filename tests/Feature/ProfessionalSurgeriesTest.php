@@ -146,7 +146,7 @@ class ProfessionalSurgeriesTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('surgeryNavCounts.pending', 1));
 
         $this->actingAs($this->makeAdmin())
-            ->get('/admin/reservas')
+            ->get('/admin/historial/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('surgeryNavCounts.pending', 3));
     }
@@ -510,7 +510,7 @@ class ProfessionalSurgeriesTest extends TestCase
             'requested_by_user_id' => $mine->user->id,
             'note' => 'Mía history.',
         ]);
-        Surgery::factory()->scheduled(Carbon::parse('2026-10-10 11:00:00'))->create([
+        $foreignHistory = Surgery::factory()->scheduled(Carbon::parse('2026-10-10 11:00:00'))->create([
             'patient_id' => $this->makePatient()->id,
             'professional_id' => $other->id,
             'requested_by_user_id' => $other->user->id,
@@ -542,12 +542,28 @@ class ProfessionalSurgeriesTest extends TestCase
                 ->where('surgeries.data.0.id', $ownApproved->id)
                 ->where('surgeries.data', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($foreignApproved->id)));
 
+        $this->assertSame(
+            '/profesional/historial/mis-cirugias',
+            route('professional.historial.mis-cirugias', absolute: false),
+        );
+
         $this->actingAs($mine->user)
             ->get('/profesional/cirugias?section=history')
+            ->assertRedirect(route('professional.historial.mis-cirugias'));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/cirugias?section=history&q=Mía')
+            ->assertRedirect(route('professional.historial.mis-cirugias', ['q' => 'Mía']));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/historial/mis-cirugias')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->component('Professional/Surgeries')
+                ->where('section', 'history')
                 ->has('surgeries.data', 1)
-                ->where('surgeries.data.0.id', $ownHistory->id));
+                ->where('surgeries.data.0.id', $ownHistory->id)
+                ->where('surgeries.data', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($foreignHistory->id)));
 
         $this->actingAs($mine->user)
             ->get('/profesional/cirugias?section=approved&surgery='.$foreignApproved->id)
@@ -572,6 +588,10 @@ class ProfessionalSurgeriesTest extends TestCase
         // HTML 403s redirect home (303); JSON keeps 403 — DoD is the JSON contract.
         $this->actingAs($orphan)
             ->getJson('/profesional/cirugias')
+            ->assertForbidden();
+
+        $this->actingAs($orphan)
+            ->getJson('/profesional/historial/mis-cirugias')
             ->assertForbidden();
 
         $this->actingAs($orphan)

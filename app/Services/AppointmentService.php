@@ -172,6 +172,18 @@ class AppointmentService
     }
 
     /**
+     * @return Collection<int, Appointment>
+     */
+    public function pastForProfessional(Professional $professional): Collection
+    {
+        return Appointment::query()
+            ->forProfessional($professional)
+            ->past()
+            ->with(['patient', 'specialty', 'professional.user', 'professional.specialties'])
+            ->get();
+    }
+
+    /**
      * @param  Builder<Appointment>  $query
      * @return Collection<int, Appointment>
      */

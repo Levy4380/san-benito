@@ -15,7 +15,6 @@ const PRODUCT_PAGES = new Set([
     'Professionals/Slots',
     'Appointments/Index',
     'Appointments/History',
-    'Settings/Agenda',
     'Settings/Profile',
     'Settings/Password',
     'Admin/Appointments',

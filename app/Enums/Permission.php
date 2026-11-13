@@ -20,9 +20,6 @@ enum Permission: string
     case OwnAvailabilityCreate = 'own.availability.create';
     case OwnAvailabilityProgram = 'own.availability.program';
     case OwnAvailabilityDelete = 'own.availability.delete';
-    case OwnSurgeriesView = 'own.surgeries.view';
-    case OwnSurgeriesCreate = 'own.surgeries.create';
-    case OwnSurgeriesSchedule = 'own.surgeries.schedule';
 
     case AppointmentsCancel = 'appointments.cancel';
     case AppointmentsAssign = 'appointments.assign';
@@ -109,9 +106,6 @@ enum Permission: string
                 self::OwnAvailabilityCreate,
                 self::OwnAvailabilityProgram,
                 self::OwnAvailabilityDelete,
-                self::OwnSurgeriesView,
-                self::OwnSurgeriesCreate,
-                self::OwnSurgeriesSchedule,
             ],
             'admin' => $staff,
             'super_admin' => [

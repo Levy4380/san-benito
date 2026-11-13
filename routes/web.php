@@ -26,7 +26,6 @@ use App\Http\Controllers\MyAppointmentsController;
 use App\Http\Controllers\MyPatientProfileController;
 use App\Http\Controllers\MyPatientsController;
 use App\Http\Controllers\PatientHomeController;
-use App\Http\Controllers\Professional\SurgeryController as ProfessionalSurgeryController;
 use App\Http\Controllers\ProfessionalHomeController;
 use App\Http\Controllers\ProfessionalProfileController;
 use App\Http\Controllers\ProfessionalSearchController;
@@ -171,22 +170,6 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware(Permission::middleware(Permission::OwnAgendaSettingsUpdate))->group(function () {
             Route::get('/configuracion/agenda', [ProfessionalAgendaSettingsController::class, 'edit'])->name('settings.agenda.edit');
-        });
-
-        Route::middleware(Permission::middleware(Permission::OwnSurgeriesView))->group(function () {
-            Route::get('/cirugias', [ProfessionalSurgeryController::class, 'index'])->name('surgeries.index');
-            Route::get('/cirugias/calendario', [ProfessionalSurgeryController::class, 'calendar'])->name('surgeries.calendar');
-        });
-
-        Route::middleware(Permission::middleware(Permission::OwnSurgeriesCreate))->group(function () {
-            Route::get('/cirugias/crear', [ProfessionalSurgeryController::class, 'create'])->name('surgeries.create');
-            Route::post('/cirugias', [ProfessionalSurgeryController::class, 'store'])->name('surgeries.store');
-            Route::get('/cirugias/pacientes', [ProfessionalSurgeryController::class, 'patients'])->name('surgeries.patients');
-        });
-
-        Route::middleware(Permission::middleware(Permission::OwnSurgeriesSchedule))->group(function () {
-            Route::get('/cirugias/{surgery}/programar', [ProfessionalSurgeryController::class, 'schedule'])->name('surgeries.schedule');
-            Route::post('/cirugias/{surgery}/programar', [ProfessionalSurgeryController::class, 'storeSchedule'])->name('surgeries.schedule.store');
         });
     });
 

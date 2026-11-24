@@ -6,6 +6,8 @@ import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
+import type { HistoryCriterion } from '@/Components/History/HistorySearch';
+import SurgeryHistoryPanel from '@/Components/History/SurgeryHistoryPanel';
 import RequestSurgeryModal from '@/Components/Surgeries/RequestSurgeryModal';
 import SurgeryDetailDialog, { SurgeryStatusBadge } from '@/Components/Surgeries/SurgeryDetailDialog';
 import Empty from '@/Components/Surfaces/Empty';
@@ -30,12 +32,14 @@ type FiltersState = {
     professional_id: number | null;
     health_insurance_id: number | string | null;
     status: string | null;
+    date: string | null;
 };
 
 type Props = {
     section: SurgerySection;
     surgeries: Paginator;
     filters: FiltersState;
+    by: HistoryCriterion | null;
     openSurgery: SurgeryRecord | null;
     professionals: ProfessionalRecord[];
     specialties: Specialty[];
@@ -65,6 +69,7 @@ export default function AdminSurgeries({
     section,
     surgeries,
     filters,
+    by,
     openSurgery,
     professionals,
     specialties,
@@ -143,127 +148,154 @@ export default function AdminSurgeries({
                 }
             >
                 <StageCard>
-                    <Results>
-                        <Filters
-                            applied={applied}
-                            onApply={apply}
-                            primary={
-                                <Field label="Paciente" htmlFor="surgery-q" flush className="min-w-0">
-                                    <TextInput
-                                        id="surgery-q"
-                                        name="q"
-                                        type="search"
-                                        placeholder="Nombre o DNI"
-                                        defaultValue={filters.q}
-                                        autoComplete="off"
-                                    />
-                                </Field>
-                            }
-                            advanced={
-                                <>
-                                    {section === 'approved' ? (
-                                        <Field label="Estado" htmlFor="surgery-status" flush className="min-w-0">
+                    {section === 'history' ? (
+                        <SurgeryHistoryPanel
+                            path="/admin/historial/cirugias"
+                            includeProfessional
+                            surgeries={surgeries}
+                            filters={{ ...filters, date: filters.date ?? null }}
+                            by={by}
+                            professionals={professionals}
+                            specialties={specialties}
+                            healthInsurances={healthInsurances}
+                            onOpen={setOpenId}
+                        />
+                    ) : (
+                        <Results>
+                            <Filters
+                                applied={applied}
+                                onApply={apply}
+                                primary={
+                                    <Field label="Paciente" htmlFor="surgery-q" flush className="min-w-0">
+                                        <TextInput
+                                            id="surgery-q"
+                                            name="q"
+                                            type="search"
+                                            placeholder="Nombre o DNI"
+                                            defaultValue={filters.q}
+                                            autoComplete="off"
+                                        />
+                                    </Field>
+                                }
+                                advanced={
+                                    <>
+                                        {section === 'approved' ? (
+                                            <Field label="Estado" htmlFor="surgery-status" flush className="min-w-0">
+                                                <Combobox
+                                                    id="surgery-status"
+                                                    name="status"
+                                                    defaultValue={filters.status ?? ''}
+                                                    options={[
+                                                        { value: '', label: 'Todos' },
+                                                        { value: 'to_schedule', label: 'A programar' },
+                                                        { value: 'scheduled', label: 'Programada' },
+                                                    ]}
+                                                />
+                                            </Field>
+                                        ) : null}
+                                        <Field label="Especialidad" htmlFor="surgery-specialty" flush className="min-w-0">
                                             <Combobox
-                                                id="surgery-status"
-                                                name="status"
-                                                defaultValue={filters.status ?? ''}
+                                                id="surgery-specialty"
+                                                name="specialty_id"
+                                                defaultValue={filters.specialty_id != null ? String(filters.specialty_id) : ''}
                                                 options={[
-                                                    { value: '', label: 'Todos' },
-                                                    { value: 'to_schedule', label: 'A programar' },
-                                                    { value: 'scheduled', label: 'Programada' },
+                                                    { value: '', label: 'Todas' },
+                                                    ...specialties.map((specialty) => ({
+                                                        value: String(specialty.id),
+                                                        label: specialty.name,
+                                                    })),
                                                 ]}
                                             />
                                         </Field>
-                                    ) : null}
-                                    <Field label="Especialidad" htmlFor="surgery-specialty" flush className="min-w-0">
-                                        <Combobox
-                                            id="surgery-specialty"
-                                            name="specialty_id"
-                                            defaultValue={filters.specialty_id != null ? String(filters.specialty_id) : ''}
-                                            options={[
-                                                { value: '', label: 'Todas' },
-                                                ...specialties.map((specialty) => ({ value: String(specialty.id), label: specialty.name })),
-                                            ]}
-                                        />
-                                    </Field>
-                                    <Field label="Profesional" htmlFor="surgery-professional" flush className="min-w-0">
-                                        <Combobox
-                                            id="surgery-professional"
-                                            name="professional_id"
-                                            defaultValue={filters.professional_id != null ? String(filters.professional_id) : ''}
-                                            options={[
-                                                { value: '', label: 'Todos' },
-                                                ...professionals.map((professional) => ({
-                                                    value: String(professional.id),
-                                                    label: professional.user.name,
-                                                })),
-                                            ]}
-                                        />
-                                    </Field>
-                                    <Field label="Obra social" htmlFor="surgery-insurance" flush className="min-w-0">
-                                        <Combobox
-                                            id="surgery-insurance"
-                                            name="health_insurance_id"
-                                            defaultValue={filters.health_insurance_id != null ? String(filters.health_insurance_id) : ''}
-                                            options={[
-                                                { value: '', label: 'Todas' },
-                                                ...healthInsurances.map((insurance) => ({ value: String(insurance.id), label: insurance.name })),
-                                                { value: 'particular', label: 'Particular' },
-                                            ]}
-                                        />
-                                    </Field>
-                                </>
-                            }
-                        >
-                            {surgeries.data.length === 0 ? (
-                                <Empty>{hasFilters ? 'No hay cirugías con esos filtros.' : 'No hay cirugías en esta sección.'}</Empty>
-                            ) : (
-                                <div className="grid gap-[var(--space-sm)]">
-                                    {surgeries.data.map((surgery) => (
-                                        <div key={surgery.id} className="grid gap-[var(--space-sm)]">
-                                            {surgery.opens_scheduled_group ? (
-                                                <div role="separator" className="pt-[var(--space-xs)] text-sm font-semibold text-ink">
-                                                    Programadas
-                                                </div>
-                                            ) : null}
-                                            <article className="flex min-w-0 flex-col gap-[0.35rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.55rem] sm:flex-row sm:items-center sm:justify-between">
-                                                <div className="grid min-w-0 justify-items-start gap-[0.15rem]">
-                                                    {surgery.starts_at && surgery.ends_at ? (
-                                                        <div className="text-sm text-ink-2">
-                                                            {surgeryShortDate(surgery.starts_at.slice(0, 10))} · {surgeryRange(surgery.starts_at, surgery.ends_at)}
-                                                        </div>
-                                                    ) : null}
-                                                    <div className="font-display text-sm font-semibold text-ink">{surgery.patient?.name}</div>
-                                                    <div className="text-sm text-ink-2">
-                                                        DNI <span className="font-mono">{surgery.patient?.dni}</span>
+                                        <Field label="Profesional" htmlFor="surgery-professional" flush className="min-w-0">
+                                            <Combobox
+                                                id="surgery-professional"
+                                                name="professional_id"
+                                                defaultValue={filters.professional_id != null ? String(filters.professional_id) : ''}
+                                                options={[
+                                                    { value: '', label: 'Todos' },
+                                                    ...professionals.map((professional) => ({
+                                                        value: String(professional.id),
+                                                        label: professional.user.name,
+                                                    })),
+                                                ]}
+                                            />
+                                        </Field>
+                                        <Field label="Obra social" htmlFor="surgery-insurance" flush className="min-w-0">
+                                            <Combobox
+                                                id="surgery-insurance"
+                                                name="health_insurance_id"
+                                                defaultValue={
+                                                    filters.health_insurance_id != null ? String(filters.health_insurance_id) : ''
+                                                }
+                                                options={[
+                                                    { value: '', label: 'Todas' },
+                                                    ...healthInsurances.map((insurance) => ({
+                                                        value: String(insurance.id),
+                                                        label: insurance.name,
+                                                    })),
+                                                    { value: 'particular', label: 'Particular' },
+                                                ]}
+                                            />
+                                        </Field>
+                                    </>
+                                }
+                            >
+                                {surgeries.data.length === 0 ? (
+                                    <Empty>{hasFilters ? 'No hay cirugías con esos filtros.' : 'No hay cirugías en esta sección.'}</Empty>
+                                ) : (
+                                    <div className="grid gap-[var(--space-sm)]">
+                                        {surgeries.data.map((surgery) => (
+                                            <div key={surgery.id} className="grid gap-[var(--space-sm)]">
+                                                {surgery.opens_scheduled_group ? (
+                                                    <div role="separator" className="pt-[var(--space-xs)] text-sm font-semibold text-ink">
+                                                        Programadas
                                                     </div>
-                                                    <div className="text-sm text-ink-2">Solicita: {surgery.professional?.user.name}</div>
-                                                    <SurgeryStatusBadge status={surgery.status} />
-                                                </div>
-                                                <Btn type="button" variant="outline" size="sm" onClick={() => setOpenId(surgery.id)}>
-                                                    Ver detalle
-                                                </Btn>
-                                            </article>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {surgeries.prev_page_url || surgeries.next_page_url ? (
-                                <div className="mt-[var(--space-sm)] flex justify-end gap-[var(--space-sm)]">
-                                    {surgeries.prev_page_url ? (
-                                        <Btn asChild variant="outline" size="sm">
-                                            <Link href={surgeries.prev_page_url}>Anterior</Link>
-                                        </Btn>
-                                    ) : null}
-                                    {surgeries.next_page_url ? (
-                                        <Btn asChild variant="outline" size="sm">
-                                            <Link href={surgeries.next_page_url}>Siguiente</Link>
-                                        </Btn>
-                                    ) : null}
-                                </div>
-                            ) : null}
-                        </Filters>
-                    </Results>
+                                                ) : null}
+                                                <article className="flex min-w-0 flex-col gap-[0.35rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.55rem] sm:flex-row sm:items-center sm:justify-between">
+                                                    <div className="grid min-w-0 justify-items-start gap-[0.15rem]">
+                                                        {surgery.starts_at && surgery.ends_at ? (
+                                                            <div className="text-sm text-ink-2">
+                                                                {surgeryShortDate(surgery.starts_at.slice(0, 10))} ·{' '}
+                                                                {surgeryRange(surgery.starts_at, surgery.ends_at)}
+                                                            </div>
+                                                        ) : null}
+                                                        <div className="font-display text-sm font-semibold text-ink">
+                                                            {surgery.patient?.name}
+                                                        </div>
+                                                        <div className="text-sm text-ink-2">
+                                                            DNI <span className="font-mono">{surgery.patient?.dni}</span>
+                                                        </div>
+                                                        <div className="text-sm text-ink-2">
+                                                            Solicita: {surgery.professional?.user.name}
+                                                        </div>
+                                                        <SurgeryStatusBadge status={surgery.status} />
+                                                    </div>
+                                                    <Btn type="button" variant="outline" size="sm" onClick={() => setOpenId(surgery.id)}>
+                                                        Ver detalle
+                                                    </Btn>
+                                                </article>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {surgeries.prev_page_url || surgeries.next_page_url ? (
+                                    <div className="mt-[var(--space-sm)] flex justify-end gap-[var(--space-sm)]">
+                                        {surgeries.prev_page_url ? (
+                                            <Btn asChild variant="outline" size="sm">
+                                                <Link href={surgeries.prev_page_url}>Anterior</Link>
+                                            </Btn>
+                                        ) : null}
+                                        {surgeries.next_page_url ? (
+                                            <Btn asChild variant="outline" size="sm">
+                                                <Link href={surgeries.next_page_url}>Siguiente</Link>
+                                            </Btn>
+                                        ) : null}
+                                    </div>
+                                ) : null}
+                            </Filters>
+                        </Results>
+                    )}
                 </StageCard>
             </PageScreen>
             {openRecord ? (

@@ -272,9 +272,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $this->actingAs($super)
             ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/HealthInsurances')
-                ->has('healthInsurances', HealthInsurance::query()->count()));
+            ->assertJsonCount(HealthInsurance::query()->count(), 'healthInsurances');
 
         $this->actingAs($super)
             ->getJson('/admin/profesionales/'.$professional->id.'/obras-sociales')
@@ -285,7 +283,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [$added->id],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales');
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
@@ -300,11 +298,11 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ->assertRedirect('/admin/profesionales?q=Ana');
 
         $this->actingAs($super)
-            ->withHeader('referer', url('/admin/profesionales/'.$professional->id.'/obras-sociales'))
+            ->withHeader('referer', url('/admin/profesionales?info='.$professional->id))
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales?info='.$professional->id);
 
         $this->assertTrue($professional->fresh()->healthInsurances()->doesntExist());
     }

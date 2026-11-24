@@ -10,8 +10,6 @@ const PRODUCT_PAGES = new Set([
     'Professional/SurgeryCalendar',
     'Professionals/Index',
     'Professionals/Show',
-    'Professionals/Specialties',
-    'Professionals/HealthInsurances',
     'Professionals/Slots',
     'Appointments/Index',
     'Appointments/History',

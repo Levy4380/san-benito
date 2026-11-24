@@ -42,6 +42,7 @@ export default function TimelineAppointmentDialog({ appointment, profileHref, ca
                 </>
             }
             onDismiss={onDismiss}
+            kind="info"
         >
             <div className="flex flex-wrap justify-end gap-[0.5rem]">
                 <Btn type="button" variant="outline" onClick={onDismiss}>

@@ -18,6 +18,7 @@ class AppointmentService
 {
     public function __construct(
         private readonly AvailabilityService $availability,
+        private readonly AvailabilityWindowService $windows,
         private readonly ProfessionalPatientService $links,
         private readonly PatientService $patients,
         private readonly ProfessionalService $professionals,
@@ -111,13 +112,56 @@ class AppointmentService
     }
 
     /**
-     * Staff books any calculated slot of any professional for any patient; the professional_patient link is created if missing.
+     * Staff books a slot for any patient. If `$startsAt` is already a free calculated slot, only inserts the
+     * appointment. Otherwise creates a short window of `slot_duration_minutes` (sobreturno) and then inserts.
+     * The professional_patient link is created if missing.
+     *
+     * @return array{appointment: Appointment, overbook: bool}
      */
-    public function assignAsStaff(Professional $professional, int $patientId, string $startsAt, int $specialtyId): Appointment
+    public function assignAsStaff(Professional $professional, int $patientId, string $startsAt, int $specialtyId): array
     {
         $patient = Patient::query()->findOrFail($patientId);
+        $this->assertSpecialtyOfProfessional($professional, $specialtyId);
 
-        return $this->insertReservation($professional, $patient, $startsAt, $specialtyId);
+        $start = Carbon::parse($startsAt);
+
+        if ($this->availability->isBookableSlot($professional, $start)) {
+            return [
+                'appointment' => $this->insertReservation($professional, $patient, $startsAt, $specialtyId),
+                'overbook' => false,
+            ];
+        }
+
+        $end = $start->copy()->addMinutes((int) $professional->slot_duration_minutes);
+
+        if (! $start->gt(now())) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'El turno ya no está disponible',
+            ]);
+        }
+
+        if (Appointment::query()->forProfessional($professional)->overlapping($start, $end)->exists()) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'El turno ya no está disponible',
+            ]);
+        }
+
+        try {
+            $appointment = DB::transaction(function () use ($professional, $patient, $startsAt, $specialtyId) {
+                $this->windows->createShortWindow($professional, $startsAt);
+
+                return $this->insertReservation($professional, $patient, $startsAt, $specialtyId);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'El turno ya no está disponible',
+            ]);
+        }
+
+        return [
+            'appointment' => $appointment,
+            'overbook' => true,
+        ];
     }
 
     public function cancel(Appointment $appointment): void

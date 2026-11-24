@@ -50,7 +50,7 @@ export default function PatientInfoModal({ patientId, onDismiss, onOpenAgenda }:
     const patient = profile?.patient;
 
     return (
-        <ConfirmDialog title={patient?.name ?? 'Paciente'} message="Datos del paciente." onDismiss={onDismiss} className="w-[min(32rem,100%)]">
+        <ConfirmDialog title={patient?.name ?? 'Paciente'} message="Datos del paciente." onDismiss={onDismiss} kind="info">
             {failed ? (
                 <Empty>No se pudo cargar la ficha.</Empty>
             ) : loading || !patient || !profile ? (

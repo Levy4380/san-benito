@@ -1,7 +1,7 @@
 import { Btn } from '@/Components/Form/Btn';
 import { cn } from '@/lib/utils';
 import { Check, Trash2, Undo2, X } from 'lucide-react';
-import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 
 type ConfirmOptions = {
     title: string;
@@ -13,6 +13,9 @@ type ConfirmOptions = {
 
 type Pending = ConfirmOptions & { resolve: (value: boolean) => void };
 
+/** confirm: prompt + cancel/accept. info: entity or a short form. workspace: dense content (agenda, sobreturno). */
+export type ModalKind = 'confirm' | 'info' | 'workspace';
+
 type ConfirmDialogProps = {
     title: string;
     message?: ReactNode;
@@ -21,13 +24,33 @@ type ConfirmDialogProps = {
     children: ReactNode;
     onDismiss: () => void;
     className?: string;
+    kind?: ModalKind;
+};
+
+/** Always inset from the viewport: centered, never flush to the edge, never 100vw. */
+const kindClass: Record<ModalKind, string> = {
+    confirm: 'grid w-[min(26rem,calc(100vw-3rem))] max-h-[calc(100dvh-3rem)] overflow-y-auto',
+    info: 'grid w-[min(40rem,calc(100vw-3rem))] max-h-[calc(100dvh-3rem)] overflow-y-auto',
+    workspace:
+        'flex h-[min(42rem,calc(100dvh-3rem))] w-[min(72rem,calc(100vw-3rem))] max-h-[calc(100dvh-3rem)] min-h-0 flex-col overflow-hidden',
 };
 
 /** Open dialogs, innermost last: only the top one reacts to Escape. */
 const openDialogs: symbol[] = [];
 
-export function ConfirmDialog({ title, message, messageClassName, headerAction, children, onDismiss, className }: ConfirmDialogProps) {
+export function ConfirmDialog({
+    title,
+    message,
+    messageClassName,
+    headerAction,
+    children,
+    onDismiss,
+    className,
+    kind = 'confirm',
+}: ConfirmDialogProps) {
     const dismissRef = useRef(onDismiss);
+    const titleId = useId();
+    const messageId = useId();
 
     useEffect(() => {
         dismissRef.current = onDismiss;
@@ -57,26 +80,27 @@ export function ConfirmDialog({ title, message, messageClassName, headerAction, 
     }, []);
 
     return (
-        <div className="fixed inset-0 z-[200] grid place-items-center p-4 max-md:p-[var(--space-sm)]" role="presentation">
+        <div className="fixed inset-0 z-[200] grid place-items-center p-6" role="presentation">
             <div className="absolute inset-0 bg-[oklch(22%_0.02_255/0.42)]" onClick={onDismiss} />
             <div
                 className={cn(
-                    'relative z-[1] grid w-[min(22rem,100%)] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg max-md:w-[min(22rem,calc(100vw-var(--space-sm)*2))] max-md:gap-[var(--space-xs)] max-md:p-[var(--space-sm)] max-md:rounded-[calc(var(--radius-card)+2px)]',
+                    'relative z-[1] animate-confirm-in gap-[var(--space-sm)] rounded-lg border border-rule bg-paper p-[var(--space-md)] shadow-lg max-md:gap-[var(--space-xs)] max-md:rounded-[calc(var(--radius-card)+2px)] max-md:p-[var(--space-sm)]',
+                    kindClass[kind],
                     className,
                 )}
-                role="alertdialog"
+                role={kind === 'confirm' ? 'alertdialog' : 'dialog'}
                 aria-modal="true"
-                aria-labelledby="confirm-modal-title"
-                aria-describedby={message != null && message !== '' ? 'confirm-modal-msg' : undefined}
+                aria-labelledby={titleId}
+                aria-describedby={message != null && message !== '' ? messageId : undefined}
             >
-                <div className="flex items-start justify-between gap-[var(--space-sm)]">
-                    <h2 className="m-0 min-w-0 flex-1 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id="confirm-modal-title">
+                <div className="flex shrink-0 items-start justify-between gap-[var(--space-sm)]">
+                    <h2 className="m-0 min-w-0 flex-1 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id={titleId}>
                         {title}
                     </h2>
                     {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
                 </div>
                 {message != null && message !== '' ? (
-                    <p className={cn('m-0 text-sm leading-[1.45] text-ink-2', messageClassName)} id="confirm-modal-msg">
+                    <p className={cn('m-0 shrink-0 text-sm leading-[1.45] text-ink-2', messageClassName)} id={messageId}>
                         {message}
                     </p>
                 ) : null}

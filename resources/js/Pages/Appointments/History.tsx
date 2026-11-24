@@ -1,4 +1,6 @@
 import { Head } from '@inertiajs/react';
+import { useState } from 'react';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -17,6 +19,9 @@ export default function AppointmentHistory({
     backHref = '/paciente/mis-turnos',
     backLabel = 'Mis turnos',
 }: Props) {
+    const [openId, setOpenId] = useState<number | null>(null);
+    const open = appointments.find((appointment) => appointment.id === openId) ?? null;
+
     return (
         <>
             <Head title="Historial de turnos" />
@@ -36,7 +41,12 @@ export default function AppointmentHistory({
                     ) : (
                         <BookingList>
                             {appointments.map((appointment) => (
-                                <BookingCard key={appointment.id}>
+                                <BookingCard
+                                    key={appointment.id}
+                                    as="button"
+                                    onClick={() => setOpenId(appointment.id)}
+                                    aria-label="Ver detalle del turno"
+                                >
                                     <BookingCardFields appointment={appointment} />
                                 </BookingCard>
                             ))}
@@ -44,6 +54,7 @@ export default function AppointmentHistory({
                     )}
                 </StageCard>
             </PageScreen>
+            {open ? <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} /> : null}
         </>
     );
 }

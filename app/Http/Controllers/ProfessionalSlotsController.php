@@ -24,11 +24,9 @@ class ProfessionalSlotsController extends Controller
         AgendaService $agenda,
         PatientService $patients,
     ): Response {
-        $staff = $request->routeIs('admin.professionals.slots');
-
         return Inertia::render(
             'Professionals/Slots',
-            $this->payload($request, $professional, $availability, $search, $agenda, $patients, $staff),
+            $this->payload($request, $professional, $availability, $search, $agenda, $patients, false),
         );
     }
 

@@ -58,7 +58,7 @@ export default function CreatePatientModal({ onDismiss }: Props) {
     }, []);
 
     return (
-        <ConfirmDialog title="Crear paciente" message="Alta de pacientes. Solo super admin." onDismiss={onDismiss} className="w-[min(48rem,100%)]">
+        <ConfirmDialog title="Crear paciente" message="Alta de pacientes. Solo super admin." onDismiss={onDismiss} kind="info">
             <form
                 className="grid min-h-0"
                 onSubmit={(event) => {

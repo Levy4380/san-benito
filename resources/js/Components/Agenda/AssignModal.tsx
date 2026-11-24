@@ -110,8 +110,8 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
         'Elegí un día en el calendario.';
 
     return (
-        <ConfirmDialog title="Asignar turno" message={message} onDismiss={onDismiss} className={date ? undefined : 'w-[min(30rem,100%)]'}>
-            <div className="flex max-h-[60dvh] min-h-0 flex-col">
+        <ConfirmDialog title="Asignar turno" message={message} onDismiss={onDismiss} kind={date ? 'info' : 'workspace'}>
+            <div className={cn('flex min-h-0 flex-col', !date && 'flex-1')}>
                 {!patient ? (
                     <Field label="Paciente vinculado" htmlFor="assign_patient_id" className="shrink-0">
                         <Combobox
@@ -248,7 +248,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                                         onClick={() => assign(slot.starts_at)}
                                     >
                                         <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Asignar
+                                        Asignar turno
                                     </Btn>
                                 </SlotRow>
                             ))
@@ -265,7 +265,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                         onClick={() => assign(startsAt)}
                     >
                         <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Asignar
+                        Asignar turno
                     </Btn>
                 ) : null}
                 <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>

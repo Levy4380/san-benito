@@ -361,6 +361,15 @@ class AdminSurgeriesTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Surgeries')
                 ->where('section', 'history')
+                ->where('by', null)
+                ->has('surgeries.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/cirugias?by=patient&q=44556677')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('section', 'history')
+                ->where('by', 'patient')
                 ->has('surgeries.data', 1)
                 ->where('surgeries.data.0.note', 'Pasada.'));
 

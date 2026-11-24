@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
 
 class AvailabilityService
 {
+    public function __construct(private readonly ClinicScheduleService $clinic) {}
+
     /**
      * @return Collection<int, array{starts_at: string, ends_at: string}>
      */
@@ -42,7 +44,7 @@ class AvailabilityService
                     break;
                 }
 
-                if ($cursor->gt($now)) {
+                if ($cursor->gt($now) && $this->clinic->contains($cursor, $slotEnd)) {
                     $overlaps = $appointments->contains(function (Appointment $appointment) use ($cursor, $slotEnd) {
                         return $appointment->starts_at->lt($slotEnd) && $appointment->ends_at->gt($cursor);
                     });
@@ -79,7 +81,7 @@ class AvailabilityService
         $duration = (int) $professional->slot_duration_minutes;
         $endsAt = $startsAt->copy()->addMinutes($duration);
 
-        if (! $startsAt->gt(now())) {
+        if (! $startsAt->gt(now()) || ! $this->clinic->contains($startsAt, $endsAt)) {
             return false;
         }
 

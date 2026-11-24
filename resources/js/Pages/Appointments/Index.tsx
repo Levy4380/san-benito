@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Calendar, CalendarDays, History, NotebookPen, Undo2, X } from 'lucide-react';
+import { Calendar, CalendarDays, History, NotebookPen } from 'lucide-react';
 import { useState } from 'react';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
 import WeekTimeline, { blocksOnDay } from '@/Components/Calendar/WeekTimeline';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
@@ -10,10 +11,9 @@ import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
-import { ConfirmDialog, useConfirm } from '@/Components/Feedback/ConfirmModal';
+import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Empty from '@/Components/Surfaces/Empty';
 import Panel from '@/Components/Surfaces/Panel';
-import { BookingCardFields } from '@/Components/Surfaces/BookingCard';
 import { formatDateLabel, wallDate } from '@/lib/datetime';
 import type { AppointmentRecord } from '@/types';
 
@@ -161,19 +161,12 @@ export default function MyAppointments({ appointments, today, now }: Props) {
                 </StageCard>
             </PageScreen>
             {open ? (
-                <ConfirmDialog title="Turno" onDismiss={() => setOpenId(null)}>
-                    <BookingCardFields appointment={open} />
-                    <div className="flex flex-wrap justify-end gap-[0.5rem]">
-                        <Btn type="button" variant="outline" onClick={() => setOpenId(null)}>
-                            <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Volver
-                        </Btn>
-                        <Btn type="button" variant="danger" onClick={() => cancel(open.id)}>
-                            <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Cancelar turno
-                        </Btn>
-                    </div>
-                </ConfirmDialog>
+                <AppointmentDetailDialog
+                    appointment={open}
+                    onDismiss={() => setOpenId(null)}
+                    canCancel
+                    onCancel={() => cancel(open.id)}
+                />
             ) : null}
             {dialog}
         </>

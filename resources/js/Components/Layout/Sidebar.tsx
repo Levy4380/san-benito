@@ -53,7 +53,7 @@ const portalNav: NavEntry[] = [
     { href: '/paciente/mis-turnos', label: 'Mis turnos', icon: CalendarClock, permission: Permission.OwnAppointmentsView },
     { href: '/paciente/reserva', label: 'Reservar turno', icon: NotebookPen, permission: Permission.AppointmentsBook },
     { href: '/profesional/agenda', label: 'Mi agenda', icon: Calendar, permission: Permission.OwnAgendaView },
-    { href: '/profesional/programar', label: 'Programar turnos', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
+    { href: '/profesional/programar', label: 'Programar horarios', icon: CalendarPlus, permission: Permission.OwnAvailabilityProgram },
     { href: '/profesional/mis-pacientes', label: 'Mis pacientes', icon: Users, permission: Permission.OwnPatientsView },
     {
         id: 'mis-cirugias',

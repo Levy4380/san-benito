@@ -10,10 +10,9 @@ final class ProfessionalCatalogReturn
 {
     public static function to(Request $request, Professional $professional, string $message): RedirectResponse
     {
-        $profile = route('admin.professionals.show', $professional);
         $referer = $request->headers->get('referer');
         $catalog = url('/admin/profesionales');
-        $target = $profile;
+        $target = route('admin.professionals.index');
 
         if (is_string($referer) && str_starts_with($referer, $catalog)) {
             $path = parse_url($referer, PHP_URL_PATH);
@@ -27,5 +26,19 @@ final class ProfessionalCatalogReturn
             'message' => $message,
             'variant' => 'ok',
         ]);
+    }
+
+    /**
+     * @param  'agenda'|'info'|null  $modal
+     */
+    public static function href(Professional $professional, ?string $modal = null): string
+    {
+        $query = match ($modal) {
+            'agenda' => ['agenda' => $professional->id],
+            'info' => ['info' => $professional->id],
+            default => [],
+        };
+
+        return route('admin.professionals.index', $query, absolute: false);
     }
 }

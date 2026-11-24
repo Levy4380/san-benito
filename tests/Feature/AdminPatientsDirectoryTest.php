@@ -22,13 +22,12 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->seedCatalog();
     }
 
-    public function test_admin_professional_and_patient_cannot_access_patients_or_admins(): void
+    public function test_patient_and_professional_cannot_access_patients_or_admins(): void
     {
         $patient = $this->makePatient();
         $professional = $this->makeProfessional();
-        $admin = $this->makeAdmin();
 
-        foreach ([$patient->user, $professional->user, $admin] as $user) {
+        foreach ([$patient->user, $professional->user] as $user) {
             $this->actingAs($user)->get('/admin/pacientes')->assertRedirect(RoleRedirector::landing($user));
             $this->actingAs($user)->get('/patients/create')->assertRedirect(RoleRedirector::landing($user));
             $this->actingAs($user)->get('/admin/administradores')->assertRedirect(RoleRedirector::landing($user));
@@ -47,6 +46,22 @@ class AdminPatientsDirectoryTest extends TestCase
                 'role' => 'admin',
             ])->assertRedirect(RoleRedirector::landing($user));
         }
+    }
+
+    public function test_admin_can_access_patients_but_not_admins_catalog(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)->get('/admin/pacientes')->assertOk();
+        $this->actingAs($admin)->getJson('/patients/create')->assertOk();
+        $this->actingAs($admin)->get('/admin/administradores')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/admin/administradores/crear')->assertRedirect('/admin');
+        $this->actingAs($admin)->post('/admins', [
+            'name' => 'Otro Admin',
+            'email' => 'otro.admin@example.com',
+            'password' => 'password',
+            'role' => 'admin',
+        ])->assertRedirect('/admin');
     }
 
     public function test_super_admin_creates_patient_without_logging_in_as_them(): void
@@ -149,7 +164,7 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->actingAs($super)->get('/admin/pacientes/999999')->assertNotFound();
     }
 
-    public function test_patient_profile_and_agenda_json_are_super_admin_only(): void
+    public function test_patient_profile_and_agenda_json_are_staff_with_catalog_view(): void
     {
         $this->travelTo(Carbon::parse('2026-10-07 10:30:00'));
         $super = $this->makeSuperAdmin();
@@ -164,23 +179,21 @@ class AdminPatientsDirectoryTest extends TestCase
             'ends_at' => '2026-10-07 11:20:00',
         ]);
 
-        $this->actingAs($admin)
-            ->getJson('/patients/'.$patient->id)
-            ->assertForbidden();
+        foreach ([$admin, $super] as $staff) {
+            $this->actingAs($staff)
+                ->getJson('/patients/'.$patient->id)
+                ->assertOk()
+                ->assertJsonPath('patient.name', 'Nora Ficha')
+                ->assertJsonPath('patient.dni', $patient->dni);
 
-        $this->actingAs($super)
-            ->getJson('/patients/'.$patient->id)
-            ->assertOk()
-            ->assertJsonPath('patient.name', 'Nora Ficha')
-            ->assertJsonPath('patient.dni', $patient->dni);
-
-        $this->actingAs($super)
-            ->getJson('/patients/'.$patient->id.'/agenda')
-            ->assertOk()
-            ->assertJsonPath('selectedDate', '2026-10-07')
-            ->assertJsonPath('bookingTones.2026-10-07', 'has')
-            ->assertJsonCount(1, 'timeline.appointments')
-            ->assertJsonPath('timeline.appointments.0.professional.user.name', $professional->user->name);
+            $this->actingAs($staff)
+                ->getJson('/patients/'.$patient->id.'/agenda')
+                ->assertOk()
+                ->assertJsonPath('selectedDate', '2026-10-07')
+                ->assertJsonPath('bookingTones.2026-10-07', 'has')
+                ->assertJsonCount(1, 'timeline.appointments')
+                ->assertJsonPath('timeline.appointments.0.professional.user.name', $professional->user->name);
+        }
 
         $this->actingAs($super)->getJson('/patients/999999')->assertNotFound();
     }

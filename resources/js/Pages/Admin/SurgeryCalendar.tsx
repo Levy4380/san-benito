@@ -10,14 +10,14 @@ import RequestSurgeryModal from '@/Components/Surgeries/RequestSurgeryModal';
 import SurgeryDetailDialog from '@/Components/Surgeries/SurgeryDetailDialog';
 import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Panel from '@/Components/Surfaces/Panel';
-import { clockMinutes, useClinic } from '@/lib/clinic';
+import { clinicHours, clockMinutes, useClinic } from '@/lib/clinic';
 import { formatDateLabel, pad2 } from '@/lib/datetime';
 import { hasPermission, Permission, type PermissionName } from '@/lib/permissions';
 import { surgeryRange } from '@/lib/surgery';
 import { cn } from '@/lib/utils';
 import type { SharedData, SurgeryRecord, SurgerySection } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Plus, Undo2 } from 'lucide-react';
 import { type CSSProperties, useRef, useState } from 'react';
 
 type Suggestion = { starts_at: string; ends_at: string };
@@ -278,7 +278,8 @@ function ScheduleControls({
             </Field>
             <div className="flex flex-wrap justify-end gap-[var(--space-sm)]">
                 <Btn type="button" variant="outline" onClick={onCancel}>
-                    Cancelar
+                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                    Volver
                 </Btn>
                 <Btn type="button" disabled={!check.ok} onClick={onSubmit}>
                     Programar
@@ -302,8 +303,9 @@ function SurgeryTimeline({
     onOpen?: (id: number) => void;
 }) {
     const clinic = useClinic();
-    const dayStart = clockMinutes(clinic.opensAt);
-    const dayEnd = clockMinutes(clinic.closesAt);
+    const hours = clinicHours(date, clinic);
+    const dayStart = clockMinutes(hours?.opensAt ?? clinic.opensAt);
+    const dayEnd = clockMinutes(hours?.closesAt ?? clinic.closesAt);
     const previewStart = preview ? toMinutes(preview.start) : null;
     const previewEnd = preview ? toMinutes(preview.end) : null;
     const busyMinutes = surgeries.flatMap((surgery) =>

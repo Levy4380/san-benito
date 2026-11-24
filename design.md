@@ -129,7 +129,7 @@ Default class `.btn` is **primary**. Combine with modifiers; do not invent new f
 Fill `--color-accent`, text `--color-accent-ink`, `--shadow-sm`.
 Hover: brightness 1.05. Active: 1px down.
 
-Use for the **one** forward action in a region: Logear (paciente), Reservar, Buscar, Continuar, Crear turno, Guardar, Confirmar, Vincular, Ir a mi agenda, header “Programar turnos” / “Reservar turno”.
+Use for the **one** forward action in a region: Logear (paciente), Reservar, Buscar, Continuar, Crear turno, Guardar, Confirmar, Vincular, Ir a mi agenda, header “Programar horarios” / “Reservar turno”.
 
 Verb first, Spanish: “Ver agenda”, “Reservar”, “Crear horario”, “Continuar”, “Buscar”.
 

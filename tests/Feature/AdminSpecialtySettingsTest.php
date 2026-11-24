@@ -36,7 +36,7 @@ class AdminSpecialtySettingsTest extends TestCase
             $this->actingAs($user)->post('/specialties', ['name' => 'Oftalmología'])->assertRedirect(RoleRedirector::landing($user));
             $this->actingAs($user)->patch('/specialties/'.$specialty->id, ['name' => 'Renombrada'])->assertRedirect(RoleRedirector::landing($user));
             $this->actingAs($user)->delete('/specialties/'.$specialty->id)->assertRedirect(RoleRedirector::landing($user));
-            $this->actingAs($user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect(RoleRedirector::landing($user));
+            $this->actingAs($user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertNotFound();
             $this->actingAs($user)->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [$specialty->id],
             ])->assertRedirect(RoleRedirector::landing($user));
@@ -210,13 +210,12 @@ class AdminSpecialtySettingsTest extends TestCase
 
         $this->actingAs($this->makeAdmin())
             ->get('/admin/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Show')
-                ->missing('specialties'));
+            ->assertNotFound();
 
         $this->actingAs($this->makeAdmin())
-            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
+            ->patch('/professionals/'.$professional->id.'/specialties', [
+                'specialty_ids' => [$added->id],
+            ])
             ->assertRedirect('/admin');
 
         $this->actingAs($super)
@@ -228,16 +227,13 @@ class AdminSpecialtySettingsTest extends TestCase
 
         $this->actingAs($super)
             ->get('/admin/profesionales/'.$professional->id.'/especialidades')
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Specialties')
-                ->has('specialties', Specialty::query()->count()));
+            ->assertNotFound();
 
         $this->actingAs($super)
             ->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [$added->id],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales');
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
@@ -252,11 +248,11 @@ class AdminSpecialtySettingsTest extends TestCase
             ->assertRedirect('/admin/profesionales?q=Ana');
 
         $this->actingAs($super)
-            ->withHeader('referer', url('/admin/profesionales/'.$professional->id.'/especialidades'))
+            ->withHeader('referer', url('/admin/profesionales?info='.$professional->id))
             ->patch('/professionals/'.$professional->id.'/specialties', [
                 'specialty_ids' => [],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales?info='.$professional->id);
 
         $this->assertTrue($professional->fresh()->specialties()->doesntExist());
     }

@@ -54,7 +54,7 @@ export default function AuthenticatedLayout({ children }: Props) {
                 <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-paper">
                     <main
                         data-app-main=""
-                        className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto p-[var(--space-md)] min-[1200px]:p-[var(--space-lg)_var(--space-xl)]"
+                        className="flex min-h-0 w-full flex-1 flex-col overflow-x-hidden overflow-y-auto p-[var(--space-md)] min-[1200px]:p-[var(--space-md)_var(--space-md)]"
                     >
                         {children}
                     </main>
@@ -91,7 +91,7 @@ export default function AuthenticatedLayout({ children }: Props) {
                     className={cn(
                         'flex min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-x-hidden overflow-y-auto rounded-[var(--app-radius)] bg-paper p-[var(--space-md)]',
                         'min-[1200px]:m-[var(--app-frame)]',
-                        'min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:p-[var(--space-lg)_var(--space-xl)]',
+                        'min-[1200px]:col-start-2 min-[1200px]:row-start-1 min-[1200px]:p-[var(--space-md)_var(--space-md)]',
                         chromeMainPadClass,
                         isHome && 'min-[1200px]:overflow-visible',
                     )}

@@ -88,6 +88,8 @@ enum Permission: string
             self::SurgeriesRequest,
             self::SurgeriesApprove,
             self::SurgeriesSchedule,
+            self::PatientsCatalogView,
+            self::PatientsCreate,
         ];
 
         return match ($role) {
@@ -117,8 +119,6 @@ enum Permission: string
             'super_admin' => [
                 ...$staff,
                 self::AdminsManage,
-                self::PatientsCatalogView,
-                self::PatientsCreate,
                 self::SpecialtiesManage,
                 self::HealthInsurancesManage,
                 self::ClinicManage,

@@ -74,13 +74,13 @@ function wallParts(dateKey: string): Date {
     return new Date(year, (month ?? 1) - 1, day);
 }
 
-function openDaySpan(origin: string, count: number, openDays: number[]): string[] {
+function openDaySpan(origin: string, count: number, clinic: ReturnType<typeof useClinic>): string[] {
     const days: string[] = [];
     let cursor = origin;
     let guard = 0;
 
     while (days.length < count && guard < 400) {
-        if (isClinicOpen(cursor, openDays)) {
+        if (isClinicOpen(cursor, clinic)) {
             days.push(cursor);
         }
         cursor = addDays(cursor, 1);
@@ -90,7 +90,7 @@ function openDaySpan(origin: string, count: number, openDays: number[]): string[
     return days;
 }
 
-function shiftOpenDays(from: string, delta: number, openDays: number[]): string {
+function shiftOpenDays(from: string, delta: number, clinic: ReturnType<typeof useClinic>): string {
     let cursor = from;
     let remaining = Math.abs(delta);
     const direction = delta < 0 ? -1 : 1;
@@ -98,7 +98,7 @@ function shiftOpenDays(from: string, delta: number, openDays: number[]): string 
 
     while (remaining > 0 && guard < 400) {
         cursor = addDays(cursor, direction);
-        if (isClinicOpen(cursor, openDays)) {
+        if (isClinicOpen(cursor, clinic)) {
             remaining -= 1;
         }
         guard += 1;
@@ -139,13 +139,13 @@ export default function WeekTimeline({ today, now, appointments, onSelect }: Pro
     const dayEnd = clockMinutes(clinic.closesAt);
     const todayKey = wallDate(today);
     const nowKey = wallDate(now);
-    const earliest = openDaySpan(todayKey, 1, clinic.openDays)[0] ?? todayKey;
+    const earliest = openDaySpan(todayKey, 1, clinic)[0] ?? todayKey;
     const frameRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const scaleRef = useRef<HTMLDivElement>(null);
     const [visible, setVisible] = useState(7);
     const [start, setStart] = useState(earliest);
-    const days = openDaySpan(start, visible, clinic.openDays);
+    const days = openDaySpan(start, visible, clinic);
     const columns = days.map((date) => {
         const blocks: Block[] = blocksOnDay(appointments, date).map((block) => ({
             ...block,
@@ -208,7 +208,7 @@ export default function WeekTimeline({ today, now, appointments, onSelect }: Pro
                     aria-label="Días anteriores"
                     disabled={prevDisabled}
                     onClick={() => {
-                        const previous = shiftOpenDays(firstDay, -visible, clinic.openDays);
+                        const previous = shiftOpenDays(firstDay, -visible, clinic);
                         setStart(previous < earliest ? earliest : previous);
                     }}
                 >

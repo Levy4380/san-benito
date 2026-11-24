@@ -343,7 +343,7 @@ function SlotList({ slots, professionalId, specialtyId }: { slots: Slot[]; profe
                         }
                     >
                         <NotebookPen className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Reservar
+                        Reservar turno
                     </Btn>
                 </SlotRow>
             ))}

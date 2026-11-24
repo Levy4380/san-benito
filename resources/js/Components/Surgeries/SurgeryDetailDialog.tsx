@@ -4,6 +4,7 @@ import { hasPermission, Permission } from '@/lib/permissions';
 import { SURGERY_STATUS_LABEL, surgeryRange } from '@/lib/surgery';
 import type { SharedData, SurgeryRecord, SurgerySection } from '@/types';
 import { router, usePage } from '@inertiajs/react';
+import { Undo2 } from 'lucide-react';
 
 type Props = {
     surgery: SurgeryRecord;
@@ -54,11 +55,7 @@ export default function SurgeryDetailDialog({
             : 'Sin horario';
 
     return (
-        <ConfirmDialog
-            title="Detalle de la cirugía"
-            onDismiss={onDismiss}
-            className="w-[min(40rem,100%)]"
-        >
+        <ConfirmDialog title="Detalle de la cirugía" onDismiss={onDismiss} kind="info">
             <div className="flex items-center justify-between gap-[var(--space-sm)]">
                 <SurgeryStatusBadge status={surgery.status} />
             </div>
@@ -93,7 +90,8 @@ export default function SurgeryDetailDialog({
             </div>
             <div className="flex flex-wrap justify-end gap-[var(--space-sm)]">
                 <Btn type="button" variant="outline" onClick={onDismiss}>
-                    Cerrar
+                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                    Volver
                 </Btn>
                 {showMarkRequested ? (
                     <Btn type="button" onClick={() => router.post(`${basePath}/${surgery.id}/solicitar`, {}, { preserveState: false })}>

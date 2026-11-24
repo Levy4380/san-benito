@@ -561,6 +561,15 @@ class ProfessionalSurgeriesTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Professional/Surgeries')
                 ->where('section', 'history')
+                ->where('by', null)
+                ->has('surgeries.data', 0));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/historial/mis-cirugias?by=date&date=2026-10-10')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('section', 'history')
+                ->where('by', 'date')
                 ->has('surgeries.data', 1)
                 ->where('surgeries.data.0.id', $ownHistory->id)
                 ->where('surgeries.data', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($foreignHistory->id)));

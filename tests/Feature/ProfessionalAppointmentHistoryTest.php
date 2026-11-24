@@ -52,12 +52,27 @@ class ProfessionalAppointmentHistoryTest extends TestCase
             ->get('/profesional/historial/mis-turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Appointments/History')
-                ->has('appointments', 1)
-                ->where('appointments.0.id', $ownPast->id)
-                ->where('appointments.0.starts_at', $past->format('Y-m-d H:i:s'))
-                ->where('backHref', '/profesional/agenda')
-                ->where('backLabel', 'Mi agenda'));
+                ->component('Professional/AppointmentHistory')
+                ->where('by', null)
+                ->has('appointments.data', 0));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/historial/mis-turnos?by=date&date='.$past->toDateString())
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Professional/AppointmentHistory')
+                ->where('by', 'date')
+                ->has('appointments.data', 1)
+                ->where('appointments.data.0.id', $ownPast->id)
+                ->where('appointments.data.0.starts_at', $past->format('Y-m-d H:i:s')));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/historial/mis-turnos?by=patient&patient_id='.$patient->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('by', 'patient')
+                ->has('appointments.data', 1)
+                ->where('appointments.data.0.id', $ownPast->id));
     }
 
     public function test_patient_and_admin_cannot_access_professional_historial(): void

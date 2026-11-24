@@ -44,14 +44,17 @@ class PermissionAuthorizationTest extends TestCase
         $this->actingAs($admin)->get('/professionals/create')->assertOk();
         $this->actingAs($super)->get('/professionals/create')->assertOk();
         $this->actingAs($admin)->get('/admin/administradores/crear')->assertRedirect('/admin');
-        $this->actingAs($admin)->get('/patients/create')->assertRedirect('/admin');
+        $this->actingAs($admin)->getJson('/patients/create')->assertOk();
         $this->actingAs($super)->get('/admin/administradores/crear')->assertOk();
-        $this->actingAs($super)->get('/patients/create')->assertOk();
+        $this->actingAs($super)->getJson('/patients/create')->assertOk();
         $this->actingAs($super)->get('/admin/configuracion/especialidades/crear')->assertOk();
         $this->actingAs($admin)->get('/admin/configuracion/especialidades/crear')->assertRedirect('/admin');
-        $this->actingAs($patient->user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/paciente');
-        $this->actingAs($admin)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/admin');
-        $this->actingAs($super)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertOk();
-        $this->actingAs($professional->user)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertRedirect('/profesional');
+        $this->actingAs($patient->user)->get('/admin/profesionales/'.$professional->id)->assertNotFound();
+        $this->actingAs($admin)->get('/admin/profesionales/'.$professional->id)->assertNotFound();
+        $this->actingAs($super)->get('/admin/profesionales/'.$professional->id.'/especialidades')->assertNotFound();
+        $this->actingAs($super)->get('/admin/profesionales/'.$professional->id.'/horarios')->assertNotFound();
+        $this->actingAs($professional->user)->get('/admin/profesionales/'.$professional->id)->assertNotFound();
+        $this->actingAs($super)->getJson('/admin/profesionales/'.$professional->id.'/obras-sociales')->assertOk();
+        $this->actingAs($admin)->get('/admin/profesionales/'.$professional->id.'/obras-sociales')->assertRedirect('/admin');
     }
 }

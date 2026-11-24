@@ -18,10 +18,22 @@ export type SurgeryNavCounts = {
     history: number;
 };
 
+export type ClinicException = {
+    id: number;
+    /** Y-m-d */
+    date: string;
+    closed: boolean;
+    opensAt: string | null;
+    closesAt: string | null;
+    label: string | null;
+};
+
 export type ClinicSchedule = {
+    /** ISO-8601: 1 = lunes … 7 = domingo */
     openDays: number[];
     opensAt: string;
     closesAt: string;
+    exceptions: ClinicException[];
 };
 
 export type SharedData = {

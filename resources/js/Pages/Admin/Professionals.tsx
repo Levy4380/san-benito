@@ -12,7 +12,7 @@ import Catalog from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import { specialtyNames } from '@/lib/specialties';
 import type { ProfessionalRecord, Specialty } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { UserPlus } from 'lucide-react';
 import { useState } from 'react';
 
@@ -22,14 +22,42 @@ type Props = {
     filters: { specialty_id: string; q: string };
 };
 
+function queryId(key: string, url: string): number | null {
+    const value = new URLSearchParams(url.split('?')[1] ?? '').get(key);
+    if (!value || !/^\d+$/.test(value)) {
+        return null;
+    }
+
+    return Number(value);
+}
+
 export default function AdminProfessionals({ professionals, specialties, filters }: Props) {
+    const page = usePage();
     const [creating, setCreating] = useState(false);
-    const [infoId, setInfoId] = useState<number | null>(null);
-    const [agendaId, setAgendaId] = useState<number | null>(null);
+    const [infoId, setInfoId] = useState<number | null>(() => queryId('info', page.url));
+    const [agendaId, setAgendaId] = useState<number | null>(() => queryId('agenda', page.url));
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
 
     const info = professionals.find((professional) => professional.id === infoId) ?? null;
     const agenda = professionals.find((professional) => professional.id === agendaId) ?? null;
+
+    const catalogQuery = () => {
+        const data: FilterValues = {};
+        if (filters.q.trim() !== '') {
+            data.q = filters.q;
+        }
+        if (filters.specialty_id !== '' && filters.specialty_id !== 'all') {
+            data.specialty_id = filters.specialty_id;
+        }
+        return data;
+    };
+
+    const clearModalQuery = () => {
+        if (queryId('agenda', page.url) === null && queryId('info', page.url) === null) {
+            return;
+        }
+        router.get('/admin/profesionales', catalogQuery(), { preserveState: true, replace: true });
+    };
 
     const apply = (data: FilterValues) => {
         router.get('/admin/profesionales', data, { preserveState: true });
@@ -92,14 +120,26 @@ export default function AdminProfessionals({ professionals, specialties, filters
                 <ProfessionalInfoModal
                     professional={info}
                     specialties={specialties}
-                    onDismiss={() => setInfoId(null)}
+                    onDismiss={() => {
+                        setInfoId(null);
+                        clearModalQuery();
+                    }}
                     onOpenAgenda={() => {
                         setInfoId(null);
                         setAgendaId(info.id);
                     }}
                 />
             ) : null}
-            {agenda ? <ProfessionalAgendaModal professionalId={agenda.id} name={agenda.user.name} onDismiss={() => setAgendaId(null)} /> : null}
+            {agenda ? (
+                <ProfessionalAgendaModal
+                    professionalId={agenda.id}
+                    name={agenda.user.name}
+                    onDismiss={() => {
+                        setAgendaId(null);
+                        clearModalQuery();
+                    }}
+                />
+            ) : null}
         </>
     );
 }

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { focusVisibleClass } from '@/lib/clinico-control';
 import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
 
@@ -59,11 +60,32 @@ export function HomeUpcomingList({ children }: { children: ReactNode }) {
     return <div className="grid gap-[0.35rem] text-left max-md:gap-[0.45rem]">{children}</div>;
 }
 
-export function HomeUpcomingItem({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
-    return (
-        <div className="flex w-full items-start justify-between gap-[0.65rem] rounded-md py-[0.35rem] text-left max-md:min-h-[var(--control-h-sm)] max-md:items-center max-md:py-[0.45rem]">
+type HomeUpcomingItemProps = {
+    children: ReactNode;
+    actions?: ReactNode;
+    onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
+    'aria-label'?: string;
+};
+
+export function HomeUpcomingItem({ children, actions, onClick, 'aria-label': ariaLabel }: HomeUpcomingItemProps) {
+    const body = (
+        <>
             <div className="min-w-0 flex-1">{children}</div>
             {actions ? <div className="shrink-0">{actions}</div> : null}
-        </div>
+        </>
     );
+    const classes = cn(
+        'flex w-full items-start justify-between gap-[0.65rem] rounded-md py-[0.35rem] text-left max-md:min-h-[var(--control-h-sm)] max-md:items-center max-md:py-[0.45rem]',
+        onClick ? cn('cursor-pointer hover:bg-paper-2', focusVisibleClass) : null,
+    );
+
+    if (onClick) {
+        return (
+            <button type="button" className={classes} onClick={onClick} aria-label={ariaLabel}>
+                {body}
+            </button>
+        );
+    }
+
+    return <div className={classes}>{body}</div>;
 }

@@ -10,6 +10,7 @@ use App\Models\Surgery;
 use App\Services\AdminSurgeryService;
 use App\Services\ClinicScheduleService;
 use App\Services\SurgeryService;
+use App\Support\HistorySearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -172,12 +173,19 @@ class SurgeryController extends Controller
             'professional_id' => $request->integer('professional_id') ?: null,
             'health_insurance_id' => $this->insuranceFilter($request),
             'status' => $section === 'approved' ? $this->statusFilter($request) : null,
+            'date' => $request->filled('date') ? $request->string('date')->toString() : null,
         ];
+
+        $by = $section === 'history' ? HistorySearch::surgeryBy($request, true) : null;
+        $searched = $section !== 'history' || $by !== null;
 
         return [
             'section' => $section,
-            'surgeries' => $surgeries->paginate($section, $filters),
+            'surgeries' => $searched
+                ? $surgeries->paginate($section, $filters)
+                : HistorySearch::emptyPaginator($request),
             'filters' => $filters,
+            'by' => $section === 'history' ? $by : null,
             'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery')),
             ...$surgeries->filterOptions(),
         ];
@@ -269,7 +277,12 @@ class SurgeryController extends Controller
      */
     private function freeGaps(string $date, $busy, ClinicScheduleService $clinic): array
     {
-        $hours = $clinic->share();
+        $hours = $clinic->hoursOn($date);
+
+        if ($hours === null) {
+            return [];
+        }
+
         $dayStart = $this->clockMinutes($hours['opensAt']);
         $dayEnd = $this->clockMinutes($hours['closesAt']);
         $today = now()->toDateString();

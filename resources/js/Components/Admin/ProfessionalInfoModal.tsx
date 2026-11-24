@@ -33,12 +33,7 @@ export default function ProfessionalInfoModal({ professional, specialties, onDis
 
     return (
         <>
-            <ConfirmDialog
-                title={professional.user.name}
-                message="Datos del profesional."
-                onDismiss={onDismiss}
-                className="flex max-h-[calc(100dvh-2rem)] w-[min(32rem,100%)] min-h-0 flex-col overflow-hidden max-md:max-h-[calc(100dvh-var(--space-sm)*2))]"
-            >
+            <ConfirmDialog title={professional.user.name} message="Datos del profesional." onDismiss={onDismiss} kind="info">
                 <div className="max-h-[min(60dvh,calc(100dvh-10rem))] overflow-y-auto">
                     <ProfessionalProfileFields
                         professional={professional}
@@ -57,12 +52,7 @@ export default function ProfessionalInfoModal({ professional, specialties, onDis
                 </div>
             </ConfirmDialog>
             {editing === 'specialties' ? (
-                <ConfirmDialog
-                    title="Especialidades"
-                    message={professional.user.name}
-                    onDismiss={() => setEditing(null)}
-                    className="flex max-h-[calc(100dvh-2rem)] w-[min(32rem,100%)] min-h-0 flex-col overflow-hidden"
-                >
+                <ConfirmDialog title="Especialidades" message={professional.user.name} onDismiss={() => setEditing(null)} kind="info">
                     <AssociateSpecialtiesForm professional={professional} specialties={specialties} onSaved={() => setEditing(null)} />
                     <div className="flex justify-end">
                         <Btn type="button" variant="outline" onClick={() => setEditing(null)}>
@@ -102,12 +92,7 @@ function HealthInsuranceEditor({ professional, onDismiss }: { professional: Prof
     const assigned = professional.health_insurances ?? [];
 
     return (
-        <ConfirmDialog
-            title="Obras sociales"
-            message={professional.user.name}
-            onDismiss={onDismiss}
-            className="flex max-h-[calc(100dvh-2rem)] w-[min(32rem,100%)] min-h-0 flex-col overflow-hidden"
-        >
+        <ConfirmDialog title="Obras sociales" message={professional.user.name} onDismiss={onDismiss} kind="info">
             {failed ? (
                 <Empty>No se pudieron cargar las obras sociales.</Empty>
             ) : options === null ? (

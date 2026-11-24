@@ -116,7 +116,7 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
                     : 'Paciente, obra social, profesional y nota. Sin horario.'
             }
             onDismiss={onDismiss}
-            className="w-[min(40rem,100%)]"
+            kind="info"
         >
             <form
                 className="grid min-h-0"

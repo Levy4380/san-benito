@@ -1,4 +1,4 @@
-import { clockMinutes, useClinic } from '@/lib/clinic';
+import { clinicHours, clockMinutes, useClinic } from '@/lib/clinic';
 import { pad2, wallDate, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import { type CSSProperties, type PointerEvent, useRef, useState } from 'react';
@@ -25,11 +25,14 @@ type Props = {
     className?: string;
     label?: string;
     onBlockSelect?: (key: DayTimelineBlock['key']) => void;
-    /** Free calculated slots, rendered as «+ Asignar turno» when `onFreeSelect` is set */
-    freeSlots?: { starts_at: string; ends_at: string }[];
+    /** Free slots, rendered when `onFreeSelect` is set. Optional `label` defaults to «+ Asignar turno». */
+    freeSlots?: { starts_at: string; ends_at: string; label?: string }[];
     onFreeSelect?: (startsAt: string) => void;
     /** Drag to paint [start, end). A new window starts on a 5-minute mark; slots and erases step from that window's start. `on` is false when the drag starts inside a band. */
     onPaint?: (start: number, end: number, on: boolean) => void;
+    /** Overrides the hours of `date` (for example the shared window of several days). */
+    opensAt?: string;
+    closesAt?: string;
 };
 
 type PaintDraft = { from: number; to: number; on: boolean; origin: number };
@@ -92,10 +95,13 @@ export default function DayTimeline({
     freeSlots = [],
     onFreeSelect,
     onPaint,
+    opensAt,
+    closesAt,
 }: Props) {
     const clinic = useClinic();
-    const dayStart = clockMinutes(clinic.opensAt);
-    const dayEnd = clockMinutes(clinic.closesAt);
+    const dayHours = clinicHours(date, clinic);
+    const dayStart = clockMinutes(opensAt ?? dayHours?.opensAt ?? clinic.opensAt);
+    const dayEnd = clockMinutes(closesAt ?? dayHours?.closesAt ?? clinic.closesAt);
     const step = Math.max(STEP_MIN, Math.min(stepMinutes, STEP_MAX));
     const [paint, setPaint] = useState<PaintDraft | null>(null);
     const paintRef = useRef<PaintDraft | null>(null);
@@ -259,20 +265,21 @@ export default function DayTimeline({
                 {onFreeSelect
                     ? freeSlots.map((slot) => {
                           const [start, end] = clipToDay(date, slot.starts_at, slot.ends_at);
+                          const label = slot.label ?? '+ Asignar turno';
 
                           return end > start ? (
                               <button
                                   key={slot.starts_at}
                                   type="button"
                                   onClick={() => onFreeSelect(slot.starts_at)}
-                                  aria-label={`Asignar turno ${wallTime(slot.starts_at)}–${wallTime(slot.ends_at)}`}
+                                  aria-label={`${label} ${wallTime(slot.starts_at)}–${wallTime(slot.ends_at)}`}
                                   className="tl-block tl-free border-ink-2/40 text-ink-2 hover:bg-paper-2 hover:border-ink-2/70 hover:text-ink focus-visible:outline-focus absolute right-[0.35rem] left-[var(--tl-inset)] block min-h-[1.1rem] cursor-pointer overflow-hidden rounded-[var(--radius-input)] border border-dashed bg-transparent px-[0.45rem] py-[0.2rem] text-left text-[length:var(--text-xs)] leading-[1.25] outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-solid"
                                   style={{ top: top(start), height: `calc(${height(end - start)} - 2px)` }}
                               >
                                   <strong className="font-mono">
                                       {wallTime(slot.starts_at)}–{wallTime(slot.ends_at)}
                                   </strong>{' '}
-                                  + Asignar turno
+                                  {label}
                               </button>
                           ) : null;
                       })

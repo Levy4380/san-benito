@@ -56,7 +56,7 @@ class AgendaProgramController extends Controller
         );
 
         return redirect()->route('professional.agenda')->with('toast', [
-            'message' => 'Programaste las franjas.',
+            'message' => 'Programaste los horarios.',
             'variant' => 'ok',
         ]);
     }

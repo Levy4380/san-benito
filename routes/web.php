@@ -86,6 +86,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/professionals/{professional}/windows/program', [AdminProfessionalWindowController::class, 'program'])->name('admin.professionals.windows.program');
     });
 
+    Route::middleware(Permission::middleware(Permission::AvailabilityDelete))->group(function () {
+        Route::delete('/professionals/{professional}/windows/{window}', [AdminProfessionalWindowController::class, 'destroy'])
+            ->whereNumber(['professional', 'window'])
+            ->name('admin.professionals.windows.destroy');
+    });
+
     Route::middleware(Permission::middleware(Permission::PatientsLink))->group(function () {
         Route::post('/professionals/{professional}/patients', [AdminProfessionalPatientController::class, 'store'])->name('admin.professionals.patients.store');
     });
@@ -201,7 +207,12 @@ Route::middleware('auth')->group(function () {
         Route::middleware(Permission::middleware(Permission::AppointmentsCatalogView))->group(function () {
             Route::get('/historial/turnos', [AdminAppointmentController::class, 'index'])->name('historial.turnos');
             Route::get('/reservas', fn () => redirect()->route('admin.historial.turnos'))->name('appointments.index');
-            Route::get('/profesionales/{professional}/horarios', [ProfessionalSlotsController::class, 'index'])->name('professionals.slots');
+        });
+
+        Route::middleware(Permission::middleware(Permission::AvailabilityProgram))->group(function () {
+            Route::get('/profesionales/{professional}/programar', [AdminProfessionalWindowController::class, 'createProgram'])
+                ->whereNumber('professional')
+                ->name('professionals.program');
         });
 
         Route::middleware(Permission::middleware(Permission::SurgeriesCatalogView))->group(function () {
@@ -231,7 +242,6 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware(Permission::middleware(Permission::ProfessionalsCatalogView))->group(function () {
             Route::get('/profesionales', [AdminProfessionalController::class, 'index'])->name('professionals.index');
-            Route::get('/profesionales/{professional}', [ProfessionalProfileController::class, 'show'])->name('professionals.show');
         });
 
         Route::middleware(Permission::middleware(Permission::AdminsManage))->group(function () {
@@ -251,12 +261,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/configuracion/especialidades', [AdminSpecialtyController::class, 'index'])->name('settings.specialties.index');
             Route::get('/configuracion/especialidades/crear', [AdminSpecialtyController::class, 'create'])->name('settings.specialties.create');
             Route::get('/configuracion/especialidades/{specialty}/editar', [AdminSpecialtyController::class, 'edit'])->name('settings.specialties.edit');
-            Route::get('/profesionales/{professional}/especialidades', [ProfessionalProfileController::class, 'specialties'])->name('professionals.specialties');
         });
 
         Route::middleware(Permission::middleware(Permission::ClinicManage))->group(function () {
             Route::get('/configuracion/sanatorio', [AdminClinicScheduleController::class, 'edit'])->name('settings.clinic.edit');
             Route::patch('/configuracion/sanatorio', [AdminClinicScheduleController::class, 'update'])->name('settings.clinic.update');
+            Route::post('/configuracion/sanatorio/excepciones', [AdminClinicScheduleController::class, 'storeException'])->name('settings.clinic.exceptions.store');
+            Route::delete('/configuracion/sanatorio/excepciones/{clinicScheduleException}', [AdminClinicScheduleController::class, 'destroyException'])->name('settings.clinic.exceptions.destroy');
         });
 
         Route::middleware(Permission::middleware(Permission::HealthInsurancesManage))->group(function () {

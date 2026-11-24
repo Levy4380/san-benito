@@ -8,18 +8,18 @@ import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import { ConfirmDialog, useConfirm } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
-import Field from '@/Components/Form/Field';
-import Time24 from '@/Components/Form/Time24';
+import FieldError from '@/Components/Form/FieldError';
 import Hint from '@/Components/Surfaces/Hint';
 import ListRow from '@/Components/Surfaces/ListRow';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
-import { clockMinutes, isClinicOpen, useClinic } from '@/lib/clinic';
+import { clinicHours, clockMinutes, useClinic } from '@/lib/clinic';
 import { formatDateLabel, wallTime } from '@/lib/datetime';
+import { overbookSlots } from '@/lib/overbook';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, Slot } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CalendarPlus, Plus, Trash2, Undo2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type PanelStep = 'day' | 'load';
 
@@ -48,19 +48,29 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
         setAssignStartsAt(startsAt);
         setModal('assign');
     };
-    const [start, setStart] = useState('09:00');
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
     const openAppointment = appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
     const { ask, dialog } = useConfirm();
     const clinic = useClinic();
-    const openMinutes = clockMinutes(clinic.opensAt);
-    const closeMinutes = clockMinutes(clinic.closesAt);
-    const dayClosed = !isClinicOpen(selectedDate, clinic.openDays);
-    const shortFits =
-        !dayClosed &&
-        clockMinutes(start) >= openMinutes &&
-        clockMinutes(start) + professional.slot_duration_minutes <= closeMinutes;
-    const shortForm = useForm({ starts_at: `${selectedDate} ${start}:00` });
+    const hours = clinicHours(selectedDate, clinic);
+    const openMinutes = clockMinutes(hours?.opensAt ?? clinic.opensAt);
+    const closeMinutes = clockMinutes(hours?.closesAt ?? clinic.closesAt);
+    const dayClosed = hours === null;
+    const shortForm = useForm({ starts_at: '' });
+    const sobreturnoSlots = useMemo(
+        () =>
+            overbookSlots({
+                date: selectedDate,
+                now,
+                stepMinutes: professional.slot_duration_minutes,
+                openMinutes,
+                closeMinutes,
+                dayOpen: !dayClosed,
+                appointments,
+                windows,
+            }),
+        [selectedDate, now, professional.slot_duration_minutes, openMinutes, closeMinutes, dayClosed, appointments, windows],
+    );
 
     useEffect(() => {
         if (serverMonth === requestedMonth.current) {
@@ -101,8 +111,11 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
         }
     };
 
-    const loadWindow = () => {
-        shortForm.transform(() => ({ starts_at: `${selectedDate} ${start}:00` }));
+    const loadWindow = (startsAt: string) => {
+        if (shortForm.processing) {
+            return;
+        }
+        shortForm.transform(() => ({ starts_at: startsAt }));
         shortForm.post('/agenda/windows', { preserveScroll: true, onSuccess: () => setModal(null) });
     };
 
@@ -148,7 +161,7 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
         >
             <Btn type="button" block onClick={() => setModal('load')}>
                 <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                Cargar un turno
+                Cargar sobreturno
             </Btn>
         </div>
     );
@@ -188,33 +201,34 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
 
     const loadModal =
         modal === 'load' ? (
-            <ConfirmDialog title="Cargar un turno" message={dayLabel} onDismiss={closeModal}>
-                <div className="flex max-h-[60dvh] min-h-0 flex-col">
-                    <form
-                        className="flex shrink-0 items-end gap-[0.65rem]"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            loadWindow();
-                        }}
-                    >
-                        <Field
-                            label="Hora de inicio"
-                            error={shortForm.errors.starts_at || shortForm.errors.dates || shortForm.errors.ranges}
-                            flush
-                            className="min-w-0 flex-1"
-                        >
-                            <Time24 value={start} onChange={setStart} />
-                        </Field>
-                        <Btn type="submit" className="shrink-0" disabled={shortForm.processing || !shortFits}>
-                            <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Cargar
-                        </Btn>
-                    </form>
-                    <Hint className="m-0 mt-[var(--space-xs)]">
+            <ConfirmDialog title="Cargar sobreturno" message={dayLabel} onDismiss={closeModal} kind="workspace">
+                <div className="flex min-h-0 flex-1 flex-col">
+                    {shortForm.errors.starts_at || shortForm.errors.dates || shortForm.errors.ranges ? (
+                        <FieldError className="shrink-0">
+                            {shortForm.errors.starts_at || shortForm.errors.dates || shortForm.errors.ranges}
+                        </FieldError>
+                    ) : null}
+                    <Hint className="m-0 shrink-0">
                         {dayClosed
                             ? 'El sanatorio no abre este día.'
-                            : `El sanatorio atiende de ${clinic.opensAt} a ${clinic.closesAt}.`}
+                            : `Elegí un horario libre fuera de las franjas. El sanatorio atiende de ${hours?.opensAt ?? clinic.opensAt} a ${hours?.closesAt ?? clinic.closesAt}.`}
                     </Hint>
+                    <DayTimeline
+                        className={cn('mt-[var(--space-xs)] min-h-[12rem] flex-1', shortForm.processing && 'pointer-events-none opacity-60')}
+                        date={selectedDate}
+                        now={now}
+                        stepMinutes={professional.slot_duration_minutes}
+                        bands={windows.map((window) => ({ key: window.id, starts_at: window.starts_at, ends_at: window.ends_at }))}
+                        blocks={appointments.map((appointment) => ({
+                            key: appointment.id,
+                            starts_at: appointment.starts_at,
+                            ends_at: appointment.ends_at,
+                            title: appointment.patient?.name ?? 'Paciente',
+                            subtitle: appointment.specialty?.name,
+                        }))}
+                        freeSlots={sobreturnoSlots}
+                        onFreeSelect={loadWindow}
+                    />
                     {windows.length > 0 ? (
                         <PanelScroll className="pt-[var(--space-sm)]">
                             {windows.map((window) => (
@@ -254,7 +268,7 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
                             <Btn asChild>
                                 <Link href="/profesional/programar">
                                     <CalendarPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                    Programar turnos
+                                    Programar horarios
                                 </Link>
                             </Btn>
                         }

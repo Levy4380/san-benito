@@ -26,7 +26,7 @@ class AvailabilityWindowController extends Controller
         return redirect()
             ->route('professional.agenda', ['date' => Carbon::parse($startsAt)->toDateString()])
             ->with('toast', [
-                'message' => 'Cargaste el horario.',
+                'message' => 'Cargaste el sobreturno.',
                 'variant' => 'ok',
             ]);
     }

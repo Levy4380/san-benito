@@ -99,6 +99,14 @@ class HistorialHardeningTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Appointments')
+                ->where('by', null)
+                ->has('appointments.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/turnos?by=date&date='.$past->toDateString())
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('by', 'date')
                 ->has('appointments.data', 1)
                 ->where('appointments.data.0.id', $pastAppointment->id));
     }
@@ -136,6 +144,15 @@ class HistorialHardeningTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Surgeries')
                 ->where('section', 'history')
+                ->where('by', null)
+                ->has('surgeries.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/cirugias?by=date&date=2020-01-10')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('section', 'history')
+                ->where('by', 'date')
                 ->has('surgeries.data', 1)
                 ->where('surgeries.data.0.note', 'Historial hardening.'));
     }
@@ -165,9 +182,18 @@ class HistorialHardeningTest extends TestCase
             ->get('/profesional/historial/mis-turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Appointments/History')
-                ->has('appointments', 1)
-                ->where('appointments.0.id', $ownPast->id));
+                ->component('Professional/AppointmentHistory')
+                ->where('by', null)
+                ->has('appointments.data', 0));
+
+        $this->actingAs($mine->user)
+            ->get('/profesional/historial/mis-turnos?by=date&date='.$past->toDateString())
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Professional/AppointmentHistory')
+                ->where('by', 'date')
+                ->has('appointments.data', 1)
+                ->where('appointments.data.0.id', $ownPast->id));
 
         $this->actingAs($patient->user)
             ->getJson('/profesional/historial/mis-turnos')
@@ -226,6 +252,7 @@ class HistorialHardeningTest extends TestCase
         $this->assertStringContainsString('/profesional/historial/mis-turnos', $design);
         $this->assertStringContainsString('/profesional/historial/mis-cirugias', $design);
         $this->assertStringContainsString('redirect compat → `/admin/historial/turnos`', $design);
+        $this->assertStringContainsString('d49 — Historial search-first', $design);
 
         $common = File::get(base_path('docs/professional-surgeries/COMMON.md'));
         $this->assertStringContainsString('**Sin** hijo Historial', $common);

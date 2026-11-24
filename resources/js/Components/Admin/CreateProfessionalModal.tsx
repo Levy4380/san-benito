@@ -56,7 +56,7 @@ export default function CreateProfessionalModal({ onDismiss }: Props) {
     }, []);
 
     return (
-        <ConfirmDialog title="Crear profesional" message="Alta de profesionales." onDismiss={onDismiss} className="w-[min(48rem,100%)]">
+        <ConfirmDialog title="Crear profesional" message="Alta de profesionales." onDismiss={onDismiss} kind="info">
             <form
                 className="grid min-h-0"
                 onSubmit={(event) => {

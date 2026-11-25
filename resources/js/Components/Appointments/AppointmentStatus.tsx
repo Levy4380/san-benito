@@ -1,13 +1,14 @@
 import StatusBadge, { type StatusTone } from '@/Components/Common/StatusBadge';
 import { Btn } from '@/Components/Form/Btn';
-import { APPOINTMENT_STATUS_LABEL, appointmentStarted, appointmentStatus } from '@/lib/appointment-status';
+import { APPOINTMENT_STATUS_LABEL, appointmentStatus } from '@/lib/appointment-status';
 import { hasPermission, Permission } from '@/lib/permissions';
 import type { AppointmentAttendance, AppointmentRecord, AppointmentStatusName, SharedData } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { Check, RotateCcw, UserX } from 'lucide-react';
 import { useState } from 'react';
 
-const BADGE_STYLE: Record<AppointmentStatusName, StatusTone> = {
+/** Shared with the surgery badge for Pasada / Atendida / Ausente (d52). */
+export const APPOINTMENT_BADGE_STYLE: Record<AppointmentStatusName, StatusTone> = {
     scheduled: { background: 'oklch(88% 0.06 250)', color: 'oklch(32% 0.08 250)' },
     past: { background: 'oklch(92% 0.01 250)', color: 'oklch(40% 0.02 250)' },
     attended: { background: 'oklch(90% 0.08 150)', color: 'oklch(36% 0.1 150)' },
@@ -16,7 +17,7 @@ const BADGE_STYLE: Record<AppointmentStatusName, StatusTone> = {
 
 export function AppointmentStatusBadge({ status, className }: { status: AppointmentStatusName; className?: string }) {
     return (
-        <StatusBadge tone={BADGE_STYLE[status]} status={status} className={className}>
+        <StatusBadge tone={APPOINTMENT_BADGE_STYLE[status]} status={status} className={className}>
             {APPOINTMENT_STATUS_LABEL[status]}
         </StatusBadge>
     );
@@ -63,21 +64,27 @@ export function useAppointmentAttendance(appointment: AppointmentRecord, onChang
     return { attendance, status, saving, mark };
 }
 
-type ControlsProps = {
-    appointment: AppointmentRecord;
+type MarkProps = {
     attendance: AppointmentAttendance | null;
     saving: boolean;
     onMark: (next: AppointmentAttendance | null) => void;
 };
 
-/** Atendido / Ausente, as footer actions of «Detalle del turno». Hidden until the appointment started. */
+type ControlsProps = MarkProps & {
+    /** Hidden until the appointment / surgery started. */
+    started: boolean;
+    /** «Atendido» for appointments, «Atendida» for surgeries (d52). */
+    attendedLabel?: string;
+};
+
+/** Atendido / Ausente, as footer actions of «Detalle del turno» and «Detalle de la cirugía». */
 const OK_TONE =
     'border-ok/35 bg-ok-faint text-ok hover:border-ok hover:bg-ok-soft hover:text-ok disabled:hover:border-ok/35 disabled:hover:bg-ok-faint disabled:hover:text-ok';
 const DANGER_TONE =
     'border-danger/35 bg-danger-faint text-danger hover:border-danger hover:bg-danger-soft hover:text-danger disabled:hover:border-danger/35 disabled:hover:bg-danger-faint disabled:hover:text-danger';
 
-export function AppointmentAttendanceControls({ appointment, attendance, saving, onMark }: ControlsProps) {
-    if (!appointmentStarted(appointment.starts_at)) {
+export function AttendanceControls({ started, attendance, saving, onMark, attendedLabel = 'Atendido' }: ControlsProps) {
+    if (!started) {
         return null;
     }
 
@@ -92,7 +99,7 @@ export function AppointmentAttendanceControls({ appointment, attendance, saving,
                 onClick={() => onMark('attended')}
             >
                 <Check className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                Atendido
+                {attendedLabel}
             </Btn>
             <Btn
                 type="button"
@@ -110,7 +117,7 @@ export function AppointmentAttendanceControls({ appointment, attendance, saving,
 }
 
 /** Small «Quitar marca» shown next to the status badge while there is an explicit mark. */
-export function ClearAttendanceBtn({ attendance, saving, onMark }: Omit<ControlsProps, 'appointment'>) {
+export function ClearAttendanceBtn({ attendance, saving, onMark }: MarkProps) {
     if (!attendance) {
         return null;
     }

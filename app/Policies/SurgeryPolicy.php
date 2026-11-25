@@ -53,4 +53,15 @@ class SurgeryPolicy
         return Permission::OwnSurgeriesSchedule->allows($user)
             && $user->professional?->id === $surgery->professional_id;
     }
+
+    /** Staff any surgery; the professional only their own (d52). */
+    public function markAttendance(User $user, Surgery $surgery): bool
+    {
+        if (Permission::SurgeriesAttendance->allows($user)) {
+            return true;
+        }
+
+        return Permission::OwnSurgeriesAttendance->allows($user)
+            && $user->professional?->id === $surgery->professional_id;
+    }
 }

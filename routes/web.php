@@ -35,6 +35,7 @@ use App\Http\Controllers\ProfessionalProfileController;
 use App\Http\Controllers\ProfessionalSearchController;
 use App\Http\Controllers\ProfessionalSlotsController;
 use App\Http\Controllers\Settings\ProfessionalAgendaSettingsController;
+use App\Http\Controllers\SurgeryAttendanceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/appointments/{appointment}/attendance', [AppointmentAttendanceController::class, 'update'])
         ->middleware(Permission::middleware(Permission::OwnAppointmentsAttendance, Permission::AppointmentsAttendance))
         ->name('appointments.attendance.update');
+
+    Route::patch('/surgeries/{surgery}/attendance', [SurgeryAttendanceController::class, 'update'])
+        ->middleware(Permission::middleware(Permission::OwnSurgeriesAttendance, Permission::SurgeriesAttendance))
+        ->name('surgeries.attendance.update');
 
     Route::middleware(Permission::middleware(Permission::OwnAppointmentsReschedule, Permission::AppointmentsReschedule))->group(function () {
         Route::get('/appointments/{appointment}/reschedule-options', [AppointmentRescheduleController::class, 'options'])

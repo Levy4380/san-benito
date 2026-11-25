@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentAttendance;
 use App\Enums\SurgeryStatus;
 use App\Models\ClinicSchedule;
 use App\Models\HealthInsurance;
@@ -164,10 +165,28 @@ class SurgeryService
             $locked->status = SurgeryStatus::Scheduled;
             $locked->starts_at = $start;
             $locked->ends_at = $end;
+            $locked->attendance = null;
             $locked->save();
 
             return $locked;
         });
+    }
+
+    /**
+     * Marks a scheduled surgery that already started as attended / absent, or clears the mark (`null`).
+     * The workflow status stays `scheduled`, so the row still blocks the operating room.
+     */
+    public function setAttendance(Surgery $surgery, ?AppointmentAttendance $attendance): Surgery
+    {
+        if (! $surgery->acceptsAttendance()) {
+            throw ValidationException::withMessages([
+                'attendance' => 'Solo podés marcar una cirugía programada que ya comenzó.',
+            ]);
+        }
+
+        $surgery->update(['attendance' => $attendance]);
+
+        return $surgery;
     }
 
     /**

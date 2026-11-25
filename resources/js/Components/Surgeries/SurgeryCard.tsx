@@ -21,7 +21,7 @@ export default function SurgeryCard({ surgery, onOpen }: { surgery: SurgeryRecor
                 DNI <span className="font-mono">{surgery.patient?.dni}</span>
             </span>
             {showProfessional ? <span className="text-sm text-ink-2">Solicita: {surgery.professional?.user.name}</span> : null}
-            <SurgeryStatusBadge status={surgery.status} className="mt-[0.3rem]" />
+            <SurgeryStatusBadge surgery={surgery} className="mt-[0.3rem]" />
         </BookingCard>
     );
 }

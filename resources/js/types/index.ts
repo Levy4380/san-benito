@@ -113,6 +113,8 @@ export type SurgeryRecord = {
     note: string;
     starts_at: string | null;
     ends_at: string | null;
+    /** Explicit mark on a scheduled surgery that already started (d52). */
+    attendance: AppointmentAttendance | null;
     opens_scheduled_group?: boolean;
     patient?: PatientRecord;
     professional?: ProfessionalRecord;

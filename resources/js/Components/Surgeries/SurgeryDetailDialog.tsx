@@ -1,14 +1,16 @@
+import { APPOINTMENT_BADGE_STYLE, AttendanceControls, ClearAttendanceBtn } from '@/Components/Appointments/AppointmentStatus';
 import { DetailBlock, DetailBlocks, type DetailRow } from '@/Components/Common/DetailList';
 import StatusBadge, { type StatusTone } from '@/Components/Common/StatusBadge';
 import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
-import { appointmentStarted } from '@/lib/appointment-status';
+import { appointmentStarted, appointmentStatus } from '@/lib/appointment-status';
 import { formatDateLabel } from '@/lib/datetime';
 import { hasPermission, Permission } from '@/lib/permissions';
 import { canSeeAppointmentProfessional } from '@/lib/roles';
-import { SURGERY_STATUS_LABEL, surgeryRange } from '@/lib/surgery';
-import type { SharedData, SurgeryRecord, SurgerySection } from '@/types';
+import { SURGERY_ATTENDANCE_LABEL, SURGERY_STATUS_LABEL, surgeryRange } from '@/lib/surgery';
+import type { AppointmentAttendance, SharedData, SurgeryRecord, SurgerySection } from '@/types';
 import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 type Props = {
     surgery: SurgeryRecord;
@@ -21,7 +23,28 @@ type Props = {
     canSchedule?: boolean;
 };
 
-export function SurgeryStatusBadge({ status, className }: { status: SurgeryRecord['status']; className?: string }) {
+/**
+ * Workflow status; on a scheduled surgery the attendance mark (Atendida / Ausente) wins, and an unmarked
+ * one shows «Pasada» from `starts_at` + 24 h (same rule as appointments, D7 / d52).
+ */
+export function SurgeryStatusBadge({
+    surgery,
+    className,
+}: {
+    surgery: Pick<SurgeryRecord, 'status' | 'starts_at' | 'attendance'>;
+    className?: string;
+}) {
+    const { status } = surgery;
+    const shown = status === 'scheduled' && surgery.starts_at ? appointmentStatus(surgery.starts_at, surgery.attendance) : null;
+
+    if (shown && shown !== 'scheduled') {
+        return (
+            <StatusBadge tone={APPOINTMENT_BADGE_STYLE[shown]} status={shown} className={className}>
+                {SURGERY_ATTENDANCE_LABEL[shown]}
+            </StatusBadge>
+        );
+    }
+
     return (
         <StatusBadge tone={badgeStyle(status)} status={status} className={className}>
             {SURGERY_STATUS_LABEL[status]}
@@ -50,6 +73,24 @@ export default function SurgeryDetailDialog({
     /** d51: a scheduled surgery that has not started can be moved (same screen and rules as Programar). */
     const showReschedule =
         allowSchedule && surgery.status === 'scheduled' && surgery.starts_at !== null && !appointmentStarted(surgery.starts_at);
+    /** d52: staff (`surgeries.attendance`) or the requesting professional (`own.surgeries.attendance`; server checks ownership). */
+    const allowAttendance =
+        hasPermission(permissions, Permission.SurgeriesAttendance) || hasPermission(permissions, Permission.OwnSurgeriesAttendance);
+    const started = surgery.status === 'scheduled' && surgery.starts_at !== null && appointmentStarted(surgery.starts_at);
+    const showAttendance = allowAttendance && started;
+    const [saving, setSaving] = useState(false);
+    const markAttendance = (next: AppointmentAttendance | null) => {
+        router.patch(
+            `/surgeries/${surgery.id}/attendance`,
+            { attendance: next },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setSaving(true),
+                onFinish: () => setSaving(false),
+            },
+        );
+    };
     const patient = surgery.patient;
     const professional = surgery.professional;
     const showProfessional = canSeeAppointmentProfessional(auth.user?.roles ?? []);
@@ -66,7 +107,15 @@ export default function SurgeryDetailDialog({
                             ? ([['Horario', <span key="time" className="font-mono">{surgeryRange(scheduled.starts, scheduled.ends)}</span>]] as DetailRow[])
                             : []),
                         ['Obra social', surgery.health_insurance?.name ?? 'Particular'],
-                        ['Estado', <SurgeryStatusBadge key="status" status={surgery.status} />],
+                        [
+                            'Estado',
+                            <span key="status" className="inline-flex flex-wrap items-center gap-[0.4rem]">
+                                <SurgeryStatusBadge surgery={surgery} />
+                                {showAttendance ? (
+                                    <ClearAttendanceBtn attendance={surgery.attendance} saving={saving} onMark={markAttendance} />
+                                ) : null}
+                            </span>,
+                        ],
                     ]}
                 />
                 <DetailBlock
@@ -91,6 +140,15 @@ export default function SurgeryDetailDialog({
                 </DetailBlock>
             </DetailBlocks>
             <DialogActions>
+                {showAttendance ? (
+                    <AttendanceControls
+                        started={started}
+                        attendance={surgery.attendance}
+                        saving={saving}
+                        onMark={markAttendance}
+                        attendedLabel="Atendida"
+                    />
+                ) : null}
                 {showMarkRequested ? (
                     <Btn type="button" onClick={() => router.post(`${basePath}/${surgery.id}/solicitar`, {}, { preserveState: false })}>
                         Marcar como solicitada

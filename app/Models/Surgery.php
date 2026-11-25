@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\AppointmentAttendance;
+use App\Enums\AppointmentStatus;
 use App\Enums\SurgeryStatus;
 use App\Models\Concerns\SerializesInstitutionalDates;
 use Database\Factories\SurgeryFactory;
@@ -28,6 +30,7 @@ class Surgery extends Model
         'note',
         'starts_at',
         'ends_at',
+        'attendance',
     ];
 
     /**
@@ -39,6 +42,7 @@ class Surgery extends Model
             'status' => SurgeryStatus::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'attendance' => AppointmentAttendance::class,
         ];
     }
 
@@ -47,6 +51,35 @@ class Surgery extends Model
     {
         return $this->status === SurgeryStatus::ToSchedule
             || ($this->status === SurgeryStatus::Scheduled && $this->starts_at !== null && $this->starts_at->gt(now()));
+    }
+
+    /** A scheduled surgery that already started can be marked attended / absent (D7 mirror, d52). */
+    public function acceptsAttendance(): bool
+    {
+        return $this->status === SurgeryStatus::Scheduled
+            && $this->starts_at !== null
+            && $this->starts_at->lte(now());
+    }
+
+    /**
+     * Displayed label (d52): the attendance mark wins; an unmarked scheduled surgery shows «Pasada»
+     * from `starts_at + PAST_GRACE_HOURS` (same grace as appointments, D7); otherwise the workflow status.
+     */
+    public function statusLabel(): string
+    {
+        return match (true) {
+            $this->attendance === AppointmentAttendance::Attended => 'Atendida',
+            $this->attendance === AppointmentAttendance::Absent => 'Ausente',
+            $this->isPast() => 'Pasada',
+            default => $this->status->label(),
+        };
+    }
+
+    private function isPast(): bool
+    {
+        return $this->status === SurgeryStatus::Scheduled
+            && $this->starts_at !== null
+            && now()->gte($this->starts_at->copy()->addHours(AppointmentStatus::PAST_GRACE_HOURS));
     }
 
     public function patient(): BelongsTo

@@ -5,6 +5,13 @@ export const SURGERY_STATUS_LABEL = {
     scheduled: 'Programada',
 } as const;
 
+/** On a scheduled surgery the mark wins, then «Pasada» after the D7 grace (d52). */
+export const SURGERY_ATTENDANCE_LABEL = {
+    past: 'Pasada',
+    attended: 'Atendida',
+    absent: 'Ausente',
+} as const;
+
 export function surgeryRange(startsAt: string, endsAt: string): string {
     return `${startsAt.slice(11, 16)}–${endsAt.slice(11, 16)}`;
 }

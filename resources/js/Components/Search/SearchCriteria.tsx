@@ -6,34 +6,34 @@ import { cn } from '@/lib/utils';
 import { CalendarDays, HeartPulse, Search, Shield, Stethoscope, UserRound, type LucideIcon } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 
-export type HistoryCriterion = 'date' | 'professional' | 'patient' | 'specialty' | 'insurance';
+export type SearchCriterion = 'date' | 'professional' | 'patient' | 'specialty' | 'insurance';
 
-export type HistoryCriterionOption = {
-    key: HistoryCriterion;
+export type SearchCriterionOption = {
+    key: SearchCriterion;
     label: string;
     icon: LucideIcon;
 };
 
-export const appointmentCriteria = (includeProfessional: boolean): HistoryCriterionOption[] => [
+export const appointmentCriteria = (includeProfessional: boolean): SearchCriterionOption[] => [
     { key: 'date', label: 'Fecha', icon: CalendarDays },
     ...(includeProfessional ? [{ key: 'professional' as const, label: 'Doctor', icon: Stethoscope }] : []),
     { key: 'patient', label: 'Paciente', icon: UserRound },
     { key: 'specialty', label: 'Especialidad', icon: HeartPulse },
 ];
 
-export const surgeryCriteria = (includeProfessional: boolean): HistoryCriterionOption[] => [
+export const surgeryCriteria = (includeProfessional: boolean): SearchCriterionOption[] => [
     { key: 'date', label: 'Fecha', icon: CalendarDays },
     ...(includeProfessional ? [{ key: 'professional' as const, label: 'Doctor', icon: Stethoscope }] : []),
     { key: 'patient', label: 'Paciente', icon: UserRound },
     { key: 'insurance', label: 'Obra social', icon: Shield },
 ];
 
-export function HistorySearchHub({
+export function SearchHub({
     options,
     onSelect,
 }: {
-    options: HistoryCriterionOption[];
-    onSelect: (key: HistoryCriterion) => void;
+    options: SearchCriterionOption[];
+    onSelect: (key: SearchCriterion) => void;
 }) {
     const three = options.length === 3;
 
@@ -78,7 +78,7 @@ export function HistorySearchHub({
     );
 }
 
-export function HistoryCriterionForm({
+export function SearchCriterionForm({
     title,
     onBack,
     onSubmit,

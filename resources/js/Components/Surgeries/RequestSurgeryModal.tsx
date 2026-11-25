@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
@@ -7,7 +7,7 @@ import { controlClass } from '@/lib/clinico-control';
 import { cn } from '@/lib/utils';
 import type { HealthInsurance, ProfessionalRecord } from '@/types';
 import { useForm } from '@inertiajs/react';
-import { Plus, Undo2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type PatientHit = {
@@ -226,16 +226,12 @@ export default function RequestSurgeryModal({ onDismiss, basePath = '/admin/ciru
                         />
                     </Field>
                 </div>
-                <div className="mt-[0.25rem] flex flex-wrap justify-end gap-[0.5rem]">
-                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>
-                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Volver
-                    </Btn>
+                <DialogActions>
                     <Btn type="submit" className="min-w-[6.5rem]" disabled={form.processing || loading || loadFailed}>
                         <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         Solicitar cirugía
                     </Btn>
-                </div>
+                </DialogActions>
             </form>
         </ConfirmDialog>
     );

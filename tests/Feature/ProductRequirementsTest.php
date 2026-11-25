@@ -537,7 +537,7 @@ class ProductRequirementsTest extends TestCase
         $this->assertDatabaseHas('appointments', ['id' => $appointment->id]);
     }
 
-    public function test_12_admin_lists_and_filters_past_appointments_historial(): void
+    public function test_12_admin_searches_past_and_future_appointments(): void
     {
         $admin = $this->makeAdmin();
         $patient = $this->makePatient();
@@ -559,7 +559,7 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos')
+            ->get('/admin/buscar/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Appointments')
@@ -568,33 +568,35 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/reservas')
-            ->assertRedirect(route('admin.historial.turnos'));
+            ->assertRedirect(route('admin.search.appointments'));
 
         $this->actingAs($admin)
             ->get('/admin')
             ->assertRedirect(route('admin.surgeries.calendar'));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?by=professional&professional_id='.$professional->id)
+            ->get('/admin/buscar/turnos?by=professional&professional_id='.$professional->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('by', 'professional')
-                ->has('appointments.data', 1));
+                ->has('appointments.data', 2)
+                ->where('appointments.data.0.starts_at', $future->format('Y-m-d H:i:s'))
+                ->where('appointments.data.1.id', $appointment->id));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?by=date&date='.$past->copy()->addYear()->toDateString())
+            ->get('/admin/buscar/turnos?by=date&date='.$past->copy()->addYear()->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?by=specialty&specialty_id='.$appointment->specialty_id)
+            ->get('/admin/buscar/turnos?by=specialty&specialty_id='.$appointment->specialty_id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 2));
 
         $other = Specialty::factory()->create(['name' => 'Oftalmología']);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?by=specialty&specialty_id='.$other->id)
+            ->get('/admin/buscar/turnos?by=specialty&specialty_id='.$other->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
     }
@@ -1130,24 +1132,28 @@ class ProductRequirementsTest extends TestCase
         $other = $this->makePatient();
         $professional->patients()->syncWithoutDetaching([$linked->id]);
 
+        // No individual pages: profiles are modals (patient side reads the search payload).
         $this->actingAs($linked->user)
             ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professionals/Show'));
-
-        $this->actingAs($this->makeAdmin())
-            ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professionals/Show'));
+            ->assertNotFound();
 
         $this->actingAs($professional->user)
             ->get('/profesional/mis-pacientes/'.$linked->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professional/PatientProfile'));
+            ->assertNotFound();
 
         $this->actingAs($professional->user)
-            ->get('/profesional/mis-pacientes/'.$other->id)
-            ->assertRedirect('/profesional');
+            ->getJson('/patients/'.$linked->id)
+            ->assertOk()
+            ->assertJsonPath('patient.id', $linked->id)
+            ->assertJsonMissingPath('healthInsurances');
+
+        $this->actingAs($professional->user)
+            ->getJson('/patients/'.$other->id)
+            ->assertForbidden();
+
+        $this->actingAs($linked->user)
+            ->getJson('/patients/'.$linked->id)
+            ->assertForbidden();
     }
 
     public function test_22_admin_can_persist_windows_for_another_professional(): void

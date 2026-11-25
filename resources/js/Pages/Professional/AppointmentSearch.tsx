@@ -7,10 +7,10 @@ import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import {
     appointmentCriteria,
-    HistoryCriterionForm,
-    HistorySearchHub,
-    type HistoryCriterion,
-} from '@/Components/History/HistorySearch';
+    SearchCriterionForm,
+    SearchHub,
+    type SearchCriterion,
+} from '@/Components/Search/SearchCriteria';
 import BookingCard, { BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
@@ -33,15 +33,15 @@ type FiltersState = {
 type Props = {
     appointments: Paginator;
     filters: FiltersState;
-    by: HistoryCriterion | null;
+    by: SearchCriterion | null;
     patients: PatientRecord[];
     specialties: Specialty[];
 };
 
-const PATH = '/profesional/historial/mis-turnos';
+const PATH = '/profesional/buscar/mis-turnos';
 const CRITERIA = appointmentCriteria(false);
 
-function lockedLabel(by: HistoryCriterion, filters: FiltersState, patients: PatientRecord[], specialties: Specialty[]): string {
+function lockedLabel(by: SearchCriterion, filters: FiltersState, patients: PatientRecord[], specialties: Specialty[]): string {
     if (by === 'date') {
         return filters.date ?? '';
     }
@@ -52,8 +52,8 @@ function lockedLabel(by: HistoryCriterion, filters: FiltersState, patients: Pati
     return specialties.find((item) => item.id === filters.specialty_id)?.name ?? '';
 }
 
-export default function ProfessionalAppointmentHistory({ appointments, filters, by, patients, specialties }: Props) {
-    const [draft, setDraft] = useState<HistoryCriterion | null>(null);
+export default function ProfessionalAppointmentSearch({ appointments, filters, by, patients, specialties }: Props) {
+    const [draft, setDraft] = useState<SearchCriterion | null>(null);
     const [draftDate, setDraftDate] = useState('');
     const [draftPatient, setDraftPatient] = useState('');
     const [draftSpecialty, setDraftSpecialty] = useState('');
@@ -79,7 +79,7 @@ export default function ProfessionalAppointmentHistory({ appointments, filters, 
         router.get(PATH, {}, { preserveState: false });
     };
 
-    const openDraft = (key: HistoryCriterion) => {
+    const openDraft = (key: SearchCriterion) => {
         setDraft(key);
         setDraftDate('');
         setDraftPatient('');
@@ -121,22 +121,22 @@ export default function ProfessionalAppointmentHistory({ appointments, filters, 
 
     return (
         <>
-            <Head title="Historial de turnos" />
+            <Head title="Buscar turnos" />
             <PageScreen
                 header={
                     <PageHeader
-                        title="Historial de turnos"
-                        description="Tus turnos cuyo horario de inicio ya pasó."
+                        title="Buscar turnos"
+                        description="Tus turnos pasados y futuros, más recientes primero."
                         backHref="/profesional/agenda"
                         backLabel="Mi agenda"
                     />
                 }
             >
                 <StageCard>
-                    {!searched && draft == null ? <HistorySearchHub options={CRITERIA} onSelect={openDraft} /> : null}
+                    {!searched && draft == null ? <SearchHub options={CRITERIA} onSelect={openDraft} /> : null}
 
                     {!searched && draft != null ? (
-                        <HistoryCriterionForm
+                        <SearchCriterionForm
                             title={CRITERIA.find((item) => item.key === draft)?.label ?? ''}
                             onBack={() => setDraft(null)}
                             onSubmit={searchCriterion}
@@ -178,7 +178,7 @@ export default function ProfessionalAppointmentHistory({ appointments, filters, 
                                     />
                                 </Field>
                             ) : null}
-                        </HistoryCriterionForm>
+                        </SearchCriterionForm>
                     ) : null}
 
                     {searched && by ? (
@@ -246,7 +246,7 @@ export default function ProfessionalAppointmentHistory({ appointments, filters, 
                                 }
                             >
                                 {appointments.data.length === 0 ? (
-                                    <Empty>No hay turnos pasados con esos filtros.</Empty>
+                                    <Empty>No hay turnos con esos filtros.</Empty>
                                 ) : (
                                     <BookingList className="mt-0">
                                         {appointments.data.map((appointment) => (
@@ -269,11 +269,7 @@ export default function ProfessionalAppointmentHistory({ appointments, filters, 
                 </StageCard>
             </PageScreen>
             {open ? (
-                <AppointmentDetailDialog
-                    appointment={open}
-                    onDismiss={() => setOpenId(null)}
-                    profileHref={`/profesional/mis-pacientes/${open.patient_id}`}
-                />
+                <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} />
             ) : null}
         </>
     );

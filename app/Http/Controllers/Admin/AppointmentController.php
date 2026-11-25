@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AdminAppointmentService;
-use App\Support\HistorySearch;
+use App\Support\SearchCriteria;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +13,7 @@ class AppointmentController extends Controller
 {
     public function index(Request $request, AdminAppointmentService $appointments): Response
     {
-        $by = HistorySearch::appointmentBy($request, true);
+        $by = SearchCriteria::appointmentBy($request, true);
         $filters = [
             'professional_id' => $request->integer('professional_id') ?: null,
             'patient_id' => $request->integer('patient_id') ?: null,
@@ -23,7 +23,7 @@ class AppointmentController extends Controller
 
         return Inertia::render('Admin/Appointments', [
             'appointments' => $by === null
-                ? HistorySearch::emptyPaginator($request)
+                ? SearchCriteria::emptyPaginator($request)
                 : $appointments->paginate($filters),
             'filters' => $filters,
             'by' => $by,

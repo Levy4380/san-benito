@@ -147,21 +147,12 @@ class AdminPatientsDirectoryTest extends TestCase
         $this->assertNull(User::query()->where('email', 'otro@example.com')->first());
     }
 
-    public function test_admin_patient_profile_hides_portal_ctas(): void
+    public function test_there_is_no_individual_admin_patient_page(): void
     {
         $super = $this->makeSuperAdmin();
-        $patient = $this->makePatient(['name' => 'Luis Paciente'], ['dni' => '33999888']);
+        $patient = $this->makePatient();
 
-        $this->actingAs($super)
-            ->get('/admin/pacientes/'.$patient->id)
-            ->assertOk()
-            ->assertDontSee('Asignar turno')
-            ->assertInertia(fn ($page) => $page
-                ->component('Admin/UserPatient')
-                ->where('patient.name', 'Luis Paciente')
-                ->where('patient.dni', '33999888'));
-
-        $this->actingAs($super)->get('/admin/pacientes/999999')->assertNotFound();
+        $this->actingAs($super)->get('/admin/pacientes/'.$patient->id)->assertNotFound();
     }
 
     public function test_patient_profile_and_agenda_json_are_staff_with_catalog_view(): void

@@ -1,7 +1,7 @@
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import AssignModal from '@/Components/Agenda/AssignModal';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
-import TimelineAppointmentDialog from '@/Components/Calendar/TimelineAppointmentDialog';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
@@ -18,7 +18,7 @@ import { overbookSlots } from '@/lib/overbook';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, Slot } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CalendarPlus, Plus, Trash2, Undo2 } from 'lucide-react';
+import { CalendarPlus, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type PanelStep = 'day' | 'load';
@@ -190,15 +190,6 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
         </>
     );
 
-    const modalFooter = (
-        <div className="flex justify-end">
-            <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeModal}>
-                <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                Volver
-            </Btn>
-        </div>
-    );
-
     const loadModal =
         modal === 'load' ? (
             <ConfirmDialog title="Cargar sobreturno" message={dayLabel} onDismiss={closeModal} kind="workspace">
@@ -251,7 +242,6 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
                         </PanelScroll>
                     ) : null}
                 </div>
-                {modalFooter}
             </ConfirmDialog>
         ) : null;
 
@@ -298,13 +288,7 @@ export default function Agenda({ professional, selectedDate, panel, windows, slo
             {loadModal}
             {modal === 'assign' ? <AssignModal date={selectedDate} startsAt={assignStartsAt} onDismiss={() => setModal(null)} /> : null}
             {openAppointment ? (
-                <TimelineAppointmentDialog
-                    appointment={openAppointment}
-                    profileHref={`/profesional/mis-pacientes/${openAppointment.patient_id}`}
-                    cancelHref={`/appointments/${openAppointment.id}`}
-                    canCancel
-                    onDismiss={() => setOpenAppointmentId(null)}
-                />
+                <AppointmentDetailDialog appointment={openAppointment} onDismiss={() => setOpenAppointmentId(null)} />
             ) : null}
             {dialog}
         </>

@@ -203,10 +203,7 @@ class AdminSpecialtySettingsTest extends TestCase
 
         $this->actingAs($this->makePatient()->user)
             ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Show')
-                ->missing('specialties'));
+            ->assertNotFound();
 
         $this->actingAs($this->makeAdmin())
             ->get('/admin/profesionales/'.$professional->id)
@@ -217,13 +214,6 @@ class AdminSpecialtySettingsTest extends TestCase
                 'specialty_ids' => [$added->id],
             ])
             ->assertRedirect('/admin');
-
-        $this->actingAs($super)
-            ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Show')
-                ->missing('specialties'));
 
         $this->actingAs($super)
             ->get('/admin/profesionales/'.$professional->id.'/especialidades')

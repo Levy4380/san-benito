@@ -138,8 +138,8 @@ export default function ProfessionalSlots({
                     <PageHeader
                         title="Turnos disponibles"
                         description={description}
-                        backHref={`/paciente/profesionales/${professional.id}`}
-                        backLabel={professional.user.name}
+                        backHref="/paciente/profesionales"
+                        backLabel="Profesionales"
                     />
                 }
             >

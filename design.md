@@ -137,7 +137,7 @@ Verb first, Spanish: “Ver agenda”, “Reservar”, “Crear horario”, “C
 
 Fill `--color-paper`, text `--color-ink`, border `--color-rule`, no extra shadow beyond the hairline.
 Hover: **fills accent** (same as primary) — not a grey wash.
-Use for: alternate roles on login, Cerrar sesión, mes ‹ ›, Quitar / Cancelar (non-destructive), Reset, Agregar franja, Volver in dialogs, home secondary CTAs.
+Use for: alternate roles on login, Cerrar sesión, mes ‹ ›, Quitar / Cancelar (non-destructive), Reset, Agregar franja, home secondary CTAs.
 
 ### Destructive — `.btn.btn-danger`
 
@@ -186,8 +186,8 @@ Patient = primary. Doctor and admin = outline. Full-width column. Same heights a
 
 ### Confirm dialog actions
 
-Right-aligned pair: outline “Volver” + primary “Confirmar”. Min width 6.5rem.
-If destructive: OK becomes `.btn-danger` and **initial focus is Cancel**. Escape / backdrop = false.
+Every dialog closes with an icon-only outline **Cerrar** (X) in the **top-right corner** of the header; there is no “Volver” in dialogs. The footer holds only actions, right-aligned, primary “Confirmar” last (min width 6.5rem); no footer when there are no actions.
+If destructive: OK becomes `.btn-danger` and **initial focus is Cerrar**. Cerrar / Escape / backdrop = false.
 
 ### Placement rules
 

@@ -8,11 +8,11 @@ Scratch pack sibling. **No** commitear salvo orden. Este archivo se **enmendó**
 
 **Forma NUEVA (cerrada):**
 
-1. Grupo **Mis Cirugías** (portal) y **Cirugías** (staff): solo workflow **3 hijos** — `pending` / `requested` / `approved` — más el calendario del grupo. **Sin** hijo Historial (`section=history`) en `surgeryChildren`.
-2. Grupo nav dedicado **Historial** (`permission: null`, sin href de grupo, hijos `RouteChild` con `href` + permission):
-   - Portal: **Mis turnos** → `GET /profesional/historial/mis-turnos` (`own.agenda.view`); **Mis cirugías** → `GET /profesional/historial/mis-cirugias` (`own.surgeries.view`).
-   - Staff: **Turnos** → `GET /admin/historial/turnos` (`appointments.catalog.view`); **Cirugías** → `GET /admin/historial/cirugias` (`surgeries.catalog.view`).
-3. Redirects compat: `GET /admin/cirugias?section=history` → `/admin/historial/cirugias`; `GET /profesional/cirugias?section=history` → `/profesional/historial/mis-cirugias`.
+1. Grupo **Mis Cirugías** (portal) y **Cirugías** (staff): solo workflow **3 hijos** — `pending` / `requested` / `approved` — más el calendario del grupo. **Sin** hijo Buscador (ex Historial, `section=history`) en `surgeryChildren`.
+2. Grupo nav dedicado **Buscador** (ex Historial; busca pasado y futuro; `permission: null`, sin href de grupo, hijos `RouteChild` con `href` + permission):
+   - Portal: **Mis turnos** → `GET /profesional/buscar/mis-turnos` (`own.agenda.view`); **Mis cirugías** → `GET /profesional/buscar/mis-cirugias` (`own.surgeries.view`).
+   - Staff: **Turnos** → `GET /admin/buscar/turnos` (`appointments.catalog.view`); **Cirugías** → `GET /admin/buscar/cirugias` (`surgeries.catalog.view`).
+3. Redirects compat: `GET /admin/cirugias?section=history` → `/admin/buscar/cirugias`; `GET /profesional/cirugias?section=history` → `/profesional/buscar/mis-cirugias`. Las URLs viejas `/admin/historial/*` y `/profesional/historial/*` (ej. `/profesional/historial/mis-cirugias`) redirigen a `/…/buscar/*` conservando la query.
 4. SoT producto: `new-design.md` (d14, d36, d47, tablas permisos/rutas). Pack Historial: `docs/historial/`.
 
 **NO** reintroducir «4 hijos con Historial» bajo Mis Cirugías / Cirugías.

@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import type { RoleName, SharedData, SurgerySection } from '@/types';
 
 type NavLink = { href: string; label: string; icon: LucideIcon; permission: PermissionName };
-type SurgeryChild = { section: SurgerySection; label: string };
+type SurgeryChild = { section: Exclude<SurgerySection, 'search'>; label: string };
 type RouteChild = { href: string; label: string; permission: PermissionName };
 type NavGroup = {
     id: string;
@@ -64,13 +64,13 @@ const portalNav: NavEntry[] = [
         children: surgeryChildren,
     },
     {
-        id: 'historial-portal',
-        label: 'Historial',
+        id: 'buscador-portal',
+        label: 'Buscador',
         icon: ClipboardList,
         permission: null,
         children: [
-            { href: '/profesional/historial/mis-turnos', label: 'Mis turnos', permission: Permission.OwnAgendaView },
-            { href: '/profesional/historial/mis-cirugias', label: 'Mis cirugías', permission: Permission.OwnSurgeriesView },
+            { href: '/profesional/buscar/mis-turnos', label: 'Mis turnos', permission: Permission.OwnAgendaView },
+            { href: '/profesional/buscar/mis-cirugias', label: 'Mis cirugías', permission: Permission.OwnSurgeriesView },
         ],
     },
 ];
@@ -87,13 +87,13 @@ const staffNav: NavEntry[] = [
     { href: '/admin/profesionales', label: 'Profesionales', icon: Stethoscope, permission: Permission.ProfessionalsCatalogView },
     { href: '/admin/pacientes', label: 'Pacientes', icon: Users, permission: Permission.PatientsCatalogView },
     {
-        id: 'historial',
-        label: 'Historial',
+        id: 'buscador',
+        label: 'Buscador',
         icon: ClipboardList,
         permission: null,
         children: [
-            { href: '/admin/historial/turnos', label: 'Turnos', permission: Permission.AppointmentsCatalogView },
-            { href: '/admin/historial/cirugias', label: 'Cirugías', permission: Permission.SurgeriesCatalogView },
+            { href: '/admin/buscar/turnos', label: 'Turnos', permission: Permission.AppointmentsCatalogView },
+            { href: '/admin/buscar/cirugias', label: 'Cirugías', permission: Permission.SurgeriesCatalogView },
         ],
     },
     {
@@ -594,12 +594,12 @@ function navFor(permissions: string[]): NavEntry[] {
 }
 
 function groupForPath(path: string): string | null {
-    if (path === '/admin/historial' || path.startsWith('/admin/historial/')) {
-        return 'historial';
+    if (path === '/admin/buscar' || path.startsWith('/admin/buscar/')) {
+        return 'buscador';
     }
 
-    if (path === '/profesional/historial' || path.startsWith('/profesional/historial/')) {
-        return 'historial-portal';
+    if (path === '/profesional/buscar' || path.startsWith('/profesional/buscar/')) {
+        return 'buscador-portal';
     }
 
     if (path === '/admin/cirugias' || path.startsWith('/admin/cirugias/')) {
@@ -614,12 +614,12 @@ function groupForPath(path: string): string | null {
 }
 
 function groupIsCurrent(group: NavGroup, path: string): boolean {
-    if (group.id === 'historial') {
-        return path === '/admin/historial' || path.startsWith('/admin/historial/');
+    if (group.id === 'buscador') {
+        return path === '/admin/buscar' || path.startsWith('/admin/buscar/');
     }
 
-    if (group.id === 'historial-portal') {
-        return path === '/profesional/historial' || path.startsWith('/profesional/historial/');
+    if (group.id === 'buscador-portal') {
+        return path === '/profesional/buscar' || path.startsWith('/profesional/buscar/');
     }
 
     if (group.id === 'cirugias') {

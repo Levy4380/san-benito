@@ -1,18 +1,17 @@
+import SurgeryCard from '@/Components/Surgeries/SurgeryCard';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import {
-    HistoryCriterionForm,
-    HistorySearchHub,
+    SearchCriterionForm,
+    SearchHub,
     surgeryCriteria,
-    type HistoryCriterion,
-} from '@/Components/History/HistorySearch';
+    type SearchCriterion,
+} from '@/Components/Search/SearchCriteria';
 import { Btn } from '@/Components/Form/Btn';
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
 import Results from '@/Components/Surfaces/Results';
-import { SurgeryStatusBadge } from '@/Components/Surgeries/SurgeryDetailDialog';
-import { surgeryRange, surgeryShortDate } from '@/lib/surgery';
 import type { HealthInsurance, ProfessionalRecord, Specialty, SurgeryRecord } from '@/types';
 import { Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
@@ -37,7 +36,7 @@ type Props = {
     includeProfessional: boolean;
     surgeries: Paginator;
     filters: FiltersState;
-    by: HistoryCriterion | null;
+    by: SearchCriterion | null;
     professionals: ProfessionalRecord[];
     specialties: Specialty[];
     healthInsurances: HealthInsurance[];
@@ -45,7 +44,7 @@ type Props = {
 };
 
 function lockedLabel(
-    by: HistoryCriterion,
+    by: SearchCriterion,
     filters: FiltersState,
     professionals: ProfessionalRecord[],
     healthInsurances: HealthInsurance[],
@@ -66,7 +65,7 @@ function lockedLabel(
     return healthInsurances.find((item) => item.id === filters.health_insurance_id)?.name ?? '';
 }
 
-export default function SurgeryHistoryPanel({
+export default function SurgerySearchPanel({
     path,
     includeProfessional,
     surgeries,
@@ -78,7 +77,7 @@ export default function SurgeryHistoryPanel({
     onOpen,
 }: Props) {
     const criteria = useMemo(() => surgeryCriteria(includeProfessional), [includeProfessional]);
-    const [draft, setDraft] = useState<HistoryCriterion | null>(null);
+    const [draft, setDraft] = useState<SearchCriterion | null>(null);
     const [draftDate, setDraftDate] = useState('');
     const [draftProfessional, setDraftProfessional] = useState('');
     const [draftPatient, setDraftPatient] = useState('');
@@ -99,7 +98,7 @@ export default function SurgeryHistoryPanel({
         router.get(path, {}, { preserveState: false });
     };
 
-    const openDraft = (key: HistoryCriterion) => {
+    const openDraft = (key: SearchCriterion) => {
         setDraft(key);
         setDraftDate('');
         setDraftProfessional('');
@@ -157,10 +156,10 @@ export default function SurgeryHistoryPanel({
 
     return (
         <>
-            {!searched && draft == null ? <HistorySearchHub options={criteria} onSelect={openDraft} /> : null}
+            {!searched && draft == null ? <SearchHub options={criteria} onSelect={openDraft} /> : null}
 
             {!searched && draft != null ? (
-                <HistoryCriterionForm
+                <SearchCriterionForm
                     title={criteria.find((item) => item.key === draft)?.label ?? ''}
                     onBack={() => setDraft(null)}
                     onSubmit={searchCriterion}
@@ -222,7 +221,7 @@ export default function SurgeryHistoryPanel({
                             />
                         </Field>
                     ) : null}
-                </HistoryCriterionForm>
+                </SearchCriterionForm>
             ) : null}
 
             {searched && by ? (
@@ -327,28 +326,7 @@ export default function SurgeryHistoryPanel({
                         ) : (
                             <div className="grid gap-[var(--space-sm)]">
                                 {surgeries.data.map((surgery) => (
-                                    <article
-                                        key={surgery.id}
-                                        className="flex min-w-0 flex-col gap-[0.35rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.55rem] sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                        <div className="grid min-w-0 justify-items-start gap-[0.15rem]">
-                                            {surgery.starts_at && surgery.ends_at ? (
-                                                <div className="text-sm text-ink-2">
-                                                    {surgeryShortDate(surgery.starts_at.slice(0, 10))} ·{' '}
-                                                    {surgeryRange(surgery.starts_at, surgery.ends_at)}
-                                                </div>
-                                            ) : null}
-                                            <div className="font-display text-sm font-semibold text-ink">{surgery.patient?.name}</div>
-                                            <div className="text-sm text-ink-2">
-                                                DNI <span className="font-mono">{surgery.patient?.dni}</span>
-                                            </div>
-                                            <div className="text-sm text-ink-2">Solicita: {surgery.professional?.user.name}</div>
-                                            <SurgeryStatusBadge status={surgery.status} />
-                                        </div>
-                                        <Btn type="button" variant="outline" size="sm" onClick={() => onOpen(surgery.id)}>
-                                            Ver detalle
-                                        </Btn>
-                                    </article>
+                                    <SurgeryCard key={surgery.id} surgery={surgery} onOpen={onOpen} />
                                 ))}
                             </div>
                         )}

@@ -1,3 +1,4 @@
+import SurgeryCard from '@/Components/Surgeries/SurgeryCard';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
@@ -6,15 +7,14 @@ import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
-import type { HistoryCriterion } from '@/Components/History/HistorySearch';
-import SurgeryHistoryPanel from '@/Components/History/SurgeryHistoryPanel';
+import type { SearchCriterion } from '@/Components/Search/SearchCriteria';
+import SurgerySearchPanel from '@/Components/Search/SurgerySearchPanel';
 import RequestSurgeryModal from '@/Components/Surgeries/RequestSurgeryModal';
-import SurgeryDetailDialog, { SurgeryStatusBadge } from '@/Components/Surgeries/SurgeryDetailDialog';
+import SurgeryDetailDialog from '@/Components/Surgeries/SurgeryDetailDialog';
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
 import Results from '@/Components/Surfaces/Results';
 import { hasPermission, Permission } from '@/lib/permissions';
-import { surgeryRange, surgeryShortDate } from '@/lib/surgery';
 import type { HealthInsurance, ProfessionalRecord, SharedData, Specialty, SurgeryRecord, SurgerySection } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Calendar, Plus } from 'lucide-react';
@@ -39,7 +39,7 @@ type Props = {
     section: SurgerySection;
     surgeries: Paginator;
     filters: FiltersState;
-    by: HistoryCriterion | null;
+    by: SearchCriterion | null;
     openSurgery: SurgeryRecord | null;
     professionals: ProfessionalRecord[];
     specialties: Specialty[];
@@ -59,9 +59,9 @@ const SECTIONS: Record<SurgerySection, { title: string; subtitle: string }> = {
         title: 'Aprobadas',
         subtitle: 'A programar y programadas que todavía no terminaron.',
     },
-    history: {
-        title: 'Historial de cirugías',
-        subtitle: 'Cirugías programadas que ya pasaron.',
+    search: {
+        title: 'Buscar cirugías',
+        subtitle: 'Cirugías en cualquier estado, pasadas y futuras.',
     },
 };
 
@@ -90,9 +90,9 @@ export default function AdminSurgeries({
         (filters.health_insurance_id != null && filters.health_insurance_id !== '') ||
         (section === 'approved' && filters.status != null && filters.status !== '');
 
-    const listPath = section === 'history' ? '/admin/historial/cirugias' : '/admin/cirugias';
+    const listPath = section === 'search' ? '/admin/buscar/cirugias' : '/admin/cirugias';
     const apply = (data: FilterValues) => {
-        router.get(listPath, section === 'history' ? data : { section, ...data }, { preserveState: true });
+        router.get(listPath, section === 'search' ? data : { section, ...data }, { preserveState: true });
     };
 
     const approve = async (surgery: SurgeryRecord) => {
@@ -148,9 +148,9 @@ export default function AdminSurgeries({
                 }
             >
                 <StageCard>
-                    {section === 'history' ? (
-                        <SurgeryHistoryPanel
-                            path="/admin/historial/cirugias"
+                    {section === 'search' ? (
+                        <SurgerySearchPanel
+                            path="/admin/buscar/cirugias"
                             includeProfessional
                             surgeries={surgeries}
                             filters={{ ...filters, date: filters.date ?? null }}
@@ -252,29 +252,7 @@ export default function AdminSurgeries({
                                                         Programadas
                                                     </div>
                                                 ) : null}
-                                                <article className="flex min-w-0 flex-col gap-[0.35rem] rounded-lg border border-rule bg-paper-2 px-[0.7rem] py-[0.55rem] sm:flex-row sm:items-center sm:justify-between">
-                                                    <div className="grid min-w-0 justify-items-start gap-[0.15rem]">
-                                                        {surgery.starts_at && surgery.ends_at ? (
-                                                            <div className="text-sm text-ink-2">
-                                                                {surgeryShortDate(surgery.starts_at.slice(0, 10))} ·{' '}
-                                                                {surgeryRange(surgery.starts_at, surgery.ends_at)}
-                                                            </div>
-                                                        ) : null}
-                                                        <div className="font-display text-sm font-semibold text-ink">
-                                                            {surgery.patient?.name}
-                                                        </div>
-                                                        <div className="text-sm text-ink-2">
-                                                            DNI <span className="font-mono">{surgery.patient?.dni}</span>
-                                                        </div>
-                                                        <div className="text-sm text-ink-2">
-                                                            Solicita: {surgery.professional?.user.name}
-                                                        </div>
-                                                        <SurgeryStatusBadge status={surgery.status} />
-                                                    </div>
-                                                    <Btn type="button" variant="outline" size="sm" onClick={() => setOpenId(surgery.id)}>
-                                                        Ver detalle
-                                                    </Btn>
-                                                </article>
+                                                <SurgeryCard surgery={surgery} onOpen={setOpenId} />
                                             </div>
                                         ))}
                                     </div>

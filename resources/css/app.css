@@ -29,6 +29,12 @@
 @theme {
     --radius-sm: 4px;
     --duration-short: 180ms;
+    /* Atendido / Ausente (D7): botones de marca en «Detalle del turno» (faint = reposo, soft = hover). */
+    --color-ok: oklch(52% 0.13 150);
+    --color-ok-soft: oklch(96% 0.035 150);
+    --color-danger-soft: oklch(96% 0.03 25);
+    --color-ok-faint: oklch(98.5% 0.015 150);
+    --color-danger-faint: oklch(98.5% 0.012 25);
     --color-day: oklch(90% 0.008 260);
     --color-day-ink: oklch(55% 0.02 260);
     --color-day-has: oklch(88% 0.06 250);

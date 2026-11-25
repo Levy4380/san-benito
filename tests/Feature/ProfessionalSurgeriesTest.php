@@ -146,7 +146,7 @@ class ProfessionalSurgeriesTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('surgeryNavCounts.pending', 1));
 
         $this->actingAs($this->makeAdmin())
-            ->get('/admin/historial/turnos')
+            ->get('/admin/buscar/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('surgeryNavCounts.pending', 3));
     }
@@ -543,32 +543,32 @@ class ProfessionalSurgeriesTest extends TestCase
                 ->where('surgeries.data', fn ($rows): bool => collect($rows)->pluck('id')->doesntContain($foreignApproved->id)));
 
         $this->assertSame(
-            '/profesional/historial/mis-cirugias',
-            route('professional.historial.mis-cirugias', absolute: false),
+            '/profesional/buscar/mis-cirugias',
+            route('professional.search.my-surgeries', absolute: false),
         );
 
         $this->actingAs($mine->user)
             ->get('/profesional/cirugias?section=history')
-            ->assertRedirect(route('professional.historial.mis-cirugias'));
+            ->assertRedirect(route('professional.search.my-surgeries'));
 
         $this->actingAs($mine->user)
             ->get('/profesional/cirugias?section=history&q=Mía')
-            ->assertRedirect(route('professional.historial.mis-cirugias', ['q' => 'Mía']));
+            ->assertRedirect(route('professional.search.my-surgeries', ['q' => 'Mía']));
 
         $this->actingAs($mine->user)
-            ->get('/profesional/historial/mis-cirugias')
+            ->get('/profesional/buscar/mis-cirugias')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Professional/Surgeries')
-                ->where('section', 'history')
+                ->where('section', 'search')
                 ->where('by', null)
                 ->has('surgeries.data', 0));
 
         $this->actingAs($mine->user)
-            ->get('/profesional/historial/mis-cirugias?by=date&date=2026-10-10')
+            ->get('/profesional/buscar/mis-cirugias?by=date&date=2026-10-10')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('section', 'history')
+                ->where('section', 'search')
                 ->where('by', 'date')
                 ->has('surgeries.data', 1)
                 ->where('surgeries.data.0.id', $ownHistory->id)
@@ -600,7 +600,7 @@ class ProfessionalSurgeriesTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($orphan)
-            ->getJson('/profesional/historial/mis-cirugias')
+            ->getJson('/profesional/buscar/mis-cirugias')
             ->assertForbidden();
 
         $this->actingAs($orphan)

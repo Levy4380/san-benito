@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Calendar, CalendarDays, History, NotebookPen } from 'lucide-react';
 import { useState } from 'react';
 import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
@@ -11,7 +11,6 @@ import StageCard from '@/Components/Common/StageCard';
 import ViewSwitch, { type ViewSwitchOption } from '@/Components/Common/ViewSwitch';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
-import { useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Empty from '@/Components/Surfaces/Empty';
 import Panel from '@/Components/Surfaces/Panel';
 import { formatDateLabel, wallDate } from '@/lib/datetime';
@@ -32,7 +31,6 @@ const defaultAppointmentView = 'week' satisfies 'week' | 'month';
 
 export default function MyAppointments({ appointments, today, now }: Props) {
     const [mode, setMode] = useState<'week' | 'month'>(defaultAppointmentView);
-    const { ask, dialog } = useConfirm();
     const days = appointments.map((appointment) => wallDate(appointment.starts_at));
     const tones = Object.fromEntries(days.map((day) => [day, 'has' as const]));
     const [month, setMonth] = useState((days[0] ?? today).slice(0, 7) + '-01');
@@ -40,18 +38,6 @@ export default function MyAppointments({ appointments, today, now }: Props) {
     const [mobileDayOpen, setMobileDayOpen] = useState(false);
     const [openId, setOpenId] = useState<number | null>(null);
     const open = appointments.find((appointment) => appointment.id === openId) ?? null;
-
-    const cancel = async (id: number) => {
-        const ok = await ask({
-            title: 'Cancelar turno',
-            message: '¿Cancelar este turno? El horario volverá a estar disponible.',
-            confirmLabel: 'Cancelar turno',
-            danger: true,
-        });
-        if (ok) {
-            router.delete(`/appointments/${id}`, { onSuccess: () => setOpenId(null) });
-        }
-    };
 
     const selectDay = (date: string) => {
         setSelected(date);
@@ -161,14 +147,8 @@ export default function MyAppointments({ appointments, today, now }: Props) {
                 </StageCard>
             </PageScreen>
             {open ? (
-                <AppointmentDetailDialog
-                    appointment={open}
-                    onDismiss={() => setOpenId(null)}
-                    canCancel
-                    onCancel={() => cancel(open.id)}
-                />
+                <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} />
             ) : null}
-            {dialog}
         </>
     );
 }

@@ -2,11 +2,9 @@ import CalendarMonth, { type CalLegendItem } from '@/Components/Calendar/Calenda
 import DayTimeline from '@/Components/Calendar/DayTimeline';
 import MobileDaySwap from '@/Components/Common/MobileDaySwap';
 import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
-import { Btn } from '@/Components/Form/Btn';
 import Empty from '@/Components/Surfaces/Empty';
 import Panel from '@/Components/Surfaces/Panel';
 import { todayKey } from '@/lib/datetime';
-import { Undo2 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 
 type Props = {
@@ -73,12 +71,6 @@ export default function AgendaDialog({
             messageClassName="md:hidden"
             onDismiss={onDismiss}
             kind="workspace"
-            headerAction={
-                <Btn type="button" variant="outline" size="sm" onClick={onDismiss}>
-                    <Undo2 className="size-[0.95rem] shrink-0" aria-hidden strokeWidth={2} />
-                    Volver
-                </Btn>
-            }
         >
             {failed ? (
                 <Empty>No se pudo cargar la agenda.</Empty>

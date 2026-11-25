@@ -25,6 +25,7 @@ enum Permission: string
     case OwnSurgeriesView = 'own.surgeries.view';
     case OwnSurgeriesCreate = 'own.surgeries.create';
     case OwnSurgeriesSchedule = 'own.surgeries.schedule';
+    case OwnSurgeriesAttendance = 'own.surgeries.attendance';
 
     case AppointmentsCancel = 'appointments.cancel';
     case AppointmentsAssign = 'appointments.assign';
@@ -42,6 +43,7 @@ enum Permission: string
     case SurgeriesRequest = 'surgeries.request';
     case SurgeriesApprove = 'surgeries.approve';
     case SurgeriesSchedule = 'surgeries.schedule';
+    case SurgeriesAttendance = 'surgeries.attendance';
     case PatientsCatalogView = 'patients.catalog.view';
     case PatientsCreate = 'patients.create';
     case AdminsManage = 'admins.manage';
@@ -94,6 +96,7 @@ enum Permission: string
             self::SurgeriesRequest,
             self::SurgeriesApprove,
             self::SurgeriesSchedule,
+            self::SurgeriesAttendance,
             self::PatientsCatalogView,
             self::PatientsCreate,
         ];
@@ -122,6 +125,7 @@ enum Permission: string
                 self::OwnSurgeriesView,
                 self::OwnSurgeriesCreate,
                 self::OwnSurgeriesSchedule,
+                self::OwnSurgeriesAttendance,
             ],
             'admin' => $staff,
             'super_admin' => [

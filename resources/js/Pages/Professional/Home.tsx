@@ -74,11 +74,7 @@ export default function ProfessionalHome({ upcoming }: Props) {
                 </HomeHero>
             </PageScreen>
             {open ? (
-                <AppointmentDetailDialog
-                    appointment={open}
-                    onDismiss={() => setOpenId(null)}
-                    profileHref={`/profesional/mis-pacientes/${open.patient_id}`}
-                />
+                <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} />
             ) : null}
         </>
     );

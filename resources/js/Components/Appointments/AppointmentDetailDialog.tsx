@@ -1,106 +1,172 @@
-import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import {
+    AppointmentAttendanceControls,
+    AppointmentStatusBadge,
+    ClearAttendanceBtn,
+    useAppointmentAttendance,
+    useCanMarkAttendance,
+} from '@/Components/Appointments/AppointmentStatus';
+import RescheduleAppointmentModal from '@/Components/Appointments/RescheduleAppointmentModal';
+import { DetailBlock, DetailBlocks } from '@/Components/Common/DetailList';
+import { ConfirmDialog, DialogActions, useConfirm } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
+import PatientInfoModal from '@/Components/Patients/PatientInfoModal';
+import { appointmentStarted } from '@/lib/appointment-status';
 import { formatDateLabel, wallDate, wallTime } from '@/lib/datetime';
+import { hasPermission, Permission } from '@/lib/permissions';
 import { canSeeAppointmentPatient, canSeeAppointmentProfessional } from '@/lib/roles';
 import type { AppointmentRecord, SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
-import { Undo2, X } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import { CalendarClock, Info, X } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
     appointment: AppointmentRecord;
     onDismiss: () => void;
-    /** Patient profile URL; omit to hide «Ver paciente» */
-    profileHref?: string | null;
-    canCancel?: boolean;
-    onCancel?: () => void;
+    /** After cancel / attendance succeeds: JSON-fed screens (agenda modals) refetch here. */
+    onChanged?: () => void;
 };
 
-export default function AppointmentDetailDialog({
-    appointment,
-    onDismiss,
-    profileHref,
-    canCancel = false,
-    onCancel,
-}: Props) {
-    const roles = usePage<SharedData>().props.auth.user?.roles ?? [];
+/**
+ * The one «Detalle del turno» modal (lists, homes, buscador, timelines, agenda modals).
+ * What it shows and which actions it offers depend only on who is looking, never on the screen:
+ * - Paciente / Profesional blocks: by role (`canSeeAppointmentPatient` / `canSeeAppointmentProfessional`).
+ * - Atendido / Ausente: `appointments.attendance` or `own.appointments.attendance`, once started.
+ * - Ver paciente: opens `PatientInfoModal` (`GET /patients/{patient}`) with `patients.catalog.view` or `own.patients.view`.
+ * - Reprogramar: `appointments.reschedule` (staff, + sobreturno) or `own.appointments.reschedule` (professional), before it starts (d51).
+ * - Cancelar turno: `appointments.cancel` or `own.appointments.cancel`, before it starts, with confirmation (d29).
+ */
+export default function AppointmentDetailDialog({ appointment, onDismiss, onChanged }: Props) {
+    const user = usePage<SharedData>().props.auth.user;
+    const roles = user?.roles ?? [];
+    const permissions = user?.permissions;
     const showProfessional = canSeeAppointmentProfessional(roles);
     const showPatient = canSeeAppointmentPatient(roles);
     const patient = appointment.patient;
     const professional = appointment.professional;
-    const patientName = patient?.name ?? 'Paciente';
+    const canMarkAttendance = useCanMarkAttendance();
+    const { attendance, status, saving, mark } = useAppointmentAttendance(appointment, onChanged);
+    const { ask, dialog } = useConfirm();
+    const [cancelling, setCancelling] = useState(false);
+    const [rescheduling, setRescheduling] = useState(false);
+    const [viewingPatient, setViewingPatient] = useState(false);
+
+    const canViewPatient =
+        showPatient &&
+        (hasPermission(permissions, Permission.PatientsCatalogView) || hasPermission(permissions, Permission.OwnPatientsView));
+    const canCancel =
+        !appointmentStarted(appointment.starts_at) &&
+        (hasPermission(permissions, Permission.AppointmentsCancel) || hasPermission(permissions, Permission.OwnAppointmentsCancel));
+
+    const canReschedule =
+        !appointmentStarted(appointment.starts_at) &&
+        (hasPermission(permissions, Permission.AppointmentsReschedule) ||
+            hasPermission(permissions, Permission.OwnAppointmentsReschedule));
+
+    const started = appointmentStarted(appointment.starts_at);
+    const hasActions = canViewPatient || (canMarkAttendance && started) || canReschedule || canCancel;
+
+    const cancel = async () => {
+        const ok = await ask({
+            title: 'Cancelar turno',
+            message: '¿Cancelar este turno? El horario volverá a estar disponible.',
+            confirmLabel: 'Cancelar turno',
+            danger: true,
+        });
+        if (!ok) {
+            return;
+        }
+
+        router.delete(`/appointments/${appointment.id}`, {
+            preserveScroll: true,
+            onStart: () => setCancelling(true),
+            onFinish: () => setCancelling(false),
+            onSuccess: () => {
+                onChanged?.();
+                onDismiss();
+            },
+        });
+    };
 
     return (
-        <ConfirmDialog title="Detalle del turno" onDismiss={onDismiss} kind="info">
-            <div className="grid gap-[var(--space-sm)] text-sm">
-                <DetailBlock
-                    title="Turno"
-                    rows={[
-                        ['Fecha', formatDateLabel(wallDate(appointment.starts_at))],
-                        ['Horario', `${wallTime(appointment.starts_at)} — ${wallTime(appointment.ends_at)}`],
-                        ['Especialidad', appointment.specialty?.name ?? '—'],
-                    ]}
-                />
-                {showPatient ? (
+        <>
+            <ConfirmDialog title="Detalle del turno" onDismiss={onDismiss} kind="info">
+                <DetailBlocks>
                     <DetailBlock
-                        title="Paciente"
+                        title="Turno"
                         rows={[
-                            ['Nombre', patient?.name ?? ''],
-                            ['DNI', patient?.dni ?? ''],
-                            ['Correo', patient?.email ?? ''],
-                            ['Obra social', patient?.health_insurance ?? 'Particular'],
-                        ]}
-                    />
-                ) : null}
-                {showProfessional ? (
-                    <DetailBlock
-                        title="Profesional"
-                        rows={[
-                            ['Nombre', professional?.user.name ?? ''],
+                            ['Fecha', formatDateLabel(wallDate(appointment.starts_at))],
+                            ['Horario', <span key="time" className="font-mono">{`${wallTime(appointment.starts_at)} — ${wallTime(appointment.ends_at)}`}</span>],
+                            ['Especialidad', appointment.specialty?.name ?? '—'],
                             [
-                                'Especialidades',
-                                professional?.specialties.map((specialty) => specialty.name).join(', ') || '—',
+                                'Estado',
+                                <span key="status" className="inline-flex flex-wrap items-center gap-[0.4rem]">
+                                    <AppointmentStatusBadge status={status} />
+                                    {canMarkAttendance && started ? (
+                                        <ClearAttendanceBtn attendance={attendance} saving={saving} onMark={mark} />
+                                    ) : null}
+                                </span>,
                             ],
                         ]}
                     />
+                    {showPatient ? (
+                        <DetailBlock
+                            title="Paciente"
+                            rows={[
+                                ['Nombre', patient?.name ?? ''],
+                                ['DNI', patient?.dni ?? ''],
+                                ['Correo', patient?.email ?? ''],
+                                ['Obra social', patient?.health_insurance ?? 'Particular'],
+                            ]}
+                        />
+                    ) : null}
+                    {showProfessional ? (
+                        <DetailBlock
+                            title="Profesional"
+                            rows={[
+                                ['Nombre', professional?.user?.name ?? ''],
+                                ['Especialidades', professional?.specialties?.map((specialty) => specialty.name).join(', ') || '—'],
+                            ]}
+                        />
+                    ) : null}
+                </DetailBlocks>
+                {hasActions ? (
+                    <DialogActions>
+                        {canViewPatient ? (
+                            <Btn type="button" variant="outline" onClick={() => setViewingPatient(true)}>
+                                <Info className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Ver paciente
+                            </Btn>
+                        ) : null}
+                        {canMarkAttendance ? (
+                            <AppointmentAttendanceControls appointment={appointment} attendance={attendance} saving={saving} onMark={mark} />
+                        ) : null}
+                        {canReschedule ? (
+                            <Btn type="button" variant="outline" onClick={() => setRescheduling(true)}>
+                                <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Reprogramar
+                            </Btn>
+                        ) : null}
+                        {canCancel ? (
+                            <Btn type="button" variant="danger" onClick={cancel} disabled={cancelling}>
+                                <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Cancelar turno
+                            </Btn>
+                        ) : null}
+                    </DialogActions>
                 ) : null}
-            </div>
-            <div className="flex flex-wrap justify-end gap-[var(--space-sm)]">
-                <Btn type="button" variant="outline" onClick={onDismiss}>
-                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                    Volver
-                </Btn>
-                {profileHref && showPatient ? (
-                    <PatientProfileBtn
-                        patientId={appointment.patient_id}
-                        name={patientName}
-                        href={profileHref}
-                        label="Ver paciente"
-                    />
-                ) : null}
-                {canCancel && onCancel ? (
-                    <Btn type="button" variant="danger" onClick={onCancel}>
-                        <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Cancelar turno
-                    </Btn>
-                ) : null}
-            </div>
-        </ConfirmDialog>
-    );
-}
-
-function DetailBlock({ title, rows }: { title: string; rows: Array<[string, string]> }) {
-    return (
-        <section className="grid gap-[0.25rem]">
-            <h3 className="m-0 text-sm font-semibold text-ink">{title}</h3>
-            <dl className="m-0 grid gap-[0.2rem]">
-                {rows.map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-[var(--space-sm)]">
-                        <dt className="text-ink-2">{label}</dt>
-                        <dd className="m-0 text-ink">{value}</dd>
-                    </div>
-                ))}
-            </dl>
-        </section>
+            </ConfirmDialog>
+            {rescheduling ? (
+                <RescheduleAppointmentModal
+                    appointment={appointment}
+                    onDismiss={() => setRescheduling(false)}
+                    onRescheduled={() => {
+                        onChanged?.();
+                        onDismiss();
+                    }}
+                />
+            ) : null}
+            {viewingPatient ? <PatientInfoModal patientId={appointment.patient_id} onDismiss={() => setViewingPatient(false)} /> : null}
+            {dialog}
+        </>
     );
 }

@@ -7,17 +7,16 @@ import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import {
     appointmentCriteria,
-    HistoryCriterionForm,
-    HistorySearchHub,
-    type HistoryCriterion,
-} from '@/Components/History/HistorySearch';
+    SearchCriterionForm,
+    SearchHub,
+    type SearchCriterion,
+} from '@/Components/Search/SearchCriteria';
 import BookingCard, { BookingCardFields, BookingCardRow, BookingList } from '@/Components/Surfaces/BookingCard';
 import Empty from '@/Components/Surfaces/Empty';
 import Filters, { type FilterValues } from '@/Components/Surfaces/Filters';
 import Results from '@/Components/Surfaces/Results';
-import { hasPermission, Permission } from '@/lib/permissions';
-import type { AppointmentRecord, PatientRecord, ProfessionalRecord, SharedData, Specialty } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
+import type { AppointmentRecord, PatientRecord, ProfessionalRecord, Specialty } from '@/types';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 type Paginator = {
@@ -34,16 +33,16 @@ type FiltersState = {
 type Props = {
     appointments: Paginator;
     filters: FiltersState;
-    by: HistoryCriterion | null;
+    by: SearchCriterion | null;
     professionals: ProfessionalRecord[];
     patients: PatientRecord[];
     specialties: Specialty[];
 };
 
-const PATH = '/admin/historial/turnos';
+const PATH = '/admin/buscar/turnos';
 const CRITERIA = appointmentCriteria(true);
 
-function fixedKey(by: HistoryCriterion): keyof FiltersState {
+function fixedKey(by: SearchCriterion): keyof FiltersState {
     if (by === 'professional') {
         return 'professional_id';
     }
@@ -58,7 +57,7 @@ function fixedKey(by: HistoryCriterion): keyof FiltersState {
 }
 
 function lockedLabel(
-    by: HistoryCriterion,
+    by: SearchCriterion,
     filters: FiltersState,
     professionals: ProfessionalRecord[],
     patients: PatientRecord[],
@@ -78,9 +77,7 @@ function lockedLabel(
 }
 
 export default function AdminAppointments({ appointments, filters, by, professionals, patients, specialties }: Props) {
-    const { auth } = usePage<SharedData>().props;
-    const canViewPatient = hasPermission(auth.user?.permissions, Permission.PatientsCatalogView);
-    const [draft, setDraft] = useState<HistoryCriterion | null>(null);
+    const [draft, setDraft] = useState<SearchCriterion | null>(null);
     const [draftDate, setDraftDate] = useState('');
     const [draftProfessional, setDraftProfessional] = useState('');
     const [draftPatient, setDraftPatient] = useState('');
@@ -107,7 +104,7 @@ export default function AdminAppointments({ appointments, filters, by, professio
         router.get(PATH, {}, { preserveState: false });
     };
 
-    const openDraft = (key: HistoryCriterion) => {
+    const openDraft = (key: SearchCriterion) => {
         setDraft(key);
         setDraftDate('');
         setDraftProfessional('');
@@ -156,13 +153,13 @@ export default function AdminAppointments({ appointments, filters, by, professio
 
     return (
         <>
-            <Head title="Historial de turnos" />
-            <PageScreen header={<PageHeader title="Historial de turnos" description="Turnos cuyo horario de inicio ya pasó." />}>
+            <Head title="Buscar turnos" />
+            <PageScreen header={<PageHeader title="Buscar turnos" description="Turnos pasados y futuros, más recientes primero." />}>
                 <StageCard>
-                    {!searched && draft == null ? <HistorySearchHub options={CRITERIA} onSelect={openDraft} /> : null}
+                    {!searched && draft == null ? <SearchHub options={CRITERIA} onSelect={openDraft} /> : null}
 
                     {!searched && draft != null ? (
-                        <HistoryCriterionForm
+                        <SearchCriterionForm
                             title={CRITERIA.find((item) => item.key === draft)?.label ?? ''}
                             onBack={() => setDraft(null)}
                             onSubmit={searchCriterion}
@@ -220,7 +217,7 @@ export default function AdminAppointments({ appointments, filters, by, professio
                                     />
                                 </Field>
                             ) : null}
-                        </HistoryCriterionForm>
+                        </SearchCriterionForm>
                     ) : null}
 
                     {searched && by ? (
@@ -307,7 +304,7 @@ export default function AdminAppointments({ appointments, filters, by, professio
                                 }
                             >
                                 {appointments.data.length === 0 ? (
-                                    <Empty>No hay turnos pasados con esos filtros.</Empty>
+                                    <Empty>No hay turnos con esos filtros.</Empty>
                                 ) : (
                                     <BookingList className="mt-0">
                                         {appointments.data.map((appointment) => (
@@ -330,11 +327,7 @@ export default function AdminAppointments({ appointments, filters, by, professio
                 </StageCard>
             </PageScreen>
             {open ? (
-                <AppointmentDetailDialog
-                    appointment={open}
-                    onDismiss={() => setOpenId(null)}
-                    profileHref={canViewPatient ? `/admin/pacientes/${open.patient_id}` : null}
-                />
+                <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} />
             ) : null}
         </>
     );

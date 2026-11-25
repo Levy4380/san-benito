@@ -51,7 +51,7 @@ class AdminSurgeryService
     }
 
     /**
-     * @return array{pending: int, requested: int, approved: int, history: int}
+     * @return array{pending: int, requested: int, approved: int}
      */
     public function counts(?int $professionalId = null): array
     {
@@ -59,7 +59,6 @@ class AdminSurgeryService
             'pending' => $this->sectionQuery('pending', $professionalId)->count(),
             'requested' => $this->sectionQuery('requested', $professionalId)->count(),
             'approved' => $this->sectionQuery('approved', $professionalId)->count(),
-            'history' => $this->sectionQuery('history', $professionalId)->count(),
         ];
     }
 
@@ -272,6 +271,6 @@ class AdminSurgeryService
 
     private function section(string $section): string
     {
-        return in_array($section, ['pending', 'requested', 'approved', 'history'], true) ? $section : 'pending';
+        return in_array($section, ['pending', 'requested', 'approved', 'search'], true) ? $section : 'pending';
     }
 }

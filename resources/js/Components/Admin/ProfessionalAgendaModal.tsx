@@ -1,7 +1,7 @@
 import AgendaDialog from '@/Components/Admin/AgendaDialog';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
-import TimelineAppointmentDialog from '@/Components/Calendar/TimelineAppointmentDialog';
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
@@ -13,7 +13,7 @@ import { overbookSlots } from '@/lib/overbook';
 import { hasPermission, Permission } from '@/lib/permissions';
 import type { AppointmentRecord, AvailabilityWindowRecord, ProfessionalRecord, SharedData, Slot } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
-import { CalendarPlus, Plus, Undo2, UserPlus } from 'lucide-react';
+import { CalendarPlus, Plus, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 type AgendaPayload = {
@@ -52,6 +52,8 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
     const [specialtyId, setSpecialtyId] = useState<number | null>(null);
     const [pickHint, setPickHint] = useState<string | null>(null);
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
+    const [version, setVersion] = useState(0);
+    const reload = () => setVersion((current) => current + 1);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -71,9 +73,8 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
             });
 
         return () => controller.abort();
-    }, [professionalId, date]);
+    }, [professionalId, date, version]);
 
-    const canCancel = hasPermission(auth.user?.permissions, Permission.AppointmentsCancel);
     const canProgram = hasPermission(auth.user?.permissions, Permission.AvailabilityProgram);
     const selectedDate = data?.selectedDate ?? null;
     const openAppointment = data?.timeline.appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
@@ -272,16 +273,12 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
                         {selectors}
                         {pickHint ? <Hint className="m-0 text-danger">{pickHint}</Hint> : null}
                     </div>
-                    <div className="flex justify-end gap-[0.55rem]">
+                    <DialogActions>
                         <Btn type="button" className="min-w-[6.5rem]" onClick={() => book(assignStartsAt, closeBooking)}>
                             <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                             Asignar turno
                         </Btn>
-                        <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeBooking}>
-                            <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Volver
-                        </Btn>
-                    </div>
+                    </DialogActions>
                 </ConfirmDialog>
             ) : null}
             {data && overbookOpen && selectedDate ? (
@@ -310,20 +307,13 @@ export default function ProfessionalAgendaModal({ professionalId, name, onDismis
                             onFreeSelect={(startsAt) => book(startsAt, closeOverbook)}
                         />
                     </div>
-                    <div className="flex justify-end gap-[0.55rem]">
-                        <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeOverbook}>
-                            <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Volver
-                        </Btn>
-                    </div>
                 </ConfirmDialog>
             ) : null}
             {openAppointment ? (
-                <TimelineAppointmentDialog
+                <AppointmentDetailDialog
                     appointment={openAppointment}
-                    canCancel={canCancel}
-                    cancelHref={`/appointments/${openAppointment.id}`}
                     onDismiss={() => setOpenAppointmentId(null)}
+                    onChanged={reload}
                 />
             ) : null}
         </>

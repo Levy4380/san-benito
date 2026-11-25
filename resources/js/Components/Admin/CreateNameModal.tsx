@@ -1,11 +1,11 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import Empty from '@/Components/Surfaces/Empty';
 import Hint from '@/Components/Surfaces/Hint';
 import { useForm } from '@inertiajs/react';
-import { Plus, Undo2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type Props = {
@@ -74,16 +74,12 @@ export default function CreateNameModal({ title, message, submitLabel, loadUrl, 
                         </Field>
                     )}
                 </div>
-                <div className="mt-[0.25rem] flex flex-wrap justify-end gap-[0.5rem]">
-                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>
-                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Volver
-                    </Btn>
+                <DialogActions>
                     <Btn type="submit" className="min-w-[6.5rem]" disabled={form.processing || !ready || loadFailed}>
                         <Plus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         {submitLabel}
                     </Btn>
-                </div>
+                </DialogActions>
             </form>
         </ConfirmDialog>
     );

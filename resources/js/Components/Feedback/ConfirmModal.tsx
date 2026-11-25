@@ -1,13 +1,12 @@
 import { Btn } from '@/Components/Form/Btn';
 import { cn } from '@/lib/utils';
-import { Check, Trash2, Undo2, X } from 'lucide-react';
+import { Check, Trash2, X } from 'lucide-react';
 import { FormEvent, ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 
 type ConfirmOptions = {
     title: string;
     message: string;
     confirmLabel?: string;
-    cancelLabel?: string;
     danger?: boolean;
 };
 
@@ -25,6 +24,8 @@ type ConfirmDialogProps = {
     onDismiss: () => void;
     className?: string;
     kind?: ModalKind;
+    /** Initial focus on «Cerrar» (destructive confirms: Enter must not confirm). */
+    focusClose?: boolean;
 };
 
 /** Always inset from the viewport: centered, never flush to the edge, never 100vw. */
@@ -47,6 +48,7 @@ export function ConfirmDialog({
     onDismiss,
     className,
     kind = 'confirm',
+    focusClose = false,
 }: ConfirmDialogProps) {
     const dismissRef = useRef(onDismiss);
     const titleId = useId();
@@ -97,7 +99,10 @@ export function ConfirmDialog({
                     <h2 className="m-0 min-w-0 flex-1 font-display text-[length:var(--text-md)] font-semibold leading-[1.3] text-ink" id={titleId}>
                         {title}
                     </h2>
-                    {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
+                    <div className="flex shrink-0 items-center gap-[0.5rem]">
+                        {headerAction}
+                        <CloseBtn onClick={onDismiss} autoFocus={focusClose} />
+                    </div>
                 </div>
                 {message != null && message !== '' ? (
                     <p className={cn('m-0 shrink-0 text-sm leading-[1.45] text-ink-2', messageClassName)} id={messageId}>
@@ -128,12 +133,8 @@ export function useConfirm() {
     );
 
     const dialog: ReactNode = pending ? (
-        <ConfirmDialog title={pending.title} message={pending.message} onDismiss={() => close(false)}>
-            <div className="mt-[0.25rem] flex flex-wrap justify-end gap-[0.5rem]">
-                <Btn type="button" variant="outline" className="min-w-[6.5rem]" autoFocus={pending.danger} onClick={() => close(false)}>
-                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                    {pending.cancelLabel ?? 'Volver'}
-                </Btn>
+        <ConfirmDialog title={pending.title} message={pending.message} onDismiss={() => close(false)} focusClose={pending.danger}>
+            <DialogActions>
                 <Btn
                     type="button"
                     variant={pending.danger ? 'danger' : 'primary'}
@@ -144,11 +145,25 @@ export function useConfirm() {
                     <ConfirmActionIcon label={pending.confirmLabel ?? 'Confirmar'} />
                     {pending.confirmLabel ?? 'Confirmar'}
                 </Btn>
-            </div>
+            </DialogActions>
         </ConfirmDialog>
     ) : null;
 
     return { ask, dialog };
+}
+
+/** Dialog footer: actions only, primary/danger last. Closing is always «Cerrar» top-right (`ConfirmDialog`). */
+export function DialogActions({ children, className }: { children: ReactNode; className?: string }) {
+    return <div className={cn('mt-[0.25rem] flex shrink-0 flex-wrap justify-end gap-[0.5rem]', className)}>{children}</div>;
+}
+
+/** Icon-only «Cerrar»: rendered by every `ConfirmDialog` in its top-right corner. */
+export function CloseBtn({ onClick, autoFocus }: { onClick: () => void; autoFocus?: boolean }) {
+    return (
+        <Btn type="button" variant="outline" size="icon" aria-label="Cerrar" title="Cerrar" autoFocus={autoFocus} onClick={onClick}>
+            <X className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+        </Btn>
+    );
 }
 
 export function prevent(event: FormEvent) {

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\File;
 use Tests\Concerns\CreatesDomainUsers;
 use Tests\TestCase;
 
-class HistorialHardeningTest extends TestCase
+class SearchHardeningTest extends TestCase
 {
     use CreatesDomainUsers;
     use RefreshDatabase;
@@ -22,30 +22,47 @@ class HistorialHardeningTest extends TestCase
         $this->seedCatalog();
     }
 
-    public function test_named_routes_and_paths_match_historial_contract(): void
+    public function test_named_routes_and_paths_match_search_contract(): void
     {
-        $this->assertSame('/admin/historial/turnos', route('admin.historial.turnos', absolute: false));
-        $this->assertSame('/admin/historial/cirugias', route('admin.historial.cirugias', absolute: false));
-        $this->assertSame('/profesional/historial/mis-turnos', route('professional.historial.mis-turnos', absolute: false));
-        $this->assertSame('/profesional/historial/mis-cirugias', route('professional.historial.mis-cirugias', absolute: false));
+        $this->assertSame('/admin/buscar/turnos', route('admin.search.appointments', absolute: false));
+        $this->assertSame('/admin/buscar/cirugias', route('admin.search.surgeries', absolute: false));
+        $this->assertSame('/profesional/buscar/mis-turnos', route('professional.search.my-appointments', absolute: false));
+        $this->assertSame('/profesional/buscar/mis-cirugias', route('professional.search.my-surgeries', absolute: false));
         $this->assertSame('/admin/reservas', route('admin.appointments.index', absolute: false));
 
         $routes = File::get(base_path('routes/web.php'));
-        $this->assertStringNotContainsString("/profesional/historial/turnos'", $routes);
-        $this->assertStringNotContainsString('/profesional/historial/turnos"', $routes);
         $this->assertDoesNotMatchRegularExpression(
-            "#Route::get\\('/historial/cirugias'#",
-            $this->professionalHistorialRoutesSlice($routes),
+            "#Route::get\\('/buscar/cirugias'#",
+            $this->professionalRoutesSlice($routes),
         );
-        $this->assertStringContainsString("Route::get('/historial/mis-turnos'", $routes);
-        $this->assertStringContainsString("Route::get('/historial/mis-cirugias'", $routes);
+        $this->assertStringContainsString("Route::get('/buscar/mis-turnos'", $routes);
+        $this->assertStringContainsString("Route::get('/buscar/mis-cirugias'", $routes);
+    }
+
+    public function test_old_historial_urls_redirect_to_search_preserving_query(): void
+    {
+        $admin = $this->makeAdmin();
+        $professional = $this->makeProfessional();
+
+        $this->actingAs($admin)
+            ->get('/admin/historial/turnos?by=date&date=2026-01-10')
+            ->assertRedirect(route('admin.search.appointments', ['by' => 'date', 'date' => '2026-01-10']));
+        $this->actingAs($admin)
+            ->get('/admin/historial/cirugias?by=patient&q=abc')
+            ->assertRedirect(route('admin.search.surgeries', ['by' => 'patient', 'q' => 'abc']));
+        $this->actingAs($professional->user)
+            ->get('/profesional/historial/mis-turnos')
+            ->assertRedirect(route('professional.search.my-appointments'));
+        $this->actingAs($professional->user)
+            ->get('/profesional/historial/mis-cirugias?by=date&date=2026-01-10')
+            ->assertRedirect(route('professional.search.my-surgeries', ['by' => 'date', 'date' => '2026-01-10']));
     }
 
     public function test_admin_reservas_is_redirect_only_not_inertia_list(): void
     {
         $routes = File::get(base_path('routes/web.php'));
         $this->assertMatchesRegularExpression(
-            "#Route::get\\('/reservas',\\s*fn\\s*\\(\\)\\s*=>\\s*redirect\\(\\)->route\\('admin\\.historial\\.turnos'\\)\\)#",
+            "#Route::get\\('/reservas',\\s*fn\\s*\\(\\)\\s*=>\\s*redirect\\(\\)->route\\('admin\\.search\\.appointments'\\)\\)#",
             $routes,
         );
         $this->assertStringNotContainsString(
@@ -56,7 +73,7 @@ class HistorialHardeningTest extends TestCase
         $admin = $this->makeAdmin();
         $this->actingAs($admin)
             ->get('/admin/reservas')
-            ->assertRedirect(route('admin.historial.turnos'));
+            ->assertRedirect(route('admin.search.appointments'));
     }
 
     public function test_admin_home_lands_on_surgery_calendar(): void
@@ -73,7 +90,7 @@ class HistorialHardeningTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Admin/SurgeryCalendar'));
     }
 
-    public function test_admin_historial_turnos_lists_only_past_appointments(): void
+    public function test_admin_search_turnos_lists_past_and_future_appointments(): void
     {
         $admin = $this->makeAdmin();
         $patient = $this->makePatient();
@@ -87,7 +104,7 @@ class HistorialHardeningTest extends TestCase
             'starts_at' => $past,
             'ends_at' => $past->copy()->addMinutes(20),
         ]);
-        Appointment::factory()->create([
+        $futureAppointment = Appointment::factory()->create([
             'professional_id' => $professional->id,
             'patient_id' => $patient->id,
             'starts_at' => $future,
@@ -95,7 +112,7 @@ class HistorialHardeningTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos')
+            ->get('/admin/buscar/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Appointments')
@@ -103,12 +120,21 @@ class HistorialHardeningTest extends TestCase
                 ->has('appointments.data', 0));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?by=date&date='.$past->toDateString())
+            ->get('/admin/buscar/turnos?by=date&date='.$past->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('by', 'date')
                 ->has('appointments.data', 1)
                 ->where('appointments.data.0.id', $pastAppointment->id));
+
+        $this->actingAs($admin)
+            ->get('/admin/buscar/turnos?by=professional&professional_id='.$professional->id)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('appointments.data', 2)
+                ->where('appointments.data.0.id', $futureAppointment->id)
+                ->where('appointments.data.0.status', 'scheduled')
+                ->where('appointments.data.1.id', $pastAppointment->id));
     }
 
     public function test_admin_and_portal_section_history_redirects_preserve_query(): void
@@ -118,14 +144,14 @@ class HistorialHardeningTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=history&q=abc')
-            ->assertRedirect(route('admin.historial.cirugias', ['q' => 'abc']));
+            ->assertRedirect(route('admin.search.surgeries', ['q' => 'abc']));
 
         $this->actingAs($professional->user)
             ->get('/profesional/cirugias?section=history&q=xyz')
-            ->assertRedirect(route('professional.historial.mis-cirugias', ['q' => 'xyz']));
+            ->assertRedirect(route('professional.search.my-surgeries', ['q' => 'xyz']));
     }
 
-    public function test_admin_historial_cirugias_renders_history_section(): void
+    public function test_admin_search_cirugias_renders_search_section(): void
     {
         $admin = $this->makeAdmin();
         $patient = $this->makePatient();
@@ -139,25 +165,25 @@ class HistorialHardeningTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/cirugias')
+            ->get('/admin/buscar/cirugias')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Surgeries')
-                ->where('section', 'history')
+                ->where('section', 'search')
                 ->where('by', null)
                 ->has('surgeries.data', 0));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/cirugias?by=date&date=2020-01-10')
+            ->get('/admin/buscar/cirugias?by=date&date=2020-01-10')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('section', 'history')
+                ->where('section', 'search')
                 ->where('by', 'date')
                 ->has('surgeries.data', 1)
                 ->where('surgeries.data.0.note', 'Historial hardening.'));
     }
 
-    public function test_professional_historial_scopes_and_forbids_wrong_roles(): void
+    public function test_professional_search_scopes_and_forbids_wrong_roles(): void
     {
         $mine = $this->makeProfessional();
         $other = $this->makeProfessional();
@@ -179,91 +205,88 @@ class HistorialHardeningTest extends TestCase
         ]);
 
         $this->actingAs($mine->user)
-            ->get('/profesional/historial/mis-turnos')
+            ->get('/profesional/buscar/mis-turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Professional/AppointmentHistory')
+                ->component('Professional/AppointmentSearch')
                 ->where('by', null)
                 ->has('appointments.data', 0));
 
         $this->actingAs($mine->user)
-            ->get('/profesional/historial/mis-turnos?by=date&date='.$past->toDateString())
+            ->get('/profesional/buscar/mis-turnos?by=date&date='.$past->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Professional/AppointmentHistory')
+                ->component('Professional/AppointmentSearch')
                 ->where('by', 'date')
                 ->has('appointments.data', 1)
                 ->where('appointments.data.0.id', $ownPast->id));
 
         $this->actingAs($patient->user)
-            ->getJson('/profesional/historial/mis-turnos')
+            ->getJson('/profesional/buscar/mis-turnos')
             ->assertForbidden();
         $this->actingAs($admin)
-            ->getJson('/profesional/historial/mis-turnos')
+            ->getJson('/profesional/buscar/mis-turnos')
             ->assertForbidden();
         $this->actingAs($patient->user)
-            ->getJson('/profesional/historial/mis-cirugias')
+            ->getJson('/profesional/buscar/mis-cirugias')
             ->assertForbidden();
         $this->actingAs($admin)
-            ->getJson('/profesional/historial/mis-cirugias')
+            ->getJson('/profesional/buscar/mis-cirugias')
             ->assertForbidden();
 
         $orphan = User::factory()->create();
         $orphan->assignRole('professional');
         $this->actingAs($orphan)
-            ->getJson('/profesional/historial/mis-turnos')
+            ->getJson('/profesional/buscar/mis-turnos')
             ->assertForbidden();
         $this->actingAs($orphan)
-            ->getJson('/profesional/historial/mis-cirugias')
+            ->getJson('/profesional/buscar/mis-cirugias')
             ->assertForbidden();
     }
 
-    public function test_sidebar_historial_nav_contract_without_reservas_or_history_child(): void
+    public function test_sidebar_buscador_nav_contract_without_reservas_or_search_child(): void
     {
         $sidebar = File::get(base_path('resources/js/Components/Layout/Sidebar.tsx'));
 
         $this->assertStringNotContainsString("label: 'Reservas'", $sidebar);
         $this->assertStringNotContainsString('/admin/reservas', $sidebar);
-        $this->assertStringContainsString("id: 'historial'", $sidebar);
-        $this->assertStringContainsString("id: 'historial-portal'", $sidebar);
-        $this->assertStringContainsString("label: 'Historial'", $sidebar);
-        $this->assertStringContainsString("href: '/admin/historial/turnos', label: 'Turnos'", $sidebar);
-        $this->assertStringContainsString("href: '/admin/historial/cirugias', label: 'Cirugías'", $sidebar);
-        $this->assertStringContainsString("href: '/profesional/historial/mis-turnos', label: 'Mis turnos'", $sidebar);
-        $this->assertStringContainsString("href: '/profesional/historial/mis-cirugias', label: 'Mis cirugías'", $sidebar);
+        $this->assertStringContainsString("id: 'buscador'", $sidebar);
+        $this->assertStringContainsString("id: 'buscador-portal'", $sidebar);
+        $this->assertStringContainsString("label: 'Buscador'", $sidebar);
+        $this->assertStringNotContainsString("label: 'Historial'", $sidebar);
+        $this->assertStringContainsString("href: '/admin/buscar/turnos', label: 'Turnos'", $sidebar);
+        $this->assertStringContainsString("href: '/admin/buscar/cirugias', label: 'Cirugías'", $sidebar);
+        $this->assertStringContainsString("href: '/profesional/buscar/mis-turnos', label: 'Mis turnos'", $sidebar);
+        $this->assertStringContainsString("href: '/profesional/buscar/mis-cirugias', label: 'Mis cirugías'", $sidebar);
 
-        $this->assertStringNotContainsString("section: 'history'", $sidebar);
+        $this->assertStringNotContainsString("section: 'search'", $sidebar);
         $this->assertStringContainsString("{ section: 'pending', label: 'Pendientes' }", $sidebar);
         $this->assertStringContainsString("{ section: 'requested', label: 'Solicitadas' }", $sidebar);
         $this->assertStringContainsString("{ section: 'approved', label: 'Aprobadas' }", $sidebar);
 
-        $this->assertStringNotContainsString('/profesional/historial/turnos', $sidebar);
-        $this->assertDoesNotMatchRegularExpression(
-            '#/profesional/historial/cirugias(?!/)#',
-            $sidebar,
-        );
+        $this->assertStringNotContainsString('/historial/', $sidebar);
     }
 
-    public function test_docs_and_package_json_aligned_with_historial(): void
+    public function test_docs_and_package_json_aligned_with_search(): void
     {
         $design = File::get(base_path('new-design.md'));
-        $this->assertStringContainsString('/admin/historial/turnos', $design);
-        $this->assertStringContainsString('/admin/historial/cirugias', $design);
-        $this->assertStringContainsString('/profesional/historial/mis-turnos', $design);
-        $this->assertStringContainsString('/profesional/historial/mis-cirugias', $design);
-        $this->assertStringContainsString('redirect compat → `/admin/historial/turnos`', $design);
-        $this->assertStringContainsString('d49 — Historial search-first', $design);
+        $this->assertStringContainsString('/admin/buscar/turnos', $design);
+        $this->assertStringContainsString('/admin/buscar/cirugias', $design);
+        $this->assertStringContainsString('/profesional/buscar/mis-turnos', $design);
+        $this->assertStringContainsString('/profesional/buscar/mis-cirugias', $design);
+        $this->assertStringContainsString('redirect compat → `/admin/buscar/turnos`', $design);
+        $this->assertStringContainsString('d49 — Buscador search-first', $design);
 
         $common = File::get(base_path('docs/professional-surgeries/COMMON.md'));
-        $this->assertStringContainsString('**Sin** hijo Historial', $common);
+        $this->assertStringContainsString('**Sin** hijo Buscador', $common);
         $this->assertStringContainsString('`pending` / `requested` / `approved`', $common);
-        $this->assertStringContainsString('/profesional/historial/mis-cirugias', $common);
+        $this->assertStringContainsString('/profesional/buscar/mis-cirugias', $common);
 
         $package = File::get(base_path('package.json'));
         $this->assertStringNotContainsString('"packageManager"', $package);
     }
 
-    private function professionalHistorialRoutesSlice(string $routes): string
+    private function professionalRoutesSlice(string $routes): string
     {
         $start = strpos($routes, "Route::prefix('profesional')");
         $end = strpos($routes, "Route::prefix('admin')");

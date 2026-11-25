@@ -8,7 +8,7 @@ import Time24 from '@/Components/Form/Time24';
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import RequestSurgeryModal from '@/Components/Surgeries/RequestSurgeryModal';
 import SurgeryDetailDialog from '@/Components/Surgeries/SurgeryDetailDialog';
-import { useConfirm } from '@/Components/Feedback/ConfirmModal';
+import { DialogActions, useConfirm } from '@/Components/Feedback/ConfirmModal';
 import Panel from '@/Components/Surfaces/Panel';
 import { clinicHours, clockMinutes, useClinic } from '@/lib/clinic';
 import { formatDateLabel, pad2 } from '@/lib/datetime';
@@ -92,13 +92,20 @@ export default function AdminSurgeryCalendar({
         );
     };
 
+    /** d51: moving a surgery that is already scheduled (same screen and rules). */
+    const rescheduling = scheduling && surgery?.status === 'scheduled';
     const check = scheduling ? scheduleCheck(date, start, end, now, clashBusy) : null;
     const openSurgery = daySurgeries.find((item) => item.id === openId) ?? null;
     const panelTitle = capitalize(formatDateLabel(date));
     const subtitle =
         scheduling && surgery ? (
             <>
-                <strong>Programar: {surgery.patient?.name}</strong>
+                <strong>
+                    {rescheduling ? 'Reprogramar' : 'Programar'}: {surgery.patient?.name}
+                </strong>
+                {rescheduling && surgery.starts_at && surgery.ends_at
+                    ? ` · Hoy: ${formatDateLabel(surgery.starts_at.slice(0, 10))} ${surgeryRange(surgery.starts_at, surgery.ends_at)}.`
+                    : ''}
                 {` · Solicita ${surgery.professional?.user.name}. Elegí un día y un horario libre.`}
             </>
         ) : (
@@ -132,8 +139,8 @@ export default function AdminSurgeryCalendar({
             </p>
             {scheduling && surgery && check ? (
                 <ScheduleControls
-                    date={date}
                     start={start}
+                    submitLabel={rescheduling ? 'Reprogramar' : 'Programar'}
                     end={end}
                     check={check}
                     gaps={gaps}
@@ -239,7 +246,9 @@ function ScheduleControls({
     onGap,
     onCancel,
     onSubmit,
+    submitLabel,
 }: {
+    submitLabel: string;
     start: string;
     end: string;
     check: { ok: boolean; message: string };
@@ -276,15 +285,15 @@ function ScheduleControls({
                     </div>
                 )}
             </Field>
-            <div className="flex flex-wrap justify-end gap-[var(--space-sm)]">
+            <DialogActions>
                 <Btn type="button" variant="outline" onClick={onCancel}>
                     <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                     Volver
                 </Btn>
                 <Btn type="button" disabled={!check.ok} onClick={onSubmit}>
-                    Programar
+                    {submitLabel}
                 </Btn>
-            </div>
+            </DialogActions>
         </div>
     );
 }

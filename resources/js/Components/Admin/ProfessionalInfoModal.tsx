@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import AssociateHealthInsurancesForm from '@/Components/Professionals/AssociateHealthInsurancesForm';
 import AssociateSpecialtiesForm from '@/Components/Professionals/AssociateSpecialtiesForm';
@@ -9,7 +9,6 @@ import { getJson } from '@/lib/json';
 import { hasPermission, Permission } from '@/lib/permissions';
 import type { HealthInsurance, ProfessionalRecord, SharedData, Specialty } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type Props = {
@@ -41,25 +40,15 @@ export default function ProfessionalInfoModal({ professional, specialties, onDis
                         healthInsuranceAction={canAssociateHealthInsurances ? editButton('insurances') : undefined}
                     />
                 </div>
-                <div className="flex flex-wrap justify-end gap-[0.55rem]">
+                <DialogActions>
                     <Btn type="button" onClick={onOpenAgenda}>
                         Ver agenda
                     </Btn>
-                    <Btn type="button" variant="outline" onClick={onDismiss}>
-                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Volver
-                    </Btn>
-                </div>
+                </DialogActions>
             </ConfirmDialog>
             {editing === 'specialties' ? (
                 <ConfirmDialog title="Especialidades" message={professional.user.name} onDismiss={() => setEditing(null)} kind="info">
                     <AssociateSpecialtiesForm professional={professional} specialties={specialties} onSaved={() => setEditing(null)} />
-                    <div className="flex justify-end">
-                        <Btn type="button" variant="outline" onClick={() => setEditing(null)}>
-                            <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                            Volver
-                        </Btn>
-                    </div>
                 </ConfirmDialog>
             ) : null}
             {editing === 'insurances' ? (
@@ -104,12 +93,6 @@ function HealthInsuranceEditor({ professional, onDismiss }: { professional: Prof
                     onSaved={onDismiss}
                 />
             )}
-            <div className="flex justify-end">
-                <Btn type="button" variant="outline" onClick={onDismiss}>
-                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                    Volver
-                </Btn>
-            </div>
         </ConfirmDialog>
     );
 }

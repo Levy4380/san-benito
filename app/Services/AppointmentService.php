@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentAttendance;
 use App\Models\Appointment;
 use App\Models\AvailabilityWindow;
 use App\Models\Patient;
@@ -173,6 +174,92 @@ class AppointmentService
         }
 
         $appointment->delete();
+    }
+
+    /**
+     * Moves a reservation that has not started to another slot of the same professional (d51): UPDATE of the
+     * same row (keeps id, patient, specialty; clears the attendance mark). `$allowOverbook` (staff): a start
+     * outside every window becomes a sobreturno (short window + move), same contract as `assignAsStaff`.
+     *
+     * @return array{appointment: Appointment, overbook: bool}
+     */
+    public function reschedule(Appointment $appointment, string $startsAt, bool $allowOverbook): array
+    {
+        $professional = $appointment->professional()->firstOrFail();
+        $start = Carbon::parse($startsAt);
+        $end = $start->copy()->addMinutes((int) $professional->slot_duration_minutes);
+
+        $unavailable = fn () => ValidationException::withMessages([
+            'starts_at' => 'El turno ya no está disponible',
+        ]);
+
+        try {
+            return DB::transaction(function () use ($appointment, $professional, $start, $end, $startsAt, $allowOverbook, $unavailable) {
+                $locked = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
+
+                if (! $locked->starts_at->gt(now())) {
+                    throw ValidationException::withMessages([
+                        'appointment' => 'No se puede reprogramar un turno que ya comenzó.',
+                    ]);
+                }
+
+                if ($locked->starts_at->equalTo($start)) {
+                    throw ValidationException::withMessages([
+                        'starts_at' => 'Elegí un horario distinto al actual.',
+                    ]);
+                }
+
+                AvailabilityWindow::query()
+                    ->forProfessional($professional)
+                    ->overlapping($start->copy()->startOfDay(), $start->copy()->endOfDay())
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $overbook = false;
+
+                if (! $this->availability->isBookableSlot($professional, $start, $locked)) {
+                    $clash = Appointment::query()
+                        ->forProfessional($professional)
+                        ->overlapping($start, $end)
+                        ->whereKeyNot($locked->id)
+                        ->exists();
+
+                    if (! $allowOverbook || ! $start->gt(now()) || $clash) {
+                        throw $unavailable();
+                    }
+
+                    $this->windows->createShortWindow($professional, $startsAt);
+                    $overbook = true;
+                }
+
+                $locked->update([
+                    'starts_at' => $start,
+                    'ends_at' => $end,
+                    'attendance' => null,
+                ]);
+
+                return ['appointment' => $locked, 'overbook' => $overbook];
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw $unavailable();
+        }
+    }
+
+    /**
+     * Marks a reservation that already started as attended / absent, or clears the mark (`null`).
+     */
+    public function setAttendance(Appointment $appointment, ?AppointmentAttendance $attendance): Appointment
+    {
+        if ($appointment->starts_at->gt(now())) {
+            throw ValidationException::withMessages([
+                'attendance' => 'Solo podés marcar un turno que ya comenzó.',
+            ]);
+        }
+
+        $appointment->update(['attendance' => $attendance]);
+
+        return $appointment;
     }
 
     /**

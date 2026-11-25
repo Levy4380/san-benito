@@ -5,7 +5,7 @@ namespace App\Support;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-final class HistorySearch
+final class SearchCriteria
 {
     /**
      * @param  list<string>  $allowed

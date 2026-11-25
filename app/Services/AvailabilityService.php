@@ -76,7 +76,8 @@ class AvailabilityService
             ->values();
     }
 
-    public function isBookableSlot(Professional $professional, Carbon $startsAt): bool
+    /** `$ignore`: the reservation being moved (reprogramar) does not block its own new slot. */
+    public function isBookableSlot(Professional $professional, Carbon $startsAt, ?Appointment $ignore = null): bool
     {
         $duration = (int) $professional->slot_duration_minutes;
         $endsAt = $startsAt->copy()->addMinutes($duration);
@@ -105,6 +106,7 @@ class AvailabilityService
         $overlaps = Appointment::query()
             ->forProfessional($professional)
             ->overlapping($startsAt, $endsAt)
+            ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore->id))
             ->exists();
 
         return ! $overlaps;

@@ -1,11 +1,11 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
 import Hint from '@/Components/Surfaces/Hint';
 import Surface from '@/Components/Surfaces/Surface';
 import { useForm } from '@inertiajs/react';
-import { Trash2, Undo2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { FormEventHandler, useCallback, useRef, useState } from 'react';
 
 export default function DeleteUser() {
@@ -56,16 +56,12 @@ export default function DeleteUser() {
                                 onChange={(event) => setData('password', event.target.value)}
                             />
                         </Field>
-                        <div className="mt-[0.25rem] flex flex-wrap justify-end gap-[0.5rem]">
-                            <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={closeModal}>
-                                <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Volver
-                            </Btn>
+                        <DialogActions>
                             <Btn type="submit" variant="danger" className="min-w-[6.5rem]" disabled={processing}>
                                 <Trash2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                                 Eliminar cuenta
                             </Btn>
-                        </div>
+                        </DialogActions>
                     </form>
                 </ConfirmDialog>
             ) : null}

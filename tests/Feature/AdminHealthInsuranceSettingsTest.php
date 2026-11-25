@@ -260,10 +260,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
 
         $this->actingAs($this->makePatient()->user)
             ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Show')
-                ->missing('healthInsurances'));
+            ->assertNotFound();
 
         $this->actingAs($this->makeAdmin())
             ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
@@ -364,18 +361,17 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $patient->healthInsurances()->sync([$osde->id]);
 
         $this->actingAs($super)
-            ->get('/admin/pacientes/'.$patient->id)
+            ->getJson('/patients/'.$patient->id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Admin/UserPatient')
-                ->where('healthInsuranceId', $osde->id)
-                ->has('healthInsurances'));
+            ->assertJsonPath('healthInsuranceId', $osde->id)
+            ->assertJsonStructure(['healthInsurances']);
 
         $this->actingAs($super)
+            ->from('/admin/pacientes')
             ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => $swiss->id,
             ])
-            ->assertRedirect('/admin/pacientes/'.$patient->id);
+            ->assertRedirect('/admin/pacientes');
 
         $this->assertSame('Swiss Medical', $patient->fresh()->health_insurance);
         $this->assertEqualsCanonicalizing(
@@ -384,10 +380,11 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         );
 
         $this->actingAs($super)
+            ->from('/admin/pacientes')
             ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => '',
             ])
-            ->assertRedirect('/admin/pacientes/'.$patient->id);
+            ->assertRedirect('/admin/pacientes');
 
         $this->assertNull($patient->fresh()->health_insurance);
         $this->assertDatabaseMissing('patient_health_insurance', ['patient_id' => $patient->id]);

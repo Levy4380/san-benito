@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\AppointmentAttendance;
+use App\Enums\AppointmentStatus;
 use App\Models\Concerns\SerializesInstitutionalDates;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +27,13 @@ class Appointment extends Model
         'specialty_id',
         'starts_at',
         'ends_at',
+        'attendance',
     ];
+
+    /**
+     * @var list<string>
+     */
+    protected $appends = ['status'];
 
     /**
      * @return array<string, string>
@@ -34,7 +43,28 @@ class Appointment extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'attendance' => AppointmentAttendance::class,
         ];
+    }
+
+    /**
+     * Explicit mark wins; otherwise `scheduled` until `starts_at + PAST_GRACE_HOURS`, then `past`.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function status(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->attendance instanceof AppointmentAttendance) {
+                return $this->attendance->value;
+            }
+
+            $pastAt = $this->starts_at->copy()->addHours(AppointmentStatus::PAST_GRACE_HOURS);
+
+            return now()->gte($pastAt)
+                ? AppointmentStatus::Past->value
+                : AppointmentStatus::Scheduled->value;
+        });
     }
 
     public function professional(): BelongsTo

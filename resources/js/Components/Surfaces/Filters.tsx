@@ -1,7 +1,7 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import { cn } from '@/lib/utils';
-import { ListFilter, Search } from 'lucide-react';
+import { Check, ListFilter, Search } from 'lucide-react';
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 export type FilterValues = Record<string, string>;
@@ -14,7 +14,7 @@ type Props = {
     listExtras?: ReactNode;
     children?: ReactNode;
     className?: string;
-    /** Criterio fijo de historial: sin Buscar; Limpiar (danger) después de Filtros. */
+    /** Criterio fijo del buscador: sin Buscar; Limpiar (danger) después de Filtros. */
     locked?: boolean;
     onClear?: () => void;
 };
@@ -122,12 +122,12 @@ export default function Filters({
                             <input key={name} type="hidden" name={name} value={value} />
                         ))}
                         <div className="grid content-start gap-[var(--space-sm)] sm:grid-cols-2">{advanced}</div>
-                        <div className="flex flex-wrap items-center justify-end gap-[var(--space-sm)]">
-                            <Btn type="button" variant="outline" onClick={() => setOpen(false)}>
-                                Volver
+                        <DialogActions>
+                            <Btn type="submit" className="min-w-[6.5rem]">
+                                <Check className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Aplicar
                             </Btn>
-                            <Btn type="submit">Aplicar</Btn>
-                        </div>
+                        </DialogActions>
                     </form>
                 </ConfirmDialog>
             ) : null}

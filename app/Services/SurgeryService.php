@@ -100,9 +100,9 @@ class SurgeryService
 
             $locked = Surgery::query()->whereKey($surgery->id)->lockForUpdate()->firstOrFail();
 
-            if ($locked->status !== SurgeryStatus::ToSchedule) {
+            if (! $locked->isSchedulable()) {
                 throw ValidationException::withMessages([
-                    'status' => 'Solo se puede programar una cirugía a programar.',
+                    'status' => 'Solo se puede programar una cirugía a programar o reprogramar una programada que no empezó.',
                 ]);
             }
 
@@ -142,8 +142,9 @@ class SurgeryService
                 ->lockForUpdate()
                 ->get();
 
-            $clash = $busy->first(function (Surgery $other) use ($start, $end): bool {
-                return $other->starts_at !== null
+            $clash = $busy->first(function (Surgery $other) use ($locked, $start, $end): bool {
+                return $other->id !== $locked->id
+                    && $other->starts_at !== null
                     && $other->ends_at !== null
                     && $other->starts_at->lt($end)
                     && $start->lt($other->ends_at);

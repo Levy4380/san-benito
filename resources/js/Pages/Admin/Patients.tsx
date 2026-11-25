@@ -1,6 +1,6 @@
 import CreatePatientModal from '@/Components/Admin/CreatePatientModal';
 import PatientAgendaModal from '@/Components/Admin/PatientAgendaModal';
-import PatientInfoModal from '@/Components/Admin/PatientInfoModal';
+import PatientInfoModal from '@/Components/Patients/PatientInfoModal';
 import PageHeader from '@/Components/Common/PageHeader';
 import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';

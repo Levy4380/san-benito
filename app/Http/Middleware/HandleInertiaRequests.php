@@ -50,7 +50,7 @@ class HandleInertiaRequests extends Middleware
      * Staff catalog.view → global counts. Own view → scoped to the actor's professional.
      * Staff wins if both (should not happen). Patient / no perm → null.
      *
-     * @return array{pending: int, requested: int, approved: int, history: int}|null
+     * @return array{pending: int, requested: int, approved: int}|null
      */
     private function surgeryNavCounts(?User $user): ?array
     {
@@ -71,7 +71,7 @@ class HandleInertiaRequests extends Middleware
         $professionalId = $user->professional?->id;
 
         return $professionalId === null
-            ? ['pending' => 0, 'requested' => 0, 'approved' => 0, 'history' => 0]
+            ? ['pending' => 0, 'requested' => 0, 'approved' => 0]
             : $surgeries->counts($professionalId);
     }
 }

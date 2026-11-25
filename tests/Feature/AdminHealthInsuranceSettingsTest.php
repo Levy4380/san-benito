@@ -260,10 +260,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
 
         $this->actingAs($this->makePatient()->user)
             ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Show')
-                ->missing('healthInsurances'));
+            ->assertNotFound();
 
         $this->actingAs($this->makeAdmin())
             ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
@@ -272,9 +269,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $this->actingAs($super)
             ->get('/admin/profesionales/'.$professional->id.'/obras-sociales')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/HealthInsurances')
-                ->has('healthInsurances', HealthInsurance::query()->count()));
+            ->assertJsonCount(HealthInsurance::query()->count(), 'healthInsurances');
 
         $this->actingAs($super)
             ->getJson('/admin/profesionales/'.$professional->id.'/obras-sociales')
@@ -285,7 +280,7 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [$added->id],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales');
 
         $this->assertEqualsCanonicalizing(
             [$added->id],
@@ -300,11 +295,11 @@ class AdminHealthInsuranceSettingsTest extends TestCase
             ->assertRedirect('/admin/profesionales?q=Ana');
 
         $this->actingAs($super)
-            ->withHeader('referer', url('/admin/profesionales/'.$professional->id.'/obras-sociales'))
+            ->withHeader('referer', url('/admin/profesionales?info='.$professional->id))
             ->patch('/professionals/'.$professional->id.'/health-insurances', [
                 'health_insurance_ids' => [],
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id);
+            ->assertRedirect('/admin/profesionales?info='.$professional->id);
 
         $this->assertTrue($professional->fresh()->healthInsurances()->doesntExist());
     }
@@ -366,18 +361,17 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         $patient->healthInsurances()->sync([$osde->id]);
 
         $this->actingAs($super)
-            ->get('/admin/pacientes/'.$patient->id)
+            ->getJson('/patients/'.$patient->id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Admin/UserPatient')
-                ->where('healthInsuranceId', $osde->id)
-                ->has('healthInsurances'));
+            ->assertJsonPath('healthInsuranceId', $osde->id)
+            ->assertJsonStructure(['healthInsurances']);
 
         $this->actingAs($super)
+            ->from('/admin/pacientes')
             ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => $swiss->id,
             ])
-            ->assertRedirect('/admin/pacientes/'.$patient->id);
+            ->assertRedirect('/admin/pacientes');
 
         $this->assertSame('Swiss Medical', $patient->fresh()->health_insurance);
         $this->assertEqualsCanonicalizing(
@@ -386,10 +380,11 @@ class AdminHealthInsuranceSettingsTest extends TestCase
         );
 
         $this->actingAs($super)
+            ->from('/admin/pacientes')
             ->patch('/patients/'.$patient->id.'/health-insurance', [
                 'health_insurance_id' => '',
             ])
-            ->assertRedirect('/admin/pacientes/'.$patient->id);
+            ->assertRedirect('/admin/pacientes');
 
         $this->assertNull($patient->fresh()->health_insurance);
         $this->assertDatabaseMissing('patient_health_insurance', ['patient_id' => $patient->id]);

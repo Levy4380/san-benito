@@ -13,6 +13,8 @@ enum Permission: string
     case OwnAppointmentsView = 'own.appointments.view';
     case OwnAppointmentsCancel = 'own.appointments.cancel';
     case OwnAppointmentsAssign = 'own.appointments.assign';
+    case OwnAppointmentsAttendance = 'own.appointments.attendance';
+    case OwnAppointmentsReschedule = 'own.appointments.reschedule';
     case OwnAgendaView = 'own.agenda.view';
     case OwnAgendaSettingsUpdate = 'own.agenda.settings.update';
     case OwnPatientsView = 'own.patients.view';
@@ -26,6 +28,8 @@ enum Permission: string
 
     case AppointmentsCancel = 'appointments.cancel';
     case AppointmentsAssign = 'appointments.assign';
+    case AppointmentsAttendance = 'appointments.attendance';
+    case AppointmentsReschedule = 'appointments.reschedule';
     case AppointmentsCatalogView = 'appointments.catalog.view';
     case PatientsLink = 'patients.link';
     case AvailabilityCreate = 'availability.create';
@@ -76,6 +80,8 @@ enum Permission: string
             self::ProfessionalsBrowse,
             self::AppointmentsCancel,
             self::AppointmentsAssign,
+            self::AppointmentsAttendance,
+            self::AppointmentsReschedule,
             self::PatientsLink,
             self::AvailabilityCreate,
             self::AvailabilityProgram,
@@ -88,6 +94,8 @@ enum Permission: string
             self::SurgeriesRequest,
             self::SurgeriesApprove,
             self::SurgeriesSchedule,
+            self::PatientsCatalogView,
+            self::PatientsCreate,
         ];
 
         return match ($role) {
@@ -103,6 +111,8 @@ enum Permission: string
                 self::OwnAppointmentsCancel,
                 self::OwnAgendaView,
                 self::OwnAppointmentsAssign,
+                self::OwnAppointmentsAttendance,
+                self::OwnAppointmentsReschedule,
                 self::OwnPatientsView,
                 self::OwnPatientsLink,
                 self::OwnAgendaSettingsUpdate,
@@ -117,8 +127,6 @@ enum Permission: string
             'super_admin' => [
                 ...$staff,
                 self::AdminsManage,
-                self::PatientsCatalogView,
-                self::PatientsCreate,
                 self::SpecialtiesManage,
                 self::HealthInsurancesManage,
                 self::ClinicManage,

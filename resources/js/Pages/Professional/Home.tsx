@@ -1,7 +1,8 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { CalendarClock, CalendarPlus, Users } from 'lucide-react';
+import { useState } from 'react';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import PageScreen from '@/Components/Common/PageScreen';
-import PatientProfileBtn from '@/Components/Common/PatientProfileBtn';
 import { Btn } from '@/Components/Form/Btn';
 import HomeHero, { HomeStartPrimary, HomeStartSecondary, HomeUpcoming, HomeUpcomingItem, HomeUpcomingList } from '@/Components/Home/HomeHero';
 import { BookingCardFields } from '@/Components/Surfaces/BookingCard';
@@ -14,6 +15,8 @@ type Props = {
 
 export default function ProfessionalHome({ upcoming }: Props) {
     const { auth } = usePage<SharedData>().props;
+    const [openId, setOpenId] = useState<number | null>(null);
+    const open = upcoming.find((appointment) => appointment.id === openId) ?? null;
 
     return (
         <>
@@ -32,7 +35,7 @@ export default function ProfessionalHome({ upcoming }: Props) {
                         <Btn variant="outline" block asChild>
                             <Link href="/profesional/programar">
                                 <CalendarPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                Programar turnos
+                                Programar horarios
                             </Link>
                         </Btn>
                         <Btn variant="outline" block asChild>
@@ -59,13 +62,8 @@ export default function ProfessionalHome({ upcoming }: Props) {
                                 {upcoming.map((appointment) => (
                                     <HomeUpcomingItem
                                         key={appointment.id}
-                                        actions={
-                                            <PatientProfileBtn
-                                                patientId={appointment.patient_id}
-                                                name={appointment.patient?.name}
-                                                label="Ver paciente"
-                                            />
-                                        }
+                                        onClick={() => setOpenId(appointment.id)}
+                                        aria-label="Ver detalle del turno"
                                     >
                                         <BookingCardFields appointment={appointment} />
                                     </HomeUpcomingItem>
@@ -75,6 +73,9 @@ export default function ProfessionalHome({ upcoming }: Props) {
                     </HomeUpcoming>
                 </HomeHero>
             </PageScreen>
+            {open ? (
+                <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} />
+            ) : null}
         </>
     );
 }

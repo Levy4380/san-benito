@@ -1,6 +1,11 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { DetailBlock, DetailBlocks, type DetailRow } from '@/Components/Common/DetailList';
+import StatusBadge, { type StatusTone } from '@/Components/Common/StatusBadge';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
+import { appointmentStarted } from '@/lib/appointment-status';
+import { formatDateLabel } from '@/lib/datetime';
 import { hasPermission, Permission } from '@/lib/permissions';
+import { canSeeAppointmentProfessional } from '@/lib/roles';
 import { SURGERY_STATUS_LABEL, surgeryRange } from '@/lib/surgery';
 import type { SharedData, SurgeryRecord, SurgerySection } from '@/types';
 import { router, usePage } from '@inertiajs/react';
@@ -16,15 +21,11 @@ type Props = {
     canSchedule?: boolean;
 };
 
-export function SurgeryStatusBadge({ status }: { status: SurgeryRecord['status'] }) {
+export function SurgeryStatusBadge({ status, className }: { status: SurgeryRecord['status']; className?: string }) {
     return (
-        <span
-            className="mt-[0.3rem] inline-flex w-fit items-center gap-[0.35rem] rounded-md px-[0.5rem] py-[0.15rem] text-[length:var(--text-xs)] leading-[1.3] font-medium whitespace-nowrap before:size-[0.45rem] before:rounded-full before:bg-current before:content-['']"
-            data-status={status}
-            style={badgeStyle(status)}
-        >
+        <StatusBadge tone={badgeStyle(status)} status={status} className={className}>
             {SURGERY_STATUS_LABEL[status]}
-        </span>
+        </StatusBadge>
     );
 }
 
@@ -46,29 +47,26 @@ export default function SurgeryDetailDialog({
     const showMarkRequested = allowMarkRequested && surgery.status === 'pending';
     const showApprove = allowApprove && surgery.status === 'requested';
     const showSchedule = allowSchedule && surgery.status === 'to_schedule';
+    /** d51: a scheduled surgery that has not started can be moved (same screen and rules as Programar). */
+    const showReschedule =
+        allowSchedule && surgery.status === 'scheduled' && surgery.starts_at !== null && !appointmentStarted(surgery.starts_at);
     const patient = surgery.patient;
     const professional = surgery.professional;
-    const schedule =
-        surgery.starts_at && surgery.ends_at
-            ? `${surgery.starts_at.slice(0, 10)} · ${surgeryRange(surgery.starts_at, surgery.ends_at)}`
-            : 'Sin horario';
+    const showProfessional = canSeeAppointmentProfessional(auth.user?.roles ?? []);
+    const scheduled = surgery.starts_at && surgery.ends_at ? { starts: surgery.starts_at, ends: surgery.ends_at } : null;
 
     return (
-        <ConfirmDialog
-            title="Detalle de la cirugía"
-            onDismiss={onDismiss}
-            className="w-[min(40rem,100%)]"
-        >
-            <div className="flex items-center justify-between gap-[var(--space-sm)]">
-                <SurgeryStatusBadge status={surgery.status} />
-            </div>
-            <div className="grid gap-[var(--space-sm)] text-sm">
+        <ConfirmDialog title="Detalle de la cirugía" onDismiss={onDismiss} kind="info">
+            <DetailBlocks>
                 <DetailBlock
                     title="Cirugía"
                     rows={[
-                        ['Estado', SURGERY_STATUS_LABEL[surgery.status]],
-                        ['Horario', schedule],
+                        ['Fecha', scheduled ? formatDateLabel(scheduled.starts.slice(0, 10)) : 'Sin horario'],
+                        ...(scheduled
+                            ? ([['Horario', <span key="time" className="font-mono">{surgeryRange(scheduled.starts, scheduled.ends)}</span>]] as DetailRow[])
+                            : []),
                         ['Obra social', surgery.health_insurance?.name ?? 'Particular'],
+                        ['Estado', <SurgeryStatusBadge key="status" status={surgery.status} />],
                     ]}
                 />
                 <DetailBlock
@@ -79,22 +77,20 @@ export default function SurgeryDetailDialog({
                         ['Correo', patient?.email ?? ''],
                     ]}
                 />
-                <DetailBlock
-                    title="Profesional"
-                    rows={[
-                        ['Nombre', professional?.user.name ?? ''],
-                        ['Especialidades', professional?.specialties.map((specialty) => specialty.name).join(', ') || '—'],
-                    ]}
-                />
-                <section className="grid gap-[0.25rem]">
-                    <h3 className="m-0 text-sm font-semibold text-ink">Nota</h3>
+                {showProfessional ? (
+                    <DetailBlock
+                        title="Profesional"
+                        rows={[
+                            ['Nombre', professional?.user?.name ?? ''],
+                            ['Especialidades', professional?.specialties?.map((specialty) => specialty.name).join(', ') || '—'],
+                        ]}
+                    />
+                ) : null}
+                <DetailBlock title="Nota">
                     <p className="m-0 whitespace-pre-wrap text-ink-2">{surgery.note}</p>
-                </section>
-            </div>
-            <div className="flex flex-wrap justify-end gap-[var(--space-sm)]">
-                <Btn type="button" variant="outline" onClick={onDismiss}>
-                    Cerrar
-                </Btn>
+                </DetailBlock>
+            </DetailBlocks>
+            <DialogActions>
                 {showMarkRequested ? (
                     <Btn type="button" onClick={() => router.post(`${basePath}/${surgery.id}/solicitar`, {}, { preserveState: false })}>
                         Marcar como solicitada
@@ -110,28 +106,17 @@ export default function SurgeryDetailDialog({
                         Programar
                     </Btn>
                 ) : null}
-            </div>
+                {showReschedule ? (
+                    <Btn type="button" onClick={() => router.visit(`${basePath}/${surgery.id}/programar?from=${section}`)}>
+                        Reprogramar
+                    </Btn>
+                ) : null}
+            </DialogActions>
         </ConfirmDialog>
     );
 }
 
-function DetailBlock({ title, rows }: { title: string; rows: Array<[string, string]> }) {
-    return (
-        <section className="grid gap-[0.25rem]">
-            <h3 className="m-0 text-sm font-semibold text-ink">{title}</h3>
-            <dl className="m-0 grid gap-[0.2rem]">
-                {rows.map(([label, value]) => (
-                    <div key={label} className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-[var(--space-sm)]">
-                        <dt className="text-ink-2">{label}</dt>
-                        <dd className="m-0 text-ink">{value}</dd>
-                    </div>
-                ))}
-            </dl>
-        </section>
-    );
-}
-
-function badgeStyle(status: SurgeryRecord['status']): { background: string; color: string } {
+function badgeStyle(status: SurgeryRecord['status']): StatusTone {
     if (status === 'pending') {
         return { background: 'oklch(88% 0.12 55)', color: 'oklch(35% 0.1 45)' };
     }

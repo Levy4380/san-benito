@@ -14,7 +14,7 @@ import Hint from '@/Components/Surfaces/Hint';
 import Panel, { PanelScroll } from '@/Components/Surfaces/Panel';
 import Results from '@/Components/Surfaces/Results';
 import SlotRow from '@/Components/Surfaces/SlotRow';
-import { clockMinutes, closedWeekdays, isClinicOpen, useClinic } from '@/lib/clinic';
+import { clockMinutes, closedWeekdays, isClinicOpen, sharedClinicBounds, useClinic } from '@/lib/clinic';
 import { formatDateLabel, isWeekendKey, minutesBetween, pad2, weekdayKeysOfMonth } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { ProfessionalRecord } from '@/types';
@@ -31,6 +31,9 @@ type Props = {
     today: string;
     tones: Record<string, Tone>;
     blockedDates: string[];
+    submitUrl?: string;
+    monthPath?: string;
+    backHref?: string;
 };
 
 const PROGRAM_LEGEND = [
@@ -93,12 +96,20 @@ function eraseRange(ranges: Range[], start: number, end: number, minLength: numb
     );
 }
 
-export default function Program({ professional, month: initialMonth, today, tones, blockedDates }: Props) {
+export default function Program({
+    professional,
+    month: initialMonth,
+    today,
+    tones,
+    blockedDates,
+    submitUrl = '/agenda/program',
+    monthPath = '/profesional/programar',
+    backHref,
+}: Props) {
     const clinic = useClinic();
-    const openMinutes = clockMinutes(clinic.opensAt);
-    const closeMinutes = clockMinutes(clinic.closesAt);
     const shutWeekdays = closedWeekdays(clinic.openDays);
-    const dayClosed = (key: string) => !isClinicOpen(key, clinic.openDays);
+    const dayClosed = (key: string) => !isClinicOpen(key, clinic);
+    const exceptionClosed = clinic.exceptions.filter((item) => item.closed).map((item) => item.date);
     const [step, setStep] = useState<'when' | 'hours'>('when');
     const [month, setMonth] = useState(initialMonth);
     const [dates, setDates] = useState<string[]>(() => (blockedDates.includes(today) || dayClosed(today) ? [] : [today]));
@@ -112,8 +123,8 @@ export default function Program({ professional, month: initialMonth, today, tone
     const requestedMonth = useRef(initialMonth);
 
     useEffect(() => {
-        setDates((current) => current.filter((key) => key >= today && !blocked.has(key) && isClinicOpen(key, clinic.openDays)));
-    }, [blocked, today, clinic.openDays]);
+        setDates((current) => current.filter((key) => key >= today && !blocked.has(key) && isClinicOpen(key, clinic)));
+    }, [blocked, today, clinic]);
 
     useEffect(() => {
         if (initialMonth === requestedMonth.current) {
@@ -159,7 +170,10 @@ export default function Program({ professional, month: initialMonth, today, tone
         }
     };
 
-    const withinClinic = toMinutes(start) >= openMinutes && toMinutes(end) <= closeMinutes;
+    const bounds = useMemo(() => sharedClinicBounds(selectedDays, clinic), [selectedDays, clinic]);
+    const openMinutes = bounds ? clockMinutes(bounds.opensAt) : clockMinutes(clinic.opensAt);
+    const closeMinutes = bounds ? clockMinutes(bounds.closesAt) : clockMinutes(clinic.closesAt);
+    const withinClinic = bounds !== null && toMinutes(start) >= openMinutes && toMinutes(end) <= closeMinutes;
     const draftOk = Boolean(start && end && withinClinic && minutesBetween(start, end) >= duration);
 
     const addRange = () => {
@@ -184,10 +198,12 @@ export default function Program({ professional, month: initialMonth, today, tone
         if (selectedDays.length === 0) {
             return;
         }
-        const defaultStart = Math.max(9 * 60, openMinutes);
-        const defaultEnd = Math.min(12 * 60, closeMinutes);
-        setStart(toTime(defaultEnd > defaultStart ? defaultStart : openMinutes));
-        setEnd(toTime(defaultEnd > defaultStart ? defaultEnd : closeMinutes));
+        const open = bounds ? clockMinutes(bounds.opensAt) : openMinutes;
+        const close = bounds ? clockMinutes(bounds.closesAt) : closeMinutes;
+        const defaultStart = Math.max(9 * 60, open);
+        const defaultEnd = Math.min(12 * 60, close);
+        setStart(toTime(defaultEnd > defaultStart ? defaultStart : open));
+        setEnd(toTime(defaultEnd > defaultStart ? defaultEnd : close));
         setRanges([]);
         setStep('hours');
     };
@@ -206,7 +222,7 @@ export default function Program({ professional, month: initialMonth, today, tone
             return;
         }
         form.transform(() => ({ dates: selectedDays, ranges, block_weekends: blockWeekends }));
-        form.post('/agenda/program');
+        form.post(submitUrl);
     };
 
     const countLabel = selectedDays.length === 1 ? `1 día · ${formatDateLabel(selectedDays[0])}` : `${selectedDays.length} días seleccionados.`;
@@ -223,7 +239,7 @@ export default function Program({ professional, month: initialMonth, today, tone
         requestedMonth.current = next;
         setMonth(next);
         router.get(
-            '/profesional/programar',
+            monthPath,
             { month: next },
             { preserveState: true, preserveScroll: true, replace: true, only: ['tones', 'blockedDates', 'month'] },
         );
@@ -240,7 +256,7 @@ export default function Program({ professional, month: initialMonth, today, tone
             tones={tones}
             paint
             blockWeekends={blockWeekends}
-            disabledDates={blockedDates}
+            disabledDates={[...blockedDates, ...exceptionClosed]}
             closedWeekdays={shutWeekdays}
             minDate={today}
             onPaint={paintDay}
@@ -251,12 +267,13 @@ export default function Program({ professional, month: initialMonth, today, tone
 
     return (
         <>
-            <Head title="Programar turnos" />
+            <Head title="Programar horarios" />
             <PageScreen
                 header={
                     <PageHeader
-                        title="Programar turnos"
+                        title="Programar horarios"
                         backLabel="Atrás"
+                        backHref={step === 'hours' ? undefined : backHref}
                         onBack={step === 'hours' ? () => setStep('when') : undefined}
                         steps={
                             <StepPills
@@ -332,8 +349,9 @@ export default function Program({ professional, month: initialMonth, today, tone
                         <Results className="relative gap-[var(--space-md)] pb-[calc(var(--control-h)+1.75rem)]">
                             <Hint className="m-0 shrink-0">{hoursMeta}</Hint>
                             <Hint id="program-paint-hint" className="m-0 shrink-0">
-                                Arrastrá sobre la línea de tiempo para pintar una franja; arrastrá sobre una franja para borrarla. El sanatorio atiende de{' '}
-                                {clinic.opensAt} a {clinic.closesAt}.
+                                {bounds
+                                    ? `Arrastrá sobre la línea de tiempo para pintar una franja; arrastrá sobre una franja para borrarla. El sanatorio atiende de ${bounds.opensAt} a ${bounds.closesAt}.`
+                                    : 'Esos días no comparten un horario de apertura.'}
                             </Hint>
                             <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-md)] md:flex-row">
                                 <DayTimeline
@@ -347,7 +365,9 @@ export default function Program({ professional, month: initialMonth, today, tone
                                         ends_at: `${timelineDate} ${range.end}:00`,
                                     }))}
                                     blocks={[]}
-                                    onPaint={paintOnTimeline}
+                                    opensAt={bounds?.opensAt}
+                                    closesAt={bounds?.closesAt}
+                                    onPaint={bounds ? paintOnTimeline : undefined}
                                 />
                                 <div className="flex min-h-0 flex-1 flex-col gap-[var(--space-md)] overflow-auto">
                                     <div className="grid w-full gap-[var(--space-md)] sm:grid-cols-2">

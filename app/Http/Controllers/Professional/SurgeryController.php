@@ -12,6 +12,7 @@ use App\Services\AdminSurgeryService;
 use App\Services\ClinicScheduleService;
 use App\Services\ProfessionalService;
 use App\Services\SurgeryService;
+use App\Support\SearchCriteria;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,8 +28,9 @@ class SurgeryController extends Controller
     {
         $this->authorize('viewAny', Surgery::class);
 
-        if ($request->string('section')->toString() === 'history') {
-            return redirect()->route('professional.historial.mis-cirugias', $request->except('section'));
+        // Compat: ex `?section=history` workflow tab → Buscador.
+        if (in_array($request->string('section')->toString(), ['history', 'search'], true)) {
+            return redirect()->route('professional.search.my-surgeries', $request->except('section'));
         }
 
         $professional = $professionals->forUser($request->user());
@@ -40,7 +42,7 @@ class SurgeryController extends Controller
         );
     }
 
-    public function history(Request $request, AdminSurgeryService $surgeries, ProfessionalService $professionals): Response
+    public function search(Request $request, AdminSurgeryService $surgeries, ProfessionalService $professionals): Response
     {
         $this->authorize('viewAny', Surgery::class);
 
@@ -48,7 +50,7 @@ class SurgeryController extends Controller
 
         return Inertia::render(
             'Professional/Surgeries',
-            $this->listProps($request, $surgeries, $professional, 'history'),
+            $this->listProps($request, $surgeries, $professional, 'search'),
         );
     }
 
@@ -128,9 +130,9 @@ class SurgeryController extends Controller
     ): Response {
         $this->authorize('schedule', $surgery);
 
-        if ($surgery->status !== SurgeryStatus::ToSchedule) {
+        if (! $surgery->isSchedulable()) {
             throw ValidationException::withMessages([
-                'status' => 'Solo se puede programar una cirugía a programar.',
+                'status' => 'Solo se puede programar una cirugía a programar o reprogramar una programada que no empezó.',
             ]);
         }
 
@@ -150,6 +152,8 @@ class SurgeryController extends Controller
     ): RedirectResponse {
         $this->authorize('schedule', $surgery);
 
+        $rescheduling = $surgery->status === SurgeryStatus::Scheduled;
+
         $saved = $surgeries->schedule(
             $surgery,
             (string) $request->validated('starts_at'),
@@ -160,7 +164,7 @@ class SurgeryController extends Controller
             ->route('professional.surgeries.index', ['section' => 'approved', 'surgery' => $saved->id])
             ->with('toast', [
                 'message' => sprintf(
-                    'Cirugía programada: %s %s–%s.',
+                    $rescheduling ? 'Cirugía reprogramada: %s %s–%s.' : 'Cirugía programada: %s %s–%s.',
                     $saved->starts_at?->toDateString(),
                     $saved->starts_at?->format('H:i'),
                     $saved->ends_at?->format('H:i'),
@@ -184,14 +188,20 @@ class SurgeryController extends Controller
             'professional_id' => null,
             'health_insurance_id' => $this->insuranceFilter($request),
             'status' => $section === 'approved' ? $this->statusFilter($request) : null,
+            'date' => $request->filled('date') ? $request->string('date')->toString() : null,
         ];
 
         $options = $surgeries->filterOptions();
+        $by = $section === 'search' ? SearchCriteria::surgeryBy($request, false) : null;
+        $searched = $section !== 'search' || $by !== null;
 
         return [
             'section' => $section,
-            'surgeries' => $surgeries->paginate($section, $filters, $professional->id),
+            'surgeries' => $searched
+                ? $surgeries->paginate($section, $filters, $professional->id)
+                : SearchCriteria::emptyPaginator($request),
             'filters' => $filters,
+            'by' => $section === 'search' ? $by : null,
             'openSurgery' => $surgeries->findInSection($section, $request->integer('surgery'), $professional->id),
             'professionals' => [],
             'specialties' => $options['specialties'],
@@ -210,7 +220,11 @@ class SurgeryController extends Controller
         Professional $professional,
     ): array {
         $today = now()->toDateString();
-        $defaultDate = $scheduling === null ? $today : now()->addDay()->toDateString();
+        $defaultDate = match (true) {
+            $scheduling === null => $today,
+            $scheduling->status === SurgeryStatus::Scheduled && $scheduling->starts_at !== null => $scheduling->starts_at->toDateString(),
+            default => now()->addDay()->toDateString(),
+        };
         $date = $this->wallDate($request->string('date')->toString(), $defaultDate);
 
         if ($scheduling !== null && $date < $today) {
@@ -230,11 +244,15 @@ class SurgeryController extends Controller
             $tones[$key] = $total >= 3 ? 'full' : ($total > 0 ? 'has' : 'empty');
         }
 
-        $daySurgeries = $surgeries->scheduledOnDate($date, $professional->id);
+        $daySurgeries = $surgeries->scheduledOnDate($date, $professional->id)
+            ->reject(fn (Surgery $other) => $other->id === $scheduling?->id)
+            ->values();
         // Gaps + client clash use institutional busy; painted day list stays own-only.
         $busyForSchedule = $scheduling === null
             ? $daySurgeries
-            : $surgeries->scheduledOnDate($date, null);
+            : $surgeries->scheduledOnDate($date, null)
+                ->reject(fn (Surgery $other) => $other->id === $scheduling?->id)
+                ->values();
 
         $from = $this->section($request->string('from')->toString() ?: ($scheduling === null ? 'pending' : 'approved'));
 
@@ -285,7 +303,12 @@ class SurgeryController extends Controller
      */
     private function freeGaps(string $date, $busy, ClinicScheduleService $clinic): array
     {
-        $hours = $clinic->share();
+        $hours = $clinic->hoursOn($date);
+
+        if ($hours === null) {
+            return [];
+        }
+
         $dayStart = $this->clockMinutes($hours['opensAt']);
         $dayEnd = $this->clockMinutes($hours['closesAt']);
         $today = now()->toDateString();
@@ -352,7 +375,7 @@ class SurgeryController extends Controller
 
     private function section(string $section): string
     {
-        return in_array($section, ['pending', 'requested', 'approved', 'history'], true) ? $section : 'pending';
+        return in_array($section, ['pending', 'requested', 'approved', 'search'], true) ? $section : 'pending';
     }
 
     private function insuranceFilter(Request $request): int|string|null

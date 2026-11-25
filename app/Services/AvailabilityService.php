@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
 
 class AvailabilityService
 {
+    public function __construct(private readonly ClinicScheduleService $clinic) {}
+
     /**
      * @return Collection<int, array{starts_at: string, ends_at: string}>
      */
@@ -42,7 +44,7 @@ class AvailabilityService
                     break;
                 }
 
-                if ($cursor->gt($now)) {
+                if ($cursor->gt($now) && $this->clinic->contains($cursor, $slotEnd)) {
                     $overlaps = $appointments->contains(function (Appointment $appointment) use ($cursor, $slotEnd) {
                         return $appointment->starts_at->lt($slotEnd) && $appointment->ends_at->gt($cursor);
                     });
@@ -74,12 +76,13 @@ class AvailabilityService
             ->values();
     }
 
-    public function isBookableSlot(Professional $professional, Carbon $startsAt): bool
+    /** `$ignore`: the reservation being moved (reprogramar) does not block its own new slot. */
+    public function isBookableSlot(Professional $professional, Carbon $startsAt, ?Appointment $ignore = null): bool
     {
         $duration = (int) $professional->slot_duration_minutes;
         $endsAt = $startsAt->copy()->addMinutes($duration);
 
-        if (! $startsAt->gt(now())) {
+        if (! $startsAt->gt(now()) || ! $this->clinic->contains($startsAt, $endsAt)) {
             return false;
         }
 
@@ -103,6 +106,7 @@ class AvailabilityService
         $overlaps = Appointment::query()
             ->forProfessional($professional)
             ->overlapping($startsAt, $endsAt)
+            ->when($ignore !== null, fn ($query) => $query->whereKeyNot($ignore->id))
             ->exists();
 
         return ! $overlaps;

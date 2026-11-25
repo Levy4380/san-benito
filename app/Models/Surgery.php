@@ -42,6 +42,13 @@ class Surgery extends Model
         ];
     }
 
+    /** Programar (`to_schedule`) or reprogramar (`scheduled` that has not started, d51). */
+    public function isSchedulable(): bool
+    {
+        return $this->status === SurgeryStatus::ToSchedule
+            || ($this->status === SurgeryStatus::Scheduled && $this->starts_at !== null && $this->starts_at->gt(now()));
+    }
+
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class);
@@ -81,10 +88,8 @@ class Surgery extends Model
                 ->orderByRaw("case when status = 'to_schedule' then 0 else 1 end")
                 ->orderByRaw("case when status = 'scheduled' then starts_at end")
                 ->orderBy('id'),
-            'history' => $query
-                ->where('status', SurgeryStatus::Scheduled)
-                ->where('ends_at', '<=', now())
-                ->orderByDesc('starts_at'),
+            // Buscador: every status, past and future. Newest first (unscheduled rows by creation).
+            'search' => $query->orderByRaw('coalesce(starts_at, created_at) desc')->orderByDesc('id'),
             default => $query->where('status', SurgeryStatus::Pending)->orderByDesc('id'),
         };
     }

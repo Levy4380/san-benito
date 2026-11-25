@@ -14,12 +14,16 @@ class AdminAppointmentService
     /**
      * @param  array{professional_id?: int|null, patient_id?: int|null, specialty_id?: int|null, date?: string|null}  $filters
      */
-    public function paginate(array $filters): LengthAwarePaginator
+    public function paginate(array $filters, ?int $scopedProfessionalId = null): LengthAwarePaginator
     {
-        $query = Appointment::past()
+        // Buscador (staff + professional): past and future, newest first.
+        $query = Appointment::query()
+            ->orderByDesc('starts_at')
             ->with(['professional.user', 'professional.specialties', 'patient.user', 'specialty']);
 
-        if (! empty($filters['professional_id'])) {
+        if ($scopedProfessionalId !== null) {
+            $query->forProfessional($scopedProfessionalId);
+        } elseif (! empty($filters['professional_id'])) {
             $query->forProfessional((int) $filters['professional_id']);
         }
 
@@ -41,8 +45,22 @@ class AdminAppointmentService
     /**
      * @return array{professionals: Collection<int, Professional>, patients: Collection<int, Patient>, specialties: Collection<int, Specialty>}
      */
-    public function filterOptions(): array
+    public function filterOptions(?Professional $scopedProfessional = null): array
     {
+        if ($scopedProfessional !== null) {
+            return [
+                'professionals' => new Collection,
+                'patients' => Patient::query()
+                    ->whereHas('appointments', function ($appointments) use ($scopedProfessional): void {
+                        $appointments->where('professional_id', $scopedProfessional->id);
+                    })
+                    ->with('user')
+                    ->orderBy('name')
+                    ->get(),
+                'specialties' => $scopedProfessional->specialties()->orderBy('name')->get(),
+            ];
+        }
+
         return [
             'professionals' => Professional::query()->with('user')->orderBy('id')->get(),
             'patients' => Patient::query()->with('user')->orderBy('id')->get(),

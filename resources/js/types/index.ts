@@ -15,13 +15,24 @@ export type SurgeryNavCounts = {
     pending: number;
     requested: number;
     approved: number;
-    history: number;
+};
+
+export type ClinicException = {
+    id: number;
+    /** Y-m-d */
+    date: string;
+    closed: boolean;
+    opensAt: string | null;
+    closesAt: string | null;
+    label: string | null;
 };
 
 export type ClinicSchedule = {
+    /** ISO-8601: 1 = lunes … 7 = domingo */
     openDays: number[];
     opensAt: string;
     closesAt: string;
+    exceptions: ClinicException[];
 };
 
 export type SharedData = {
@@ -69,6 +80,11 @@ export type Slot = {
     ends_at: string;
 };
 
+export type AppointmentAttendance = 'attended' | 'absent';
+
+/** `scheduled` / `past` derive from `starts_at` (+24h grace); `attended` / `absent` are the explicit mark. */
+export type AppointmentStatusName = 'scheduled' | 'past' | AppointmentAttendance;
+
 export type AppointmentRecord = {
     id: number;
     professional_id: number;
@@ -76,6 +92,8 @@ export type AppointmentRecord = {
     specialty_id: number;
     starts_at: string;
     ends_at: string;
+    attendance: AppointmentAttendance | null;
+    status: AppointmentStatusName;
     professional?: ProfessionalRecord;
     patient?: PatientRecord;
     specialty?: Specialty;
@@ -83,7 +101,7 @@ export type AppointmentRecord = {
 
 export type SurgeryStatusName = 'pending' | 'requested' | 'to_schedule' | 'scheduled';
 
-export type SurgerySection = 'pending' | 'requested' | 'approved' | 'history';
+export type SurgerySection = 'pending' | 'requested' | 'approved' | 'search';
 
 export type SurgeryRecord = {
     id: number;

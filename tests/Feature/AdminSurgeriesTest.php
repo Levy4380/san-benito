@@ -68,13 +68,14 @@ class AdminSurgeriesTest extends TestCase
         $this->actingAs($admin)->get('/admin')->assertRedirect('/admin/cirugias/calendario');
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos')
+            ->get('/admin/buscar/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('surgeryNavCounts.pending', 0)
                 ->where('surgeryNavCounts.requested', 0)
                 ->where('surgeryNavCounts.approved', 0)
-                ->where('surgeryNavCounts.history', 0));
+                ->missing('surgeryNavCounts.history')
+                ->missing('surgeryNavCounts.search'));
 
         $this->actingAs($super)
             ->get('/admin/cirugias')
@@ -101,7 +102,8 @@ class AdminSurgeriesTest extends TestCase
                 ->where('surgeryNavCounts.pending', 0)
                 ->where('surgeryNavCounts.requested', 0)
                 ->where('surgeryNavCounts.approved', 0)
-                ->where('surgeryNavCounts.history', 0));
+                ->missing('surgeryNavCounts.history')
+                ->missing('surgeryNavCounts.search'));
     }
 
     public function test_particular_goes_to_schedule_and_insurance_stays_pending(): void
@@ -349,20 +351,33 @@ class AdminSurgeriesTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=history')
-            ->assertRedirect(route('admin.historial.cirugias'));
+            ->assertRedirect(route('admin.search.surgeries'));
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=history&q=44556677')
-            ->assertRedirect(route('admin.historial.cirugias', ['q' => '44556677']));
+            ->assertRedirect(route('admin.search.surgeries', ['q' => '44556677']));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/cirugias')
+            ->get('/admin/buscar/cirugias')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Surgeries')
-                ->where('section', 'history')
-                ->has('surgeries.data', 1)
-                ->where('surgeries.data.0.note', 'Pasada.'));
+                ->where('section', 'search')
+                ->where('by', null)
+                ->has('surgeries.data', 0));
+
+        $this->actingAs($admin)
+            ->get('/admin/buscar/cirugias?by=patient&q=44556677')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('section', 'search')
+                ->where('by', 'patient')
+                // Every status, newest first: starts_at, or created_at (now = 2026-10-14) when unscheduled.
+                ->has('surgeries.data', 4)
+                ->where('surgeries.data.0.note', 'Futura.')
+                ->where('surgeries.data.1.id', $toSchedule->id)
+                ->where('surgeries.data.2.id', $pending->id)
+                ->where('surgeries.data.3.note', 'Pasada.'));
 
         $this->actingAs($admin)
             ->get('/admin/cirugias?section=pending&q=44556677')

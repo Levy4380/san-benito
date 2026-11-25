@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
 class AdminSurgeryService
 {
     /**
-     * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null}  $filters
+     * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null, date?: string|null}  $filters
      */
     public function paginate(string $section, array $filters, ?int $professionalId = null): LengthAwarePaginator
     {
@@ -51,7 +51,7 @@ class AdminSurgeryService
     }
 
     /**
-     * @return array{pending: int, requested: int, approved: int, history: int}
+     * @return array{pending: int, requested: int, approved: int}
      */
     public function counts(?int $professionalId = null): array
     {
@@ -59,7 +59,6 @@ class AdminSurgeryService
             'pending' => $this->sectionQuery('pending', $professionalId)->count(),
             'requested' => $this->sectionQuery('requested', $professionalId)->count(),
             'approved' => $this->sectionQuery('approved', $professionalId)->count(),
-            'history' => $this->sectionQuery('history', $professionalId)->count(),
         ];
     }
 
@@ -146,7 +145,7 @@ class AdminSurgeryService
     }
 
     /**
-     * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null}  $filters
+     * @param  array{q?: string, specialty_id?: int|null, professional_id?: int|null, health_insurance_id?: int|string|null, status?: string|null, date?: string|null}  $filters
      * @return Builder<Surgery>
      */
     private function filtered(string $section, array $filters, ?int $professionalId = null): Builder
@@ -183,6 +182,10 @@ class AdminSurgeryService
             $query->whereNull('health_insurance_id');
         } elseif (! empty($insurance)) {
             $query->where('health_insurance_id', (int) $insurance);
+        }
+
+        if (! empty($filters['date'])) {
+            $query->whereDate('starts_at', $filters['date']);
         }
 
         if ($section === 'approved') {
@@ -268,6 +271,6 @@ class AdminSurgeryService
 
     private function section(string $section): string
     {
-        return in_array($section, ['pending', 'requested', 'approved', 'history'], true) ? $section : 'pending';
+        return in_array($section, ['pending', 'requested', 'approved', 'search'], true) ? $section : 'pending';
     }
 }

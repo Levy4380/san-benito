@@ -5,6 +5,7 @@ import StageCard from '@/Components/Common/StageCard';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
 import TextInput from '@/Components/Form/TextInput';
+import PatientInfoModal from '@/Components/Patients/PatientInfoModal';
 import Catalog, { type CatalogAction } from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import type { HealthInsurance, PatientRecord, Specialty } from '@/types';
@@ -25,6 +26,7 @@ function patientLines(patient: PatientRecord): string[] {
 
 export default function MyPatients({ patients, candidates, healthInsurances, specialties, filters }: Props) {
     const [assigning, setAssigning] = useState<PatientRecord | null>(null);
+    const [infoId, setInfoId] = useState<number | null>(null);
     const hasFilters =
         filters.q.trim() !== '' ||
         (filters.health_insurance_id !== '' && filters.health_insurance_id !== 'all') ||
@@ -48,7 +50,7 @@ export default function MyPatients({ patients, candidates, healthInsurances, spe
             title: patient.name,
             lines: patientLines(patient),
             actions: [
-                { kind: 'info' as const, href: `/profesional/mis-pacientes/${patient.id}`, name: patient.name },
+                { kind: 'info' as const, name: patient.name, onClick: () => setInfoId(patient.id) },
                 { kind: 'assign' as const, onClick: () => setAssigning(patient) },
             ] satisfies CatalogAction[],
         })),
@@ -107,6 +109,7 @@ export default function MyPatients({ patients, candidates, healthInsurances, spe
                     />
                 </StageCard>
             </PageScreen>
+            {infoId !== null ? <PatientInfoModal patientId={infoId} onDismiss={() => setInfoId(null)} /> : null}
             {assigning ? <AssignModal patient={assigning} onDismiss={() => setAssigning(null)} /> : null}
         </>
     );

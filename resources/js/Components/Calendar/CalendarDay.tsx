@@ -38,6 +38,8 @@ const dayVariants = cva(
 type Props = {
     day: CalDay;
     tone?: 'empty' | 'has' | 'full';
+    /** Sanatorium exception. Closed is faded green; a different schedule is solid green. */
+    mark?: 'closed' | 'shifted' | null;
     selected?: boolean;
     muted?: boolean;
     past?: boolean;
@@ -49,6 +51,7 @@ type Props = {
 export default function CalendarDay({
     day,
     tone = 'empty',
+    mark = null,
     selected = false,
     muted = false,
     past = false,
@@ -56,13 +59,19 @@ export default function CalendarDay({
     paint = false,
     onClick,
 }: Props) {
+    const faded = muted && mark !== 'shifted';
+
     return (
         <button
             type="button"
             data-day={day.inMonth ? day.key : undefined}
             disabled={disabled || muted}
+            title={mark === 'closed' ? 'Día cerrado' : mark === 'shifted' ? 'Horario distinto' : undefined}
             className={cn(
-                dayVariants({ tone, muted, past: past && !muted, paint: paint && !disabled && !muted }),
+                dayVariants({ tone, muted: faded, past: past && !faded && mark !== 'closed', paint: paint && !disabled && !muted }),
+                mark === 'closed' && 'bg-day-closed text-day-closed-ink',
+                mark === 'closed' && !faded && !selected && 'opacity-45',
+                mark === 'shifted' && 'bg-day-shifted text-day-shifted-ink',
                 selected && 'bg-accent text-accent-ink shadow-[inset_0_0_0_2px_var(--color-day-ring)]',
             )}
             onClick={onClick}

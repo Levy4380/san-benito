@@ -36,7 +36,7 @@ class AdminAssignAppointmentTest extends TestCase
                 'patient_id' => $patient->id,
                 'specialty_id' => $specialtyId,
             ])
-            ->assertRedirect('/admin/profesionales/'.$professional->id.'/horarios?date=2026-10-07&specialty_id='.$specialtyId)
+            ->assertRedirect('/admin/profesionales?agenda='.$professional->id)
             ->assertSessionHas('toast');
 
         $this->assertDatabaseHas('appointments', [
@@ -112,21 +112,78 @@ class AdminAssignAppointmentTest extends TestCase
         $this->assertDatabaseCount('appointments', 0);
     }
 
-    public function test_slots_page_lists_patients_only_for_staff(): void
+    public function test_agenda_json_lists_patients_only_for_staff(): void
     {
         [$professional] = $this->professionalWithWindow();
         $patient = $this->makePatient();
 
         $this->actingAs($this->makeAdmin())
-            ->get('/admin/profesionales/'.$professional->id.'/horarios')
-            ->assertInertia(fn ($page) => $page
-                ->has('patients', 1)
-                ->where('patients.0.id', $patient->id)
-                ->where('patients.0.dni', $patient->dni));
+            ->getJson('/professionals/'.$professional->id.'/agenda')
+            ->assertOk()
+            ->assertJsonPath('patients.0.id', $patient->id)
+            ->assertJsonPath('patients.0.dni', $patient->dni);
 
         $this->actingAs($patient->user)
             ->get('/paciente/profesionales/'.$professional->id.'/horarios')
             ->assertInertia(fn ($page) => $page->missing('patients'));
+    }
+
+    public function test_admin_overbook_creates_short_window_and_appointment_outside_existing_windows(): void
+    {
+        $admin = $this->makeAdmin();
+        [$professional, $specialtyId] = $this->professionalWithWindow();
+        $patient = $this->makePatient();
+
+        $this->actingAs($admin)
+            ->post('/professionals/'.$professional->id.'/appointments', [
+                'starts_at' => '2026-10-07 14:00:00',
+                'patient_id' => $patient->id,
+                'specialty_id' => $specialtyId,
+            ])
+            ->assertRedirect('/admin/profesionales?agenda='.$professional->id)
+            ->assertSessionHas('toast.message', 'Cargaste el sobreturno de '.$patient->name.' a las 14:00.');
+
+        $this->assertDatabaseHas('availability_windows', [
+            'professional_id' => $professional->id,
+            'starts_at' => '2026-10-07 14:00:00',
+            'ends_at' => '2026-10-07 14:20:00',
+        ]);
+        $this->assertDatabaseHas('appointments', [
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+            'starts_at' => '2026-10-07 14:00:00',
+            'ends_at' => '2026-10-07 14:20:00',
+        ]);
+        $this->assertDatabaseHas('professional_patient', [
+            'professional_id' => $professional->id,
+            'patient_id' => $patient->id,
+        ]);
+    }
+
+    public function test_admin_cannot_overbook_on_top_of_an_existing_appointment(): void
+    {
+        $admin = $this->makeAdmin();
+        [$professional, $specialtyId] = $this->professionalWithWindow();
+        $patient = $this->makePatient();
+        Appointment::factory()->create([
+            'professional_id' => $professional->id,
+            'starts_at' => '2026-10-07 14:00:00',
+            'ends_at' => '2026-10-07 14:20:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/professionals/'.$professional->id.'/appointments', [
+                'starts_at' => '2026-10-07 14:00:00',
+                'patient_id' => $patient->id,
+                'specialty_id' => $specialtyId,
+            ])
+            ->assertSessionHasErrors('starts_at');
+
+        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseMissing('availability_windows', [
+            'professional_id' => $professional->id,
+            'starts_at' => '2026-10-07 14:00:00',
+        ]);
     }
 
     /**

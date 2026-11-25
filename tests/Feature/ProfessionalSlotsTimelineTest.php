@@ -69,30 +69,27 @@ class ProfessionalSlotsTimelineTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/profesionales/'.$professional->id.'/horarios')
+            ->getJson('/professionals/'.$professional->id.'/agenda')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Slots')
-                ->where('selectedDate', '2026-10-07')
-                ->has('professional.slot_duration_minutes')
-                ->has('timeline.windows', 2)
-                ->where('timeline.windows.0.id', $overnight->id)
-                ->where('timeline.windows.1.id', $morning->id)
-                ->has('timeline.appointments', 1)
-                ->where('timeline.appointments.0.id', $booked->id)
-                ->where('timeline.appointments.0.patient.id', $patient->id)
-                ->has('timeline.appointments.0.specialty')
-                ->where('timeline.now', '2026-10-07 10:30:00')
-                ->where('bookingTones.2026-10-07', 'has')
-                ->where('bookingTones.2026-10-08', 'has')
-                ->where('bookingTones.2026-10-09', 'empty')
-                ->has('bookingTones', 31)
-                ->has('slots', 4)
-                ->where('slots.0.starts_at', '2026-10-07 10:40:00')
-                ->where('slots.1.starts_at', '2026-10-07 11:00:00')
-                ->where('slots.2.starts_at', '2026-10-07 11:20:00')
-                ->where('slots.3.starts_at', '2026-10-07 11:40:00')
-                ->has('patients'));
+            ->assertJsonPath('selectedDate', '2026-10-07')
+            ->assertJsonPath('professional.slot_duration_minutes', $professional->slot_duration_minutes)
+            ->assertJsonCount(2, 'timeline.windows')
+            ->assertJsonPath('timeline.windows.0.id', $overnight->id)
+            ->assertJsonPath('timeline.windows.1.id', $morning->id)
+            ->assertJsonCount(1, 'timeline.appointments')
+            ->assertJsonPath('timeline.appointments.0.id', $booked->id)
+            ->assertJsonPath('timeline.appointments.0.patient.id', $patient->id)
+            ->assertJsonPath('timeline.now', '2026-10-07 10:30:00')
+            ->assertJsonPath('bookingTones.2026-10-07', 'has')
+            ->assertJsonPath('bookingTones.2026-10-08', 'has')
+            ->assertJsonPath('bookingTones.2026-10-09', 'empty')
+            ->assertJsonCount(31, 'bookingTones')
+            ->assertJsonCount(4, 'slots')
+            ->assertJsonPath('slots.0.starts_at', '2026-10-07 10:40:00')
+            ->assertJsonPath('slots.1.starts_at', '2026-10-07 11:00:00')
+            ->assertJsonPath('slots.2.starts_at', '2026-10-07 11:20:00')
+            ->assertJsonPath('slots.3.starts_at', '2026-10-07 11:40:00')
+            ->assertJsonStructure(['patients']);
     }
 
     public function test_admin_with_date_gets_that_day(): void
@@ -106,14 +103,13 @@ class ProfessionalSlotsTimelineTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/profesionales/'.$professional->id.'/horarios?date=2026-09-15')
+            ->getJson('/professionals/'.$professional->id.'/agenda?date=2026-09-15')
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('selectedDate', '2026-09-15')
-                ->has('timeline.windows', 1)
-                ->has('timeline.appointments', 0)
-                ->has('bookingTones', 30)
-                ->has('slots', 0));
+            ->assertJsonPath('selectedDate', '2026-09-15')
+            ->assertJsonCount(1, 'timeline.windows')
+            ->assertJsonCount(0, 'timeline.appointments')
+            ->assertJsonCount(30, 'bookingTones')
+            ->assertJsonCount(0, 'slots');
     }
 
     public function test_professional_agenda_gets_day_timeline_props(): void

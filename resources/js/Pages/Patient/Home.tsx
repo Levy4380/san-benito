@@ -1,5 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { CalendarClock, NotebookPen, Search } from 'lucide-react';
+import { useState } from 'react';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import PageScreen from '@/Components/Common/PageScreen';
 import { Btn } from '@/Components/Form/Btn';
 import HomeHero, { HomeStartPrimary, HomeUpcoming, HomeUpcomingItem, HomeUpcomingList } from '@/Components/Home/HomeHero';
@@ -14,6 +16,8 @@ type Props = {
 
 export default function PatientHome({ upcoming }: Props) {
     const { auth } = usePage<SharedData>().props;
+    const [openId, setOpenId] = useState<number | null>(null);
+    const open = upcoming.find((appointment) => appointment.id === openId) ?? null;
 
     return (
         <>
@@ -49,7 +53,11 @@ export default function PatientHome({ upcoming }: Props) {
                         ) : (
                             <HomeUpcomingList>
                                 {upcoming.map((appointment) => (
-                                    <HomeUpcomingItem key={appointment.id}>
+                                    <HomeUpcomingItem
+                                        key={appointment.id}
+                                        onClick={() => setOpenId(appointment.id)}
+                                        aria-label="Ver detalle del turno"
+                                    >
                                         <BookingCardFields appointment={appointment} />
                                     </HomeUpcomingItem>
                                 ))}
@@ -58,6 +66,7 @@ export default function PatientHome({ upcoming }: Props) {
                     </HomeUpcoming>
                 </HomeHero>
             </PageScreen>
+            {open ? <AppointmentDetailDialog appointment={open} onDismiss={() => setOpenId(null)} /> : null}
         </>
     );
 }

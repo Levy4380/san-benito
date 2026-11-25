@@ -1,11 +1,9 @@
 import AgendaDialog from '@/Components/Admin/AgendaDialog';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
-import TimelineAppointmentDialog from '@/Components/Calendar/TimelineAppointmentDialog';
+import AppointmentDetailDialog from '@/Components/Appointments/AppointmentDetailDialog';
 import { formatDateLabel } from '@/lib/datetime';
 import { getJson } from '@/lib/json';
-import { hasPermission, Permission } from '@/lib/permissions';
-import type { AppointmentRecord, SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
+import type { AppointmentRecord } from '@/types';
 import { useEffect, useState } from 'react';
 
 type AgendaPayload = {
@@ -24,13 +22,13 @@ type Props = {
 };
 
 export default function PatientAgendaModal({ patientId, name, onDismiss }: Props) {
-    const { auth } = usePage<SharedData>().props;
     const [date, setDate] = useState<string | null>(null);
     const [month, setMonth] = useState('');
     const [data, setData] = useState<AgendaPayload | null>(null);
     const [failed, setFailed] = useState(false);
     const [openAppointmentId, setOpenAppointmentId] = useState<number | null>(null);
-    const canCancel = hasPermission(auth.user?.permissions, Permission.AppointmentsCancel);
+    const [version, setVersion] = useState(0);
+    const reload = () => setVersion((current) => current + 1);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -49,7 +47,7 @@ export default function PatientAgendaModal({ patientId, name, onDismiss }: Props
             });
 
         return () => controller.abort();
-    }, [patientId, date]);
+    }, [patientId, date, version]);
 
     const selectedDate = data?.selectedDate ?? null;
     const openAppointment = data?.timeline.appointments.find((appointment) => appointment.id === openAppointmentId) ?? null;
@@ -96,11 +94,10 @@ export default function PatientAgendaModal({ patientId, name, onDismiss }: Props
                 }
             />
             {openAppointment ? (
-                <TimelineAppointmentDialog
+                <AppointmentDetailDialog
                     appointment={openAppointment}
-                    canCancel={canCancel}
-                    cancelHref={`/appointments/${openAppointment.id}`}
                     onDismiss={() => setOpenAppointmentId(null)}
+                    onChanged={reload}
                 />
             ) : null}
         </>

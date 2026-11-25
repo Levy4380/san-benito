@@ -123,6 +123,34 @@ class AgendaService
     }
 
     /**
+     * Reprogramar modal (d51): the professional's month tones, one day's timeline and its free slots.
+     * Default day = the appointment's own day. `overbook` tells the client to also offer sobreturnos (staff).
+     *
+     * @return array<string, mixed>
+     */
+    public function rescheduleOptions(Appointment $appointment, ?string $date, ?string $month, bool $overbook): array
+    {
+        $professional = $appointment->professional()->firstOrFail();
+        $day = Carbon::parse($date ?? $appointment->starts_at->toDateString());
+        $dayStart = $day->copy()->startOfDay();
+        $dayEnd = $day->copy()->endOfDay();
+
+        $slots = $dayEnd->lt(now())
+            ? collect()
+            : $this->availability->calculateSlots($professional, $dayStart->lt(now()) ? now() : $dayStart, $dayEnd)->values();
+
+        return [
+            'date' => $day->toDateString(),
+            'today' => now()->toDateString(),
+            'slots' => $slots,
+            'slotMinutes' => $professional->slot_duration_minutes,
+            'timeline' => $this->dayTimeline($professional, $day),
+            'tones' => $this->tonesForMonth($professional, Carbon::parse($month ?? $day->toDateString())),
+            'overbook' => $overbook,
+        ];
+    }
+
+    /**
      * Staff view of one professional day: windows as bands, bookings as blocks, month tones by booking.
      *
      * @return array{timeline: array<string, mixed>, bookingTones: array<string, string>}
@@ -167,7 +195,7 @@ class AgendaService
         $appointments = Appointment::query()
             ->forPatient($patient)
             ->whereBetween('starts_at', [$monthStart, $monthEnd])
-            ->with(['professional.user', 'specialty'])
+            ->with(['patient', 'professional.user', 'professional.specialties', 'specialty'])
             ->orderBy('starts_at')
             ->get();
 
@@ -215,7 +243,7 @@ class AgendaService
             'appointments' => Appointment::query()
                 ->forProfessional($professional)
                 ->whereDate('starts_at', $dayStart->toDateString())
-                ->with(['patient', 'specialty'])
+                ->with(['patient', 'specialty', 'professional.user', 'professional.specialties'])
                 ->orderBy('starts_at')
                 ->get(),
             'now' => now()->format('Y-m-d H:i:s'),

@@ -1,25 +1,29 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Field from '@/Components/Form/Field';
 import NativeSelect from '@/Components/Form/NativeSelect';
+import PatientProfileFields from '@/Components/Patients/PatientProfileFields';
 import Empty from '@/Components/Surfaces/Empty';
 import Hint from '@/Components/Surfaces/Hint';
 import { getJson } from '@/lib/json';
 import type { HealthInsurance, PatientRecord } from '@/types';
 import { useForm } from '@inertiajs/react';
-import { Save, Undo2 } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+/** `GET /patients/{patient}`: staff (`patients.catalog.view`) también recibe el catálogo de obras sociales para editarla. */
 type ProfilePayload = {
     patient: PatientRecord;
-    healthInsuranceId: number | null;
-    healthInsurances: HealthInsurance[];
+    healthInsuranceId?: number | null;
+    healthInsurances?: HealthInsurance[];
 };
+
+type EditableProfile = Required<ProfilePayload>;
 
 type Props = {
     patientId: number;
     onDismiss: () => void;
-    onOpenAgenda: () => void;
+    onOpenAgenda?: () => void;
 };
 
 export default function PatientInfoModal({ patientId, onDismiss, onOpenAgenda }: Props) {
@@ -50,48 +54,38 @@ export default function PatientInfoModal({ patientId, onDismiss, onOpenAgenda }:
     const patient = profile?.patient;
 
     return (
-        <ConfirmDialog title={patient?.name ?? 'Paciente'} message="Datos del paciente." onDismiss={onDismiss} className="w-[min(32rem,100%)]">
+        <ConfirmDialog title={patient?.name ?? 'Paciente'} message="Datos del paciente." onDismiss={onDismiss} kind="info">
             {failed ? (
                 <Empty>No se pudo cargar la ficha.</Empty>
             ) : loading || !patient || !profile ? (
                 <Hint>Cargando…</Hint>
-            ) : (
+            ) : isEditable(profile) ? (
                 <>
-                    <dl className="m-0 grid max-h-[min(40dvh,22rem)] w-full gap-[var(--space-sm)] overflow-y-auto">
-                        <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
-                            <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Nombre</dt>
-                            <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.name}</dd>
-                        </div>
-                        <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
-                            <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">DNI</dt>
-                            <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.dni}</dd>
-                        </div>
-                        <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
-                            <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Fecha de nacimiento</dt>
-                            <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.birth_date}</dd>
-                        </div>
-                        <div className="grid gap-[0.2rem] border-b border-rule pb-[var(--space-sm)]">
-                            <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Teléfono</dt>
-                            <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.phone ?? '—'}</dd>
-                        </div>
-                        <div className="grid gap-[0.2rem]">
-                            <dt className="text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">Correo</dt>
-                            <dd className="m-0 text-[length:var(--text-md)] text-ink">{patient.email}</dd>
-                        </div>
-                    </dl>
+                    <PatientProfileFields patient={patient} showHealthInsurance={false} className="max-h-[min(40dvh,22rem)] overflow-y-auto" />
                     <PatientInsuranceForm profile={profile} onDismiss={onDismiss} onOpenAgenda={onOpenAgenda} />
                 </>
+            ) : (
+                <PatientProfileFields patient={patient} className="max-h-[min(40dvh,22rem)] overflow-y-auto" />
             )}
-            {failed ? (
-                <div className="flex justify-end">
-                    <Btn type="button" variant="outline" onClick={onDismiss}>
-                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Volver
-                    </Btn>
-                </div>
+            {onOpenAgenda && !failed && profile && !isEditable(profile) ? (
+                <DialogActions>
+                    <AgendaBtn onClick={onOpenAgenda} />
+                </DialogActions>
             ) : null}
         </ConfirmDialog>
     );
+}
+
+function isEditable(profile: ProfilePayload): profile is EditableProfile {
+    return profile.healthInsurances !== undefined;
+}
+
+function AgendaBtn({ onClick }: { onClick?: () => void }) {
+    return onClick ? (
+        <Btn type="button" onClick={onClick}>
+            Ver agenda
+        </Btn>
+    ) : null;
 }
 
 function PatientInsuranceForm({
@@ -99,9 +93,9 @@ function PatientInsuranceForm({
     onDismiss,
     onOpenAgenda,
 }: {
-    profile: ProfilePayload;
+    profile: EditableProfile;
     onDismiss: () => void;
-    onOpenAgenda: () => void;
+    onOpenAgenda?: () => void;
 }) {
     const form = useForm({
         health_insurance_id: profile.healthInsuranceId ? String(profile.healthInsuranceId) : '',
@@ -129,19 +123,13 @@ function PatientInsuranceForm({
                     ))}
                 </NativeSelect>
             </Field>
-            <div className="flex flex-wrap justify-end gap-[0.55rem]">
+            <DialogActions>
                 <Btn type="submit" disabled={form.processing}>
                     <Save className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                     Guardar
                 </Btn>
-                <Btn type="button" onClick={onOpenAgenda}>
-                    Ver agenda
-                </Btn>
-                <Btn type="button" variant="outline" onClick={onDismiss}>
-                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                    Volver
-                </Btn>
-            </div>
+                <AgendaBtn onClick={onOpenAgenda} />
+            </DialogActions>
         </form>
     );
 }

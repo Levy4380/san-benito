@@ -3,12 +3,17 @@ import PageScreen from '@/Components/Common/PageScreen';
 import StageCard from '@/Components/Common/StageCard';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
+import { Btn } from '@/Components/Form/Btn';
 import TextInput from '@/Components/Form/TextInput';
+import ProfessionalProfileFields from '@/Components/Professionals/ProfessionalProfileFields';
 import Catalog from '@/Components/Surfaces/Catalog';
 import type { FilterValues } from '@/Components/Surfaces/Filters';
 import { specialtyNames } from '@/lib/specialties';
 import type { ProfessionalRecord, Specialty } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { CalendarClock } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
     professionals: ProfessionalRecord[];
@@ -17,6 +22,7 @@ type Props = {
 };
 
 export default function ProfessionalsIndex({ professionals, specialties, filters }: Props) {
+    const [info, setInfo] = useState<ProfessionalRecord | null>(null);
     const hasFilters = filters.q.trim() !== '' || (filters.specialty_id !== '' && filters.specialty_id !== 'all');
 
     const apply = (data: FilterValues) => {
@@ -37,7 +43,7 @@ export default function ProfessionalsIndex({ professionals, specialties, filters
                             title: professional.user.name,
                             lines: [specialtyNames(professional.specialties)],
                             actions: [
-                                { kind: 'info', href: `/paciente/profesionales/${professional.id}`, name: professional.user.name },
+                                { kind: 'info', name: professional.user.name, onClick: () => setInfo(professional) },
                                 { kind: 'slots', href: `/paciente/profesionales/${professional.id}/horarios` },
                             ],
                         }))}
@@ -62,6 +68,19 @@ export default function ProfessionalsIndex({ professionals, specialties, filters
                     />
                 </StageCard>
             </PageScreen>
+            {info ? (
+                <ConfirmDialog title={info.user.name} message="Datos del profesional." onDismiss={() => setInfo(null)} kind="info">
+                    <ProfessionalProfileFields professional={info} />
+                    <DialogActions>
+                        <Btn asChild>
+                            <Link href={`/paciente/profesionales/${info.id}/horarios`}>
+                                <CalendarClock className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
+                                Ver turnos
+                            </Link>
+                        </Btn>
+                    </DialogActions>
+                </ConfirmDialog>
+            ) : null}
         </>
     );
 }

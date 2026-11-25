@@ -3,7 +3,7 @@ import { PointerEvent, useRef } from 'react';
 import { Btn } from '@/Components/Form/Btn';
 import CalendarDay from '@/Components/Calendar/CalendarDay';
 import CalendarLegendSwatch from '@/Components/Calendar/CalendarLegendSwatch';
-import { isoWeekday } from '@/lib/clinic';
+import { clinicDayMark, isoWeekday, useClinic } from '@/lib/clinic';
 import { addMonths, isWeekendKey, lastDateOfMonth, monthGrid, monthTitle, wallDate } from '@/lib/datetime';
 import { phoneSurfaceRadiusClass } from '@/lib/mobile-chrome';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ const WEEKDAYS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 
 type Tone = 'empty' | 'has' | 'full';
 
-export type CalLegendItem = { tone: Tone | 'selected'; label: string };
+export type CalLegendItem = { tone: Tone | 'closed' | 'shifted' | 'selected'; label: string };
 
 type Props = {
     month: string;
@@ -50,7 +50,14 @@ export default function CalendarMonth({
     today,
     legend,
 }: Props) {
+    const clinic = useClinic();
     const days = monthGrid(month);
+    const marks = days.map((day) => (day.inMonth ? clinicDayMark(day.key, clinic) : null));
+    const shownLegend = [
+        ...(legend ?? []),
+        ...(marks.some((mark) => mark === 'closed') ? [{ tone: 'closed' as const, label: 'Cerrado' }] : []),
+        ...(marks.some((mark) => mark === 'shifted') ? [{ tone: 'shifted' as const, label: 'Horario distinto' }] : []),
+    ];
     const todayKey = today ? wallDate(today) : null;
     const prevDisabled = Boolean(minDate && lastDateOfMonth(addMonths(month, -1)) < minDate);
     const painting = useRef<boolean | null>(null);
@@ -153,8 +160,9 @@ export default function CalendarMonth({
                         {day}
                     </div>
                 ))}
-                {days.map((day) => {
+                {days.map((day, index) => {
                     const tone = tones?.[day.key] ?? 'empty';
+                    const mark = marks[index] ?? null;
                     const blocked = Boolean(
                         (blockWeekends && isWeekendKey(day.key)) ||
                             disabledDates?.includes(day.key) ||
@@ -170,6 +178,7 @@ export default function CalendarMonth({
                             key={day.key}
                             day={day}
                             tone={tone}
+                            mark={mark}
                             selected={isSelected}
                             muted={isMuted}
                             past={isDimmed}
@@ -185,12 +194,12 @@ export default function CalendarMonth({
                     );
                 })}
             </div>
-            {legend && legend.length > 0 ? (
+            {shownLegend.length > 0 ? (
                 <div
                     data-cal-legend=""
                     className="mt-[0.35rem] flex shrink-0 flex-wrap items-center gap-x-[0.55rem] gap-y-[0.2rem] text-[0.65rem] leading-[1.2] text-ink-2 "
                 >
-                    {legend.map((item) => (
+                    {shownLegend.map((item) => (
                         <span key={item.tone} className="inline-flex max-w-none shrink-0 items-center gap-1">
                             <CalendarLegendSwatch tone={item.tone} /> {item.label}
                         </span>

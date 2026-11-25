@@ -1,6 +1,6 @@
 import CalendarMonth from '@/Components/Calendar/CalendarMonth';
 import DayTimeline from '@/Components/Calendar/DayTimeline';
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import Combobox from '@/Components/Form/Combobox';
 import Field from '@/Components/Form/Field';
@@ -13,7 +13,7 @@ import { formatDateLabel, wallTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, AvailabilityWindowRecord, Slot } from '@/types';
 import { router } from '@inertiajs/react';
-import { Undo2, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type AssignOptions = {
@@ -110,8 +110,8 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
         'Elegí un día en el calendario.';
 
     return (
-        <ConfirmDialog title="Asignar turno" message={message} onDismiss={onDismiss} className={date ? undefined : 'w-[min(30rem,100%)]'}>
-            <div className="flex max-h-[60dvh] min-h-0 flex-col">
+        <ConfirmDialog title="Asignar turno" message={message} onDismiss={onDismiss} kind={date ? 'info' : 'workspace'}>
+            <div className={cn('flex min-h-0 flex-col', !date && 'flex-1')}>
                 {!patient ? (
                     <Field label="Paciente vinculado" htmlFor="assign_patient_id" className="shrink-0">
                         <Combobox
@@ -248,7 +248,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                                         onClick={() => assign(slot.starts_at)}
                                     >
                                         <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                                        Asignar
+                                        Asignar turno
                                     </Btn>
                                 </SlotRow>
                             ))
@@ -256,7 +256,7 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                     </PanelScroll>
                 )}
             </div>
-            <div className="flex justify-end gap-[0.55rem]">
+            <DialogActions>
                 {startsAt ? (
                     <Btn
                         type="button"
@@ -265,14 +265,10 @@ export default function AssignModal({ date, patient, startsAt, onDismiss }: Prop
                         onClick={() => assign(startsAt)}
                     >
                         <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Asignar
+                        Asignar turno
                     </Btn>
                 ) : null}
-                <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>
-                    <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                    Volver
-                </Btn>
-            </div>
+            </DialogActions>
         </ConfirmDialog>
     );
 }

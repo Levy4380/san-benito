@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@/Components/Feedback/ConfirmModal';
+import { ConfirmDialog, DialogActions } from '@/Components/Feedback/ConfirmModal';
 import { Btn } from '@/Components/Form/Btn';
 import CheckLabel from '@/Components/Form/CheckLabel';
 import Field from '@/Components/Form/Field';
@@ -6,7 +6,7 @@ import NativeSelect from '@/Components/Form/NativeSelect';
 import TextInput from '@/Components/Form/TextInput';
 import type { HealthInsurance } from '@/types';
 import { useForm } from '@inertiajs/react';
-import { Undo2, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type CreatePatientOptions = {
@@ -58,7 +58,7 @@ export default function CreatePatientModal({ onDismiss }: Props) {
     }, []);
 
     return (
-        <ConfirmDialog title="Crear paciente" message="Alta de pacientes. Solo super admin." onDismiss={onDismiss} className="w-[min(48rem,100%)]">
+        <ConfirmDialog title="Crear paciente" message="Alta de pacientes. Solo super admin." onDismiss={onDismiss} kind="info">
             <form
                 className="grid min-h-0"
                 onSubmit={(event) => {
@@ -151,16 +151,12 @@ export default function CreatePatientModal({ onDismiss }: Props) {
                         </NativeSelect>
                     </Field>
                 </div>
-                <div className="mt-[0.25rem] flex flex-wrap justify-end gap-[0.5rem]">
-                    <Btn type="button" variant="outline" className="min-w-[6.5rem]" onClick={onDismiss}>
-                        <Undo2 className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
-                        Volver
-                    </Btn>
+                <DialogActions>
                     <Btn type="submit" className="min-w-[6.5rem]" disabled={form.processing}>
                         <UserPlus className="size-[1.05rem] shrink-0" aria-hidden strokeWidth={2} />
                         Crear paciente
                     </Btn>
-                </div>
+                </DialogActions>
             </form>
         </ConfirmDialog>
     );

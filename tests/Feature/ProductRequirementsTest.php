@@ -537,7 +537,7 @@ class ProductRequirementsTest extends TestCase
         $this->assertDatabaseHas('appointments', ['id' => $appointment->id]);
     }
 
-    public function test_12_admin_lists_and_filters_past_appointments_historial(): void
+    public function test_12_admin_searches_past_and_future_appointments(): void
     {
         $admin = $this->makeAdmin();
         $patient = $this->makePatient();
@@ -559,39 +559,44 @@ class ProductRequirementsTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos')
+            ->get('/admin/buscar/turnos')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Appointments')
-                ->has('appointments.data', 1));
+                ->where('by', null)
+                ->has('appointments.data', 0));
 
         $this->actingAs($admin)
             ->get('/admin/reservas')
-            ->assertRedirect(route('admin.historial.turnos'));
+            ->assertRedirect(route('admin.search.appointments'));
 
         $this->actingAs($admin)
             ->get('/admin')
             ->assertRedirect(route('admin.surgeries.calendar'));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?professional_id='.$professional->id)
+            ->get('/admin/buscar/turnos?by=professional&professional_id='.$professional->id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
+            ->assertInertia(fn ($page) => $page
+                ->where('by', 'professional')
+                ->has('appointments.data', 2)
+                ->where('appointments.data.0.starts_at', $future->format('Y-m-d H:i:s'))
+                ->where('appointments.data.1.id', $appointment->id));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?date='.$past->copy()->addYear()->toDateString())
+            ->get('/admin/buscar/turnos?by=date&date='.$past->copy()->addYear()->toDateString())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?specialty_id='.$appointment->specialty_id)
+            ->get('/admin/buscar/turnos?by=specialty&specialty_id='.$appointment->specialty_id)
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('appointments.data', 1));
+            ->assertInertia(fn ($page) => $page->has('appointments.data', 2));
 
         $other = Specialty::factory()->create(['name' => 'Oftalmología']);
 
         $this->actingAs($admin)
-            ->get('/admin/historial/turnos?specialty_id='.$other->id)
+            ->get('/admin/buscar/turnos?by=specialty&specialty_id='.$other->id)
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('appointments.data', 0));
     }
@@ -617,8 +622,8 @@ class ProductRequirementsTest extends TestCase
             $this->actingAs($user)->get('/admin/configuracion/especialidades/'.$specialty->id.'/editar')->assertRedirect(RoleRedirector::landing($user));
         }
 
-        $this->actingAs($admin)->get('/admin/pacientes')->assertRedirect('/admin');
-        $this->actingAs($admin)->get('/patients/create')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/admin/pacientes')->assertOk();
+        $this->actingAs($admin)->getJson('/patients/create')->assertOk();
         $this->actingAs($admin)->get('/admin/administradores')->assertRedirect('/admin');
         $this->actingAs($admin)->get('/admin/administradores/crear')->assertRedirect('/admin');
         $this->actingAs($admin)->get('/admin/configuracion')->assertRedirect('/admin');
@@ -838,7 +843,12 @@ class ProductRequirementsTest extends TestCase
 
         $this->actingAs($admin)
             ->post('/professionals/'.$professional->id.'/windows/program', $payload)
-            ->assertRedirect();
+            ->assertRedirect('/admin/profesionales?agenda='.$professional->id);
+
+        $this->actingAs($super)
+            ->get('/admin/profesionales/'.$professional->id.'/programar')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Professional/Program'));
 
         $this->actingAs($super)
             ->post('/professionals/'.$professional->id.'/windows/program', [
@@ -846,7 +856,11 @@ class ProductRequirementsTest extends TestCase
                 'ranges' => [['start' => '11:00', 'end' => '12:00']],
                 'block_weekends' => false,
             ])
-            ->assertRedirect();
+            ->assertRedirect('/admin/profesionales?agenda='.$professional->id);
+
+        $this->actingAs($professional->user)
+            ->get('/admin/profesionales/'.$professional->id.'/programar')
+            ->assertRedirect('/profesional');
     }
 
     public function test_18_wizard_specialty_filters_professionals_and_booking_inserts(): void
@@ -1118,24 +1132,28 @@ class ProductRequirementsTest extends TestCase
         $other = $this->makePatient();
         $professional->patients()->syncWithoutDetaching([$linked->id]);
 
+        // No individual pages: profiles are modals (patient side reads the search payload).
         $this->actingAs($linked->user)
             ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professionals/Show'));
-
-        $this->actingAs($this->makeAdmin())
-            ->get('/paciente/profesionales/'.$professional->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professionals/Show'));
+            ->assertNotFound();
 
         $this->actingAs($professional->user)
             ->get('/profesional/mis-pacientes/'.$linked->id)
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Professional/PatientProfile'));
+            ->assertNotFound();
 
         $this->actingAs($professional->user)
-            ->get('/profesional/mis-pacientes/'.$other->id)
-            ->assertRedirect('/profesional');
+            ->getJson('/patients/'.$linked->id)
+            ->assertOk()
+            ->assertJsonPath('patient.id', $linked->id)
+            ->assertJsonMissingPath('healthInsurances');
+
+        $this->actingAs($professional->user)
+            ->getJson('/patients/'.$other->id)
+            ->assertForbidden();
+
+        $this->actingAs($linked->user)
+            ->getJson('/patients/'.$linked->id)
+            ->assertForbidden();
     }
 
     public function test_22_admin_can_persist_windows_for_another_professional(): void
@@ -1143,6 +1161,15 @@ class ProductRequirementsTest extends TestCase
         $admin = $this->makeAdmin();
         $professional = $this->makeProfessional();
         $start = $this->nextWeekdayNine();
+
+        $this->actingAs($admin)
+            ->get('/admin/profesionales/'.$professional->id.'/programar')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Professional/Program')
+                ->where('submitUrl', '/professionals/'.$professional->id.'/windows/program')
+                ->where('monthPath', '/admin/profesionales/'.$professional->id.'/programar')
+                ->where('backHref', '/admin/profesionales?agenda='.$professional->id));
 
         $this->actingAs($admin)
             ->post('/professionals/'.$professional->id.'/windows', [
@@ -1153,6 +1180,8 @@ class ProductRequirementsTest extends TestCase
         $this->assertDatabaseCount('availability_windows', 1);
         $this->assertDatabaseHas('availability_windows', ['professional_id' => $professional->id]);
 
+        $windowId = (int) AvailabilityWindow::query()->value('id');
+
         $thursday = $start->copy()->next(Carbon::THURSDAY);
         $this->actingAs($admin)
             ->post('/professionals/'.$professional->id.'/windows/program', [
@@ -1160,10 +1189,26 @@ class ProductRequirementsTest extends TestCase
                 'ranges' => [['start' => '11:00', 'end' => '12:00']],
                 'block_weekends' => false,
             ])
-            ->assertRedirect();
+            ->assertRedirect('/admin/profesionales?agenda='.$professional->id);
 
         $this->assertDatabaseCount('availability_windows', 2);
         $this->assertDatabaseCount('appointments', 0);
+
+        $this->actingAs($admin)
+            ->delete('/professionals/'.$professional->id.'/windows/'.$windowId)
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('availability_windows', ['id' => $windowId]);
+        $this->assertDatabaseCount('availability_windows', 1);
+
+        $other = $this->makeProfessional();
+        $foreignId = (int) AvailabilityWindow::query()
+            ->where('professional_id', $professional->id)
+            ->value('id');
+
+        $this->actingAs($admin)
+            ->delete('/professionals/'.$other->id.'/windows/'.$foreignId)
+            ->assertNotFound();
     }
 
     public function test_23_patient_sees_upcoming_on_my_appointments_and_past_on_history(): void
@@ -1233,7 +1278,10 @@ class ProductRequirementsTest extends TestCase
             ->assertDontSee('Matrícula');
 
         $this->actingAs($admin)->get('/admin/administradores/crear')->assertRedirect('/admin');
-        $this->actingAs($admin)->get('/patients/create')->assertRedirect('/admin');
+        $this->actingAs($admin)
+            ->getJson('/patients/create')
+            ->assertOk()
+            ->assertJsonStructure(['healthInsurances']);
 
         $this->actingAs($super)
             ->get('/admin/administradores/crear')
@@ -1246,20 +1294,16 @@ class ProductRequirementsTest extends TestCase
             ->assertJsonStructure(['healthInsurances']);
 
         $this->actingAs($this->makePatient()->user)
-            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
-            ->assertRedirect('/paciente');
+            ->get('/admin/profesionales/'.$professional->id)
+            ->assertNotFound();
 
         $this->actingAs($admin)
-            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
-            ->assertRedirect('/admin');
+            ->get('/admin/profesionales/'.$professional->id)
+            ->assertNotFound();
 
         $this->actingAs($super)
-            ->get('/admin/profesionales/'.$professional->id.'/especialidades')
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Professionals/Specialties')
-                ->where('professional.id', $professional->id)
-                ->has('specialties'));
+            ->get('/admin/profesionales/'.$professional->id.'/horarios')
+            ->assertNotFound();
 
         $this->actingAs($professional->user)
             ->get('/profesional/agenda?panel=load&date='.$date)

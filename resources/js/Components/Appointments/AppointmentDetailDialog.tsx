@@ -1,6 +1,6 @@
 import {
-    AppointmentAttendanceControls,
     AppointmentStatusBadge,
+    AttendanceControls,
     ClearAttendanceBtn,
     useAppointmentAttendance,
     useCanMarkAttendance,
@@ -138,7 +138,7 @@ export default function AppointmentDetailDialog({ appointment, onDismiss, onChan
                             </Btn>
                         ) : null}
                         {canMarkAttendance ? (
-                            <AppointmentAttendanceControls appointment={appointment} attendance={attendance} saving={saving} onMark={mark} />
+                            <AttendanceControls started={started} attendance={attendance} saving={saving} onMark={mark} />
                         ) : null}
                         {canReschedule ? (
                             <Btn type="button" variant="outline" onClick={() => setRescheduling(true)}>
